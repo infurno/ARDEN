@@ -1,0 +1,93 @@
+{
+  "version": "1.0.0",
+  "name": "ARDEN",
+  "description": "AI Routine Daily Engagement Nexus - Edge TTS (FREE)",
+
+  "voice": {
+    "enabled": true,
+    "stt_provider": "openai-whisper",
+    "stt_config": {
+      "api_key_env": "OPENAI_API_KEY",
+      "model": "whisper-1",
+      "language": "en"
+    },
+    "tts_provider": "edge-tts",
+    "tts_config": {
+      "voice": "en-US-AriaNeural"
+    },
+    "wake_word": "Hey ARDEN",
+    "notifications": true
+  },
+
+  "api": {
+    "enabled": true,
+    "port": 3000,
+    "host": "0.0.0.0",
+    "auth_token_env": "ARDEN_API_TOKEN",
+    "cors_enabled": true,
+    "rate_limit": {
+      "window_ms": 900000,
+      "max_requests": 100
+    }
+  },
+
+  "telegram": {
+    "enabled": true,
+    "bot_token_env": "TELEGRAM_BOT_TOKEN",
+    "allowed_users": []
+  },
+
+  "context": {
+    "directories": [
+      "~/ARDEN/context",
+      "~/Documents",
+      "~/Projects"
+    ],
+    "auto_load_skills": true,
+    "history_enabled": true
+  },
+
+  "agents": {
+    "default": "assistant",
+    "available": [
+      "strategist",
+      "researcher",
+      "engineer",
+      "analyst",
+      "assistant"
+    ]
+  },
+
+  "hooks": {
+    "session_start": true,
+    "post_tool_use": true,
+    "stop": true,
+    "pre_tool_use": true
+  },
+
+  "security": {
+    "audit_logging": true,
+    "command_validation": true,
+    "allowed_tools": ["*"],
+    "blocked_commands": [
+      "rm -rf /",
+      "dd if=",
+      ":(){ :|:& };:"
+    ]
+  },
+
+  "routines": {
+    "morning_briefing": {
+      "enabled": true,
+      "time": "08:00",
+      "agent": "assistant"
+    },
+    "evening_review": {
+      "enabled": true,
+      "time": "18:00",
+      "agent": "analyst"
+    }
+  },
+
+  "_comment": "Edge TTS Config - 100% FREE, no API key needed. Popular voices: en-US-AriaNeural, en-US-GuyNeural, en-US-JennyNeural, en-GB-SoniaNeural"
+}

@@ -1,0 +1,34 @@
+{
+  "name": "arden-api",
+  "version": "1.0.0",
+  "description": "ARDEN Voice API Server - AI Routine Daily Engagement Nexus",
+  "main": "telegram-bot.js",
+  "scripts": {
+    "start": "node telegram-bot.js",
+    "dev": "nodemon telegram-bot.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "arden",
+    "ai",
+    "voice",
+    "telegram",
+    "bot",
+    "claude",
+    "assistant"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "axios": "^1.6.5",
+    "form-data": "^4.0.0",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

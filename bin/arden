@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# ARDEN CLI Wrapper
+# Executes Claude Code with ARDEN context and configuration
+
+ARDEN_HOME="$HOME/ARDEN"
+
+# Load environment
+if [ -f "$ARDEN_HOME/.env" ]; then
+  export $(cat "$ARDEN_HOME/.env" | grep -v '^#' | xargs)
+fi
+
+# Check for voice flag
+VOICE_MODE=false
+if [[ "$1" == "--voice" ]]; then
+  VOICE_MODE=true
+  shift
+fi
+
+# Execute Claude Code with ARDEN config
+cd "$ARDEN_HOME"
+
+if [ "$VOICE_MODE" = true ]; then
+  echo "🎤 Voice mode not yet implemented in CLI"
+  echo "💡 Use Telegram bot for voice interaction"
+  exit 1
+fi
+
+# Run Claude Code with prompt
+claude "$@"

@@ -1,0 +1,9 @@
+Chicago
+
+# You can change this to your default location
+# Examples:
+# - Chicago
+# - New York
+# - 60601 (zip code)
+# - London,UK
+# - Tokyo,Japan

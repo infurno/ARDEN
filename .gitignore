@@ -1,0 +1,87 @@
+# ARDEN .gitignore
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.key
+credentials.json
+
+# Node modules
+node_modules/
+api/node_modules/
+package-lock.json
+
+# Python virtual environment
+venv/
+env/
+*.pyc
+__pycache__/
+
+# Voice files (can be large)
+voice/recordings/*.ogg
+voice/recordings/*.mp3
+voice/recordings/*.wav
+voice/responses/*.mp3
+voice/responses/*.wav
+
+# Keep the directories but not the files
+!voice/recordings/.gitkeep
+!voice/responses/.gitkeep
+
+# History and logs (personal data)
+history/sessions/**/*
+history/learnings/**/*
+history/decisions/**/*
+history/research/**/*
+history/security/**/*
+*.log
+api/bot.log
+
+# Keep the directory structure
+!history/sessions/.gitkeep
+!history/learnings/.gitkeep
+!history/decisions/.gitkeep
+!history/research/.gitkeep
+!history/security/.gitkeep
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Whisper model cache
+~/.cache/whisper/
+
+# Test files
+test.mp3
+test.ogg
+*.test.js
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# macOS specific
+.AppleDouble
+.LSOverride
+
+# Notes (if you want to keep personal notes private)
+# Uncomment if you don't want to share your notes
+# Notes/
+
+# Personal context (uncomment if you want to keep private)
+# context/personal/
+*.bak
