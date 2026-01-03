@@ -64,10 +64,13 @@ Thumbs.db
 # Whisper model cache
 ~/.cache/whisper/
 
-# Test files
+# Test coverage
+api/coverage/
+coverage/
+
+# Temporary test files
 test.mp3
 test.ogg
-*.test.js
 
 # Temporary files
 tmp/

@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node telegram-bot.js",
     "dev": "nodemon telegram-bot.js",
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [
     "arden",
@@ -20,15 +22,34 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "node-telegram-bot-api": "^0.66.0",
     "axios": "^1.6.5",
+    "dotenv": "^16.4.1",
     "form-data": "^4.0.0",
-    "dotenv": "^16.4.1"
+    "node-telegram-bot-api": "^0.66.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.0.3"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "**/*.js",
+      "!**/node_modules/**",
+      "!**/coverage/**",
+      "!telegram-bot.js"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.js"
+    ],
+    "setupFilesAfterEnv": [
+      "./__tests__/setup.js"
+    ],
+    "verbose": true
   }
 }
