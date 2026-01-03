@@ -257,14 +257,33 @@ async function executeCurrentSkill() {
 
 // Toggle skill enabled/disabled
 async function toggleSkill(skillId, enabled) {
-    // TODO: Implement skill toggle in backend
-    showToast(`Skill ${enabled ? 'enabled' : 'disabled'} (feature coming soon)`, 'info');
-    
-    // Update local state
-    const skill = allSkills.find(s => s.id === skillId);
-    if (skill) {
-        skill.enabled = enabled;
-        updateStats();
+    try {
+        // Call API to toggle skill
+        const result = await api.toggleSkill(skillId);
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to toggle skill');
+        }
+        
+        // Update local state with the actual server state
+        const skill = allSkills.find(s => s.id === skillId);
+        if (skill) {
+            skill.enabled = result.enabled;
+            updateStats();
+            renderSkills(); // Re-render to update the toggle switch if it changed
+        }
+        
+        showToast(`Skill ${result.enabled ? 'enabled' : 'disabled'}`, 'success');
+        
+    } catch (error) {
+        console.error('Failed to toggle skill:', error);
+        showToast('Failed to toggle skill', 'error');
+        
+        // Revert the toggle switch
+        const toggle = document.querySelector(`.skill-toggle[data-skill-id="${skillId}"]`);
+        if (toggle) {
+            toggle.checked = !enabled;
+        }
     }
 }
 

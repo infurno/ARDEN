@@ -198,6 +198,19 @@ class ArdenAPI {
             body: JSON.stringify({ params }),
         });
     }
+    
+    async toggleSkill(skillId) {
+        return this.request(`/skills/${skillId}/toggle`, {
+            method: 'POST'
+        });
+    }
+    
+    async updateSkillConfig(skillId, config) {
+        return this.request(`/skills/${skillId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(config)
+        });
+    }
 }
 
 // Create global API instance

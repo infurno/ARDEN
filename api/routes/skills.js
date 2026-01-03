@@ -8,6 +8,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
+const skillsConfig = require('../services/skills-config');
 
 const ARDEN_ROOT = path.resolve(__dirname, '../..');
 const SKILLS_DIR = path.join(ARDEN_ROOT, 'skills');
@@ -17,9 +18,17 @@ router.get('/', async (req, res) => {
   try {
     const skills = await discoverSkills();
     
+    // Add enabled status from config
+    const skillsWithConfig = await Promise.all(
+      skills.map(async (skill) => {
+        const enabled = await skillsConfig.isSkillEnabled(skill.id);
+        return { ...skill, enabled };
+      })
+    );
+    
     res.json({
       success: true,
-      skills
+      skills: skillsWithConfig
     });
   } catch (error) {
     logger.system.error('Failed to list skills', { error: error.message });
@@ -77,6 +86,75 @@ router.post('/:skillId/execute', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to execute skill'
+    });
+  }
+});
+
+// POST /api/skills/:skillId/toggle - Toggle skill enabled/disabled
+router.post('/:skillId/toggle', async (req, res) => {
+  try {
+    const { skillId } = req.params;
+    
+    // Check if skill exists
+    const skill = await getSkillDetails(skillId);
+    if (!skill) {
+      return res.status(404).json({
+        success: false,
+        error: 'Skill not found'
+      });
+    }
+    
+    const newStatus = await skillsConfig.toggleSkill(skillId);
+    
+    logger.system.info('Skill toggled', { skillId, enabled: newStatus });
+    
+    res.json({
+      success: true,
+      skillId,
+      enabled: newStatus
+    });
+  } catch (error) {
+    logger.system.error('Failed to toggle skill', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to toggle skill'
+    });
+  }
+});
+
+// PATCH /api/skills/:skillId - Update skill configuration
+router.patch('/:skillId', async (req, res) => {
+  try {
+    const { skillId } = req.params;
+    const { enabled } = req.body;
+    
+    // Check if skill exists
+    const skill = await getSkillDetails(skillId);
+    if (!skill) {
+      return res.status(404).json({
+        success: false,
+        error: 'Skill not found'
+      });
+    }
+    
+    if (typeof enabled === 'boolean') {
+      await skillsConfig.setSkillEnabled(skillId, enabled);
+    }
+    
+    const config = await skillsConfig.getSkillConfig(skillId);
+    
+    logger.system.info('Skill config updated', { skillId, enabled: config.enabled });
+    
+    res.json({
+      success: true,
+      skillId,
+      config
+    });
+  } catch (error) {
+    logger.system.error('Failed to update skill config', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update skill configuration'
     });
   }
 });
