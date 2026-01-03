@@ -37,6 +37,7 @@ history/research/**/*
 history/security/**/*
 *.log
 api/bot.log
+api/logs/*.log
 
 # Keep the directory structure
 !history/sessions/.gitkeep
@@ -44,6 +45,7 @@ api/bot.log
 !history/decisions/.gitkeep
 !history/research/.gitkeep
 !history/security/.gitkeep
+!api/logs/.gitkeep
 
 # OS files
 .DS_Store
