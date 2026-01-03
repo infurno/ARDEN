@@ -13,6 +13,7 @@ const path = require('path');
 const axios = require('axios');
 const logger = require('../utils/logger');
 const { getContextForPrompt } = require('./context-loader');
+const db = require('./database');
 
 // Ensure we're working from the correct directory
 const ARDEN_ROOT = path.resolve(__dirname, '../..');
@@ -70,9 +71,17 @@ async function buildSystemPrompt() {
 }
 
 /**
+ * Estimate token count (rough approximation: ~4 chars per token)
+ */
+function estimateTokens(text) {
+  if (!text) return 0;
+  return Math.ceil(text.length / 4);
+}
+
+/**
  * Execute with Claude Code CLI
  */
-async function executeClaude(prompt) {
+async function executeClaude(prompt, userId = 'unknown', sessionId = null) {
   logger.ai.info('Executing with Claude Code', { promptLength: prompt.length });
 
   return new Promise((resolve, reject) => {
@@ -82,7 +91,22 @@ async function executeClaude(prompt) {
       cwd: ARDEN_ROOT,
       maxBuffer: 1024 * 1024 * 10, // 10MB buffer
     }, (error, stdout, stderr) => {
+      const response = stdout || stderr;
+      
       if (error) {
+        // Record failed request
+        db.recordApiUsage(
+          'claude',
+          'claude-cli',
+          userId,
+          sessionId,
+          0,
+          0,
+          'chat',
+          false,
+          error.message
+        );
+        
         logger.ai.error('Claude Code execution error', { 
           error: error.message,
           stderr 
@@ -90,9 +114,26 @@ async function executeClaude(prompt) {
         reject(error);
         return;
       }
-      const response = stdout || stderr;
+      
+      // Estimate tokens
+      const promptTokens = estimateTokens(prompt);
+      const completionTokens = estimateTokens(response);
+      
+      // Record API usage (Claude CLI may have costs depending on setup)
+      db.recordApiUsage(
+        'claude',
+        'claude-cli',
+        userId,
+        sessionId,
+        promptTokens,
+        completionTokens,
+        'chat',
+        true
+      );
+      
       logger.ai.info('Claude Code execution successful', { 
-        responseLength: response.length 
+        responseLength: response.length,
+        estimatedTokens: promptTokens + completionTokens
       });
       resolve(response);
     });
@@ -102,7 +143,7 @@ async function executeClaude(prompt) {
 /**
  * Execute with Ollama
  */
-async function executeOllama(prompt) {
+async function executeOllama(prompt, userId = 'unknown', sessionId = null) {
   logger.ai.info('Executing with Ollama', { 
     model: OLLAMA_MODEL,
     url: OLLAMA_URL,
@@ -120,11 +161,42 @@ async function executeOllama(prompt) {
     });
     
     const result = response.data.response;
+    
+    // Estimate tokens (Ollama doesn't return token counts)
+    const promptTokens = estimateTokens(systemPrompt + prompt);
+    const completionTokens = estimateTokens(result);
+    
+    // Record API usage (Ollama is local, so cost is 0)
+    db.recordApiUsage(
+      'ollama',
+      OLLAMA_MODEL,
+      userId,
+      sessionId,
+      promptTokens,
+      completionTokens,
+      'chat',
+      true
+    );
+    
     logger.ai.info('Ollama execution successful', { 
-      responseLength: result.length 
+      responseLength: result.length,
+      estimatedTokens: promptTokens + completionTokens
     });
     return result;
   } catch (error) {
+    // Record failed request
+    db.recordApiUsage(
+      'ollama',
+      OLLAMA_MODEL,
+      userId,
+      sessionId,
+      0,
+      0,
+      'chat',
+      false,
+      error.message
+    );
+    
     logger.ai.error('Ollama error', { 
       error: error.message,
       url: OLLAMA_URL,
@@ -137,7 +209,7 @@ async function executeOllama(prompt) {
 /**
  * Execute with OpenAI API
  */
-async function executeOpenAI(prompt) {
+async function executeOpenAI(prompt, userId = 'unknown', sessionId = null) {
   logger.ai.info('Executing with OpenAI', { 
     model: OPENAI_MODEL,
     promptLength: prompt.length 
@@ -172,12 +244,41 @@ async function executeOpenAI(prompt) {
     );
     
     const result = response.data.choices[0].message.content;
+    const usage = response.data.usage;
+    
+    // Record API usage
+    if (usage) {
+      db.recordApiUsage(
+        'openai',
+        OPENAI_MODEL,
+        userId,
+        sessionId,
+        usage.prompt_tokens || 0,
+        usage.completion_tokens || 0,
+        'chat',
+        true
+      );
+    }
+    
     logger.ai.info('OpenAI execution successful', { 
       responseLength: result.length,
-      tokensUsed: response.data.usage?.total_tokens 
+      tokensUsed: usage?.total_tokens 
     });
     return result;
   } catch (error) {
+    // Record failed request
+    db.recordApiUsage(
+      'openai',
+      OPENAI_MODEL,
+      userId,
+      sessionId,
+      0,
+      0,
+      'chat',
+      false,
+      error.message
+    );
+    
     logger.ai.error('OpenAI error', { 
       error: error.message,
       status: error.response?.status
@@ -189,7 +290,7 @@ async function executeOpenAI(prompt) {
 /**
  * Execute with LM Studio
  */
-async function executeLMStudio(prompt) {
+async function executeLMStudio(prompt, userId = 'unknown', sessionId = null) {
   logger.ai.info('Executing with LM Studio', { 
     url: LMSTUDIO_URL,
     promptLength: prompt.length 
@@ -217,11 +318,43 @@ async function executeLMStudio(prompt) {
     );
     
     const result = response.data.choices[0].message.content;
+    const usage = response.data.usage;
+    
+    // Use actual token counts if available, otherwise estimate
+    const promptTokens = usage?.prompt_tokens || estimateTokens(systemPrompt + prompt);
+    const completionTokens = usage?.completion_tokens || estimateTokens(result);
+    
+    // Record API usage (LM Studio is local, so cost is 0)
+    db.recordApiUsage(
+      'lmstudio',
+      'lmstudio-local',
+      userId,
+      sessionId,
+      promptTokens,
+      completionTokens,
+      'chat',
+      true
+    );
+    
     logger.ai.info('LM Studio execution successful', { 
-      responseLength: result.length 
+      responseLength: result.length,
+      tokensUsed: promptTokens + completionTokens
     });
     return result;
   } catch (error) {
+    // Record failed request
+    db.recordApiUsage(
+      'lmstudio',
+      'lmstudio-local',
+      userId,
+      sessionId,
+      0,
+      0,
+      'chat',
+      false,
+      error.message
+    );
+    
     logger.ai.error('LM Studio error', { 
       error: error.message,
       url: LMSTUDIO_URL
@@ -233,7 +366,7 @@ async function executeLMStudio(prompt) {
 /**
  * Execute ARDEN with the given prompt using configured AI provider
  */
-async function executeArden(prompt) {
+async function executeArden(prompt, userId = 'unknown', sessionId = null) {
   logger.ai.info('Executing ARDEN', { 
     provider: AI_PROVIDER,
     promptLength: prompt.length 
@@ -243,17 +376,17 @@ async function executeArden(prompt) {
     let response;
     switch (AI_PROVIDER) {
       case 'ollama':
-        response = await executeOllama(prompt);
+        response = await executeOllama(prompt, userId, sessionId);
         break;
       case 'openai':
-        response = await executeOpenAI(prompt);
+        response = await executeOpenAI(prompt, userId, sessionId);
         break;
       case 'lmstudio':
-        response = await executeLMStudio(prompt);
+        response = await executeLMStudio(prompt, userId, sessionId);
         break;
       case 'claude':
       default:
-        response = await executeClaude(prompt);
+        response = await executeClaude(prompt, userId, sessionId);
         break;
     }
     

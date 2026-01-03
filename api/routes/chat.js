@@ -55,7 +55,7 @@ router.post('/', async (req, res) => {
       logger.system.info('Skill executed', { sessionId: currentSessionId });
     } else {
       // No skill detected, use AI
-      response = await executeArden(message);
+      response = await executeArden(message, userId, currentSessionId);
     }
     
     // Save AI response to database

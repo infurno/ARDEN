@@ -201,6 +201,45 @@ class ArdenAPI {
         return this.request(`/analytics/skills/popular?limit=${limit}&period=${period}`);
     }
     
+    async getApiCostsSummary(period = '30d') {
+        return this.request(`/analytics/api-costs?period=${period}`);
+    }
+    
+    async getApiCostsStats(period = '30d', provider = null) {
+        const params = new URLSearchParams({ period });
+        if (provider) params.append('provider', provider);
+        return this.request(`/analytics/api-costs/stats?${params.toString()}`);
+    }
+    
+    async getApiCosts(period = '30d') {
+        const response = await this.getApiCostsStats(period);
+        if (!response.success) return response;
+        
+        // Transform API response to match dashboard expectations
+        const costs = response.stats.map(stat => ({
+            provider: stat.provider,
+            model: stat.model,
+            totalCalls: stat.total_requests,
+            promptTokens: stat.total_prompt_tokens,
+            completionTokens: stat.total_completion_tokens,
+            totalTokens: stat.total_tokens,
+            totalCost: stat.total_cost_usd,
+            successRate: ((stat.successful_requests / stat.total_requests) * 100).toFixed(1)
+        }));
+        
+        return { success: true, costs };
+    }
+    
+    async getApiCostsTrends(period = '30d') {
+        return this.request(`/analytics/api-costs/trends?period=${period}`);
+    }
+    
+    async getApiCostsHistory(limit = 50, provider = null) {
+        const params = new URLSearchParams({ limit });
+        if (provider) params.append('provider', provider);
+        return this.request(`/analytics/api-costs/history?${params.toString()}`);
+    }
+    
     /**
      * Skills
      */

@@ -195,4 +195,84 @@ router.get('/skills/popular', async (req, res) => {
   }
 });
 
+// GET /api/analytics/api-costs - Get API cost summary
+router.get('/api-costs', async (req, res) => {
+  try {
+    const { period = '30d' } = req.query;
+    const summary = db.getApiCostSummary(period);
+    
+    res.json({
+      success: true,
+      summary,
+      period
+    });
+  } catch (error) {
+    logger.system.error('Failed to get API costs summary', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load API costs summary'
+    });
+  }
+});
+
+// GET /api/analytics/api-costs/stats - Get API usage statistics by provider/model
+router.get('/api-costs/stats', async (req, res) => {
+  try {
+    const { period = '30d', provider } = req.query;
+    const stats = db.getApiUsageStats(period, provider);
+    
+    res.json({
+      success: true,
+      stats,
+      period
+    });
+  } catch (error) {
+    logger.system.error('Failed to get API usage stats', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load API usage statistics'
+    });
+  }
+});
+
+// GET /api/analytics/api-costs/trends - Get API usage trends
+router.get('/api-costs/trends', async (req, res) => {
+  try {
+    const { period = '30d' } = req.query;
+    const trends = db.getApiUsageTrends(period);
+    
+    res.json({
+      success: true,
+      trends,
+      period
+    });
+  } catch (error) {
+    logger.system.error('Failed to get API usage trends', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load API usage trends'
+    });
+  }
+});
+
+// GET /api/analytics/api-costs/history - Get API usage history
+router.get('/api-costs/history', async (req, res) => {
+  try {
+    const { limit = 50, provider } = req.query;
+    const history = db.getApiUsageHistory(parseInt(limit), provider);
+    
+    res.json({
+      success: true,
+      history,
+      count: history.length
+    });
+  } catch (error) {
+    logger.system.error('Failed to get API usage history', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load API usage history'
+    });
+  }
+});
+
 module.exports = router;

@@ -77,6 +77,25 @@ function initializeSchema() {
     )
   `);
   
+  // API usage tracking table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS api_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      provider TEXT NOT NULL,
+      model TEXT NOT NULL,
+      session_id TEXT,
+      user_id TEXT NOT NULL,
+      timestamp INTEGER NOT NULL,
+      prompt_tokens INTEGER DEFAULT 0,
+      completion_tokens INTEGER DEFAULT 0,
+      total_tokens INTEGER DEFAULT 0,
+      estimated_cost_usd REAL DEFAULT 0,
+      request_type TEXT,
+      success INTEGER DEFAULT 1,
+      error_message TEXT
+    )
+  `);
+  
   // Create indexes for better query performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_sessions_expires 
@@ -99,6 +118,15 @@ function initializeSchema() {
     
     CREATE INDEX IF NOT EXISTS idx_skill_executions_timestamp
     ON skill_executions(timestamp);
+    
+    CREATE INDEX IF NOT EXISTS idx_api_usage_provider
+    ON api_usage(provider, timestamp);
+    
+    CREATE INDEX IF NOT EXISTS idx_api_usage_user
+    ON api_usage(user_id, timestamp);
+    
+    CREATE INDEX IF NOT EXISTS idx_api_usage_timestamp
+    ON api_usage(timestamp);
   `);
   
   logger.system.info('Database schema initialized');
@@ -632,6 +660,256 @@ function getMostPopularSkills(limit = 10, period = '30d') {
 }
 
 /**
+ * API Usage Tracking
+ */
+
+// Model pricing (USD per 1K tokens)
+const MODEL_PRICING = {
+  // OpenAI
+  'gpt-4': { prompt: 0.03, completion: 0.06 },
+  'gpt-4-turbo': { prompt: 0.01, completion: 0.03 },
+  'gpt-4o': { prompt: 0.0025, completion: 0.01 },
+  'gpt-4o-mini': { prompt: 0.00015, completion: 0.0006 },
+  'gpt-3.5-turbo': { prompt: 0.0005, completion: 0.0015 },
+  
+  // Anthropic Claude
+  'claude-3-opus': { prompt: 0.015, completion: 0.075 },
+  'claude-3-sonnet': { prompt: 0.003, completion: 0.015 },
+  'claude-3-haiku': { prompt: 0.00025, completion: 0.00125 },
+  'claude-3-5-sonnet': { prompt: 0.003, completion: 0.015 },
+  
+  // Ollama (local - free)
+  'ollama': { prompt: 0, completion: 0 },
+  
+  // LM Studio (local - free)
+  'lmstudio': { prompt: 0, completion: 0 }
+};
+
+// Calculate cost based on model and tokens
+function calculateCost(model, promptTokens, completionTokens) {
+  // Normalize model name
+  const normalizedModel = model.toLowerCase();
+  
+  // Find matching pricing
+  let pricing = MODEL_PRICING[normalizedModel];
+  
+  // If exact match not found, try partial match
+  if (!pricing) {
+    for (const [key, value] of Object.entries(MODEL_PRICING)) {
+      if (normalizedModel.includes(key)) {
+        pricing = value;
+        break;
+      }
+    }
+  }
+  
+  // Default to free if no pricing found
+  if (!pricing) {
+    pricing = { prompt: 0, completion: 0 };
+  }
+  
+  // Calculate cost (pricing is per 1K tokens)
+  const promptCost = (promptTokens / 1000) * pricing.prompt;
+  const completionCost = (completionTokens / 1000) * pricing.completion;
+  
+  return promptCost + completionCost;
+}
+
+// Record API usage
+function recordApiUsage(provider, model, userId, sessionId, promptTokens, completionTokens, requestType = 'chat', success = true, errorMessage = null) {
+  const stmt = db.prepare(`
+    INSERT INTO api_usage (provider, model, session_id, user_id, timestamp, prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd, request_type, success, error_message)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  
+  const timestamp = Date.now();
+  const totalTokens = promptTokens + completionTokens;
+  const estimatedCost = calculateCost(model, promptTokens, completionTokens);
+  
+  const result = stmt.run(
+    provider,
+    model,
+    sessionId,
+    userId,
+    timestamp,
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    estimatedCost,
+    requestType,
+    success ? 1 : 0,
+    errorMessage
+  );
+  
+  logger.system.info('API usage recorded', {
+    provider,
+    model,
+    userId,
+    totalTokens,
+    estimatedCost: `$${estimatedCost.toFixed(6)}`,
+    usageId: result.lastInsertRowid
+  });
+  
+  return {
+    id: result.lastInsertRowid,
+    timestamp,
+    estimatedCost
+  };
+}
+
+// Get API usage statistics
+function getApiUsageStats(period = '30d', provider = null) {
+  const periodMs = parsePeriod(period);
+  const since = Date.now() - periodMs;
+  
+  let query;
+  let params;
+  
+  if (provider) {
+    query = `
+      SELECT 
+        provider,
+        model,
+        COUNT(*) as total_requests,
+        SUM(prompt_tokens) as total_prompt_tokens,
+        SUM(completion_tokens) as total_completion_tokens,
+        SUM(total_tokens) as total_tokens,
+        SUM(estimated_cost_usd) as total_cost_usd,
+        AVG(estimated_cost_usd) as avg_cost_per_request,
+        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_requests,
+        SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_requests
+      FROM api_usage
+      WHERE provider = ? AND timestamp > ?
+      GROUP BY provider, model
+    `;
+    params = [provider, since];
+  } else {
+    query = `
+      SELECT 
+        provider,
+        model,
+        COUNT(*) as total_requests,
+        SUM(prompt_tokens) as total_prompt_tokens,
+        SUM(completion_tokens) as total_completion_tokens,
+        SUM(total_tokens) as total_tokens,
+        SUM(estimated_cost_usd) as total_cost_usd,
+        AVG(estimated_cost_usd) as avg_cost_per_request,
+        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_requests,
+        SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_requests
+      FROM api_usage
+      WHERE timestamp > ?
+      GROUP BY provider, model
+      ORDER BY total_cost_usd DESC
+    `;
+    params = [since];
+  }
+  
+  const stmt = db.prepare(query);
+  return stmt.all(...params);
+}
+
+// Get API usage trends over time
+function getApiUsageTrends(period = '30d') {
+  const periodMs = parsePeriod(period);
+  const since = Date.now() - periodMs;
+  
+  const stmt = db.prepare(`
+    SELECT 
+      DATE(timestamp / 1000, 'unixepoch') as date,
+      provider,
+      model,
+      COUNT(*) as request_count,
+      SUM(total_tokens) as total_tokens,
+      SUM(estimated_cost_usd) as total_cost_usd
+    FROM api_usage
+    WHERE timestamp > ?
+    GROUP BY date, provider, model
+    ORDER BY date ASC
+  `);
+  
+  return stmt.all(since);
+}
+
+// Get total cost summary
+function getApiCostSummary(period = '30d') {
+  const periodMs = parsePeriod(period);
+  const since = Date.now() - periodMs;
+  
+  const stmt = db.prepare(`
+    SELECT 
+      SUM(total_tokens) as total_tokens,
+      SUM(estimated_cost_usd) as total_cost_usd,
+      COUNT(*) as total_requests,
+      COUNT(DISTINCT provider) as providers_used,
+      AVG(estimated_cost_usd) as avg_cost_per_request
+    FROM api_usage
+    WHERE timestamp > ?
+  `);
+  
+  return stmt.get(since);
+}
+
+// Get recent API usage history
+function getApiUsageHistory(limit = 50, provider = null) {
+  let query;
+  let params;
+  
+  if (provider) {
+    query = `
+      SELECT 
+        id,
+        provider,
+        model,
+        user_id,
+        session_id,
+        timestamp,
+        prompt_tokens,
+        completion_tokens,
+        total_tokens,
+        estimated_cost_usd,
+        request_type,
+        success,
+        error_message
+      FROM api_usage
+      WHERE provider = ?
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `;
+    params = [provider, limit];
+  } else {
+    query = `
+      SELECT 
+        id,
+        provider,
+        model,
+        user_id,
+        session_id,
+        timestamp,
+        prompt_tokens,
+        completion_tokens,
+        total_tokens,
+        estimated_cost_usd,
+        request_type,
+        success,
+        error_message
+      FROM api_usage
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `;
+    params = [limit];
+  }
+  
+  const stmt = db.prepare(query);
+  const results = stmt.all(...params);
+  
+  return results.map(row => ({
+    ...row,
+    timestampDate: new Date(row.timestamp).toISOString(),
+    success: Boolean(row.success)
+  }));
+}
+
+/**
  * Periodic cleanup (run every hour)
  */
 setInterval(() => {
@@ -681,5 +959,11 @@ module.exports = {
   getSkillExecutionStats,
   getSkillExecutionHistory,
   getSkillUsageTrends,
-  getMostPopularSkills
+  getMostPopularSkills,
+  // API usage tracking
+  recordApiUsage,
+  getApiUsageStats,
+  getApiUsageTrends,
+  getApiCostSummary,
+  getApiUsageHistory
 };

@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadAnalytics();
     await loadActiveSessions();
     await loadSkillsAnalytics();
+    await loadApiCosts();
     
     // Setup WebSocket listeners for real-time updates
     setupWebSocketListeners();
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(loadAnalytics, 60000); // Refresh analytics every minute
     setInterval(loadActiveSessions, 30000); // Refresh sessions every 30 seconds
     setInterval(loadSkillsAnalytics, 60000); // Refresh skills analytics every minute
+    setInterval(loadApiCosts, 60000); // Refresh API costs every minute
     
     // Trends period change handler
     const trendsPeriodSelect = document.getElementById('trends-period');
@@ -48,6 +50,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (skillsPeriodSelect) {
         skillsPeriodSelect.addEventListener('change', async (e) => {
             await loadSkillsAnalytics(e.target.value);
+        });
+    }
+    
+    // API costs period change handler
+    const costsPeriodSelect = document.getElementById('costs-period');
+    if (costsPeriodSelect) {
+        costsPeriodSelect.addEventListener('change', async (e) => {
+            await loadApiCosts(e.target.value);
         });
     }
     
@@ -339,6 +349,111 @@ document.addEventListener('DOMContentLoaded', async () => {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    // Load and render API costs
+    async function loadApiCosts(period = '30d') {
+        try {
+            const response = await api.getApiCosts(period);
+            
+            if (response.success) {
+                renderApiCosts(response.costs);
+            } else {
+                document.getElementById('api-costs-container').innerHTML = 
+                    '<div class="text-center py-8" style="color: #f7768e;">Failed to load API costs</div>';
+            }
+        } catch (error) {
+            console.error('Failed to load API costs:', error);
+            document.getElementById('api-costs-container').innerHTML = 
+                '<div class="text-center py-8" style="color: #f7768e;">Error loading API costs</div>';
+        }
+    }
+    
+    // Render API costs
+    function renderApiCosts(costs) {
+        const container = document.getElementById('api-costs-container');
+        
+        if (!costs || costs.length === 0) {
+            container.innerHTML = '<div class="text-center py-8" style="color: #9aa5ce;">No API usage yet</div>';
+            return;
+        }
+        
+        // Calculate totals
+        const totalCost = costs.reduce((sum, cost) => sum + parseFloat(cost.totalCost), 0);
+        const totalTokens = costs.reduce((sum, cost) => sum + parseInt(cost.totalTokens), 0);
+        const totalCalls = costs.reduce((sum, cost) => sum + parseInt(cost.totalCalls), 0);
+        
+        let html = `
+            <div class="mb-6 p-4 rounded-lg" style="background: #1a1b26; border: 2px solid #7aa2f7;">
+                <h4 class="font-semibold mb-4" style="color: #c0caf5;">Total Usage</h4>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold" style="color: #f7768e;">$${totalCost.toFixed(4)}</div>
+                        <div class="text-xs mt-1" style="color: #9aa5ce;">Total Cost</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold" style="color: #7aa2f7;">${totalTokens.toLocaleString()}</div>
+                        <div class="text-xs mt-1" style="color: #9aa5ce;">Total Tokens</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold" style="color: #9ece6a;">${totalCalls}</div>
+                        <div class="text-xs mt-1" style="color: #9aa5ce;">API Calls</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+        `;
+        
+        costs.forEach(cost => {
+            const costValue = parseFloat(cost.totalCost);
+            const costColor = costValue === 0 ? '#9aa5ce' : '#f7768e';
+            const successRate = parseFloat(cost.successRate);
+            const successColor = successRate >= 90 ? '#9ece6a' : successRate >= 70 ? '#e0af68' : '#f7768e';
+            
+            html += `
+                <div class="p-4 rounded-lg" style="background: #1a1b26; border: 1px solid #414868;">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h5 class="font-semibold text-lg" style="color: #c0caf5;">${escapeHtml(cost.provider)}</h5>
+                            <div class="text-sm mt-1" style="color: #7aa2f7;">${escapeHtml(cost.model)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold" style="color: ${costColor};">$${costValue.toFixed(4)}</div>
+                            <div class="text-xs" style="color: #9aa5ce;">${cost.totalCalls} calls</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-3 text-sm">
+                        <div class="text-center p-2 rounded" style="background: #24283b;">
+                            <div class="font-bold" style="color: #bb9af7;">${parseInt(cost.totalTokens).toLocaleString()}</div>
+                            <div class="text-xs" style="color: #9aa5ce;">Tokens</div>
+                        </div>
+                        <div class="text-center p-2 rounded" style="background: #24283b;">
+                            <div class="font-bold" style="color: #7dcfff;">${parseInt(cost.promptTokens).toLocaleString()}</div>
+                            <div class="text-xs" style="color: #9aa5ce;">Prompt</div>
+                        </div>
+                        <div class="text-center p-2 rounded" style="background: #24283b;">
+                            <div class="font-bold" style="color: #e0af68;">${parseInt(cost.completionTokens).toLocaleString()}</div>
+                            <div class="text-xs" style="color: #9aa5ce;">Completion</div>
+                        </div>
+                        <div class="text-center p-2 rounded" style="background: #24283b;">
+                            <div class="font-bold" style="color: ${successColor};">${successRate}%</div>
+                            <div class="text-xs" style="color: #9aa5ce;">Success</div>
+                        </div>
+                    </div>
+                    
+                    ${costValue === 0 ? `
+                        <div class="mt-3 text-xs text-center p-2 rounded" style="background: #24283b; color: #9ece6a;">
+                            ✓ Free (Local/Self-hosted)
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
     }
     
     // Load status from API
