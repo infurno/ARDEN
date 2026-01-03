@@ -93,3 +93,6 @@ temp/
 # Personal context (uncomment if you want to keep private)
 # context/personal/
 *.bak
+
+# Web server process ID file
+.arden-web.pid
