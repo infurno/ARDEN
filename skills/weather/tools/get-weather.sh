@@ -3,8 +3,12 @@
 # ARDEN Weather Tool
 # Gets current weather for a location using wttr.in (free API)
 
+# Get script directory and ARDEN root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ARDEN_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
 # Get default location from config file
-DEFAULT_LOCATION_FILE="$HOME/ARDEN/skills/weather/context/default-location.txt"
+DEFAULT_LOCATION_FILE="$ARDEN_ROOT/skills/weather/context/default-location.txt"
 if [ -f "$DEFAULT_LOCATION_FILE" ]; then
     DEFAULT_LOCATION=$(head -n 1 "$DEFAULT_LOCATION_FILE" | tr -d '\n\r')
 else
@@ -50,10 +54,8 @@ LOCATION_NAME=$(curl -s --connect-timeout 10 "https://wttr.in/${LOCATION_ENCODED
 echo "Weather for ${LOCATION_NAME}:"
 echo "$WEATHER_DATA"
 
-# Get simple forecast for next 2 days
-echo ""
-echo "Forecast:"
-curl -s --connect-timeout 10 "https://wttr.in/${LOCATION_ENCODED}?format=Tomorrow:+%C+High+%t\nDay+after:+%C+High+%t"
+# Skip forecast for now - wttr.in forecast endpoint is unreliable
+# Just show current conditions which are accurate
 
 # Optional: Add weather recommendation
 TEMP_NUM=$(echo "$WEATHER_DATA" | grep -oE '\+?-?[0-9]+' | head -1)
