@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Load settings from API
 async function loadSettings() {
     try {
-        const response = await apiRequest('/api/settings', {
+        const response = await api.request('/settings', {
             method: 'GET'
         });
 
@@ -177,7 +177,7 @@ async function saveSettings() {
     try {
         const config = getFormData();
         
-        const response = await apiRequest('/api/settings', {
+        const response = await api.request('/settings', {
             method: 'PUT',
             body: JSON.stringify({ config })
         });
