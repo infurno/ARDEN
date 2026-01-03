@@ -35,6 +35,7 @@ async function speechToTextLocal(filePath) {
   logger.voice.info('Using local Whisper', { model, language, filePath });
 
   return new Promise((resolve, reject) => {
+    // Use GPU for faster transcription (llama3.2 uses minimal VRAM)
     const command = `"${whisperPath}" "${filePath}" --model ${model} --language ${language} --output_format txt --output_dir /tmp`;
 
     exec(command, (error, stdout, stderr) => {

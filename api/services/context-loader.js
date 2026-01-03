@@ -9,11 +9,26 @@
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
+const { execSync } = require('child_process');
 const logger = require('../utils/logger');
 
 // Load configuration
 const ARDEN_ROOT = path.resolve(__dirname, '../..');
 const config = require(path.join(ARDEN_ROOT, 'config/arden.json'));
+
+/**
+ * Get structured user context from user-context skill
+ */
+function getUserContextFromSkill() {
+  try {
+    const userContextScript = path.join(ARDEN_ROOT, 'skills/user-context/tools/user_context.sh');
+    const userContext = execSync(`"${userContextScript}" text`, { encoding: 'utf-8' });
+    return userContext;
+  } catch (error) {
+    logger.system.warn('Failed to load user context from skill', { error: error.message });
+    return null;
+  }
+}
 
 /**
  * Expand home directory in path
@@ -134,8 +149,16 @@ async function loadUserContext() {
   let context = {
     userInfo: {},
     recentActivity: [],
-    profileNotes: []
+    profileNotes: [],
+    structuredContext: null
   };
+  
+  // Load structured user context from skill
+  const skillContext = getUserContextFromSkill();
+  if (skillContext) {
+    context.structuredContext = skillContext;
+    logger.system.info('Loaded structured user context from skill');
+  }
   
   // Load from each directory
   for (const dir of contextDirs) {
@@ -153,6 +176,7 @@ async function loadUserContext() {
   }
   
   logger.system.info('User context loaded', { 
+    hasStructuredContext: !!context.structuredContext,
     profileCount: context.profileNotes.length,
     recentNotesCount: context.recentActivity.length 
   });
@@ -168,8 +192,13 @@ function buildContextSummary(context) {
   
   let summary = '\n\n=== USER CONTEXT ===\n';
   
-  // Add profile information
-  if (context.profileNotes.length > 0) {
+  // Add structured user context from skill (preferred)
+  if (context.structuredContext) {
+    summary += context.structuredContext + '\n';
+  }
+  
+  // Add profile information (if not already covered by structured context)
+  if (context.profileNotes.length > 0 && !context.structuredContext) {
     summary += '\nUser Profile:\n';
     context.profileNotes.forEach(({ file, content }) => {
       summary += `From ${file}:\n${content.slice(0, 1000)}\n\n`;

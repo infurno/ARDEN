@@ -1,0 +1,682 @@
+/**
+ * Notes Management Routes
+ * 
+ * API endpoints for browsing, viewing, and editing notes
+ * from ~/Notes directory (Obsidian vault)
+ */
+
+const express = require('express');
+const router = express.Router();
+const path = require('path');
+const fs = require('fs').promises;
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const logger = require('../utils/logger');
+
+const execAsync = promisify(exec);
+
+// Notes directory (Obsidian vault)
+const NOTES_DIR = path.join(process.env.HOME, 'Notes');
+
+// Security: Validate and sanitize filename
+function sanitizeFilename(filename) {
+  // Remove any path traversal attempts
+  const sanitized = path.basename(filename);
+  
+  // Ensure it ends with .md
+  if (!sanitized.endsWith('.md')) {
+    throw new Error('Only markdown files are allowed');
+  }
+  
+  // Check for suspicious characters
+  if (/[<>:"|?*\x00-\x1f]/.test(sanitized)) {
+    throw new Error('Invalid filename characters');
+  }
+  
+  return sanitized;
+}
+
+// Security: Validate and sanitize folder path
+function sanitizeFolderPath(folderPath) {
+  if (!folderPath || folderPath === '/') {
+    return '';
+  }
+  
+  // Remove leading/trailing slashes and normalize
+  const normalized = folderPath.replace(/^\/+|\/+$/g, '');
+  
+  // Check for path traversal attempts
+  if (normalized.includes('..')) {
+    throw new Error('Path traversal not allowed');
+  }
+  
+  // Check for suspicious characters
+  if (/[<>:"|?*\x00-\x1f]/.test(normalized)) {
+    throw new Error('Invalid path characters');
+  }
+  
+  return normalized;
+}
+
+// Get full file path from filename (which may include folder path)
+function getFilePath(filenameOrPath) {
+  // If it includes a slash, it's a path
+  if (filenameOrPath.includes('/')) {
+    const parts = filenameOrPath.split('/');
+    const filename = parts.pop();
+    const folderPath = parts.join('/');
+    
+    const sanitizedFolder = sanitizeFolderPath(folderPath);
+    const sanitizedFilename = sanitizeFilename(filename);
+    
+    return validatePath(path.join(NOTES_DIR, sanitizedFolder, sanitizedFilename));
+  } else {
+    // Just a filename in root
+    const sanitized = sanitizeFilename(filenameOrPath);
+    return validatePath(path.join(NOTES_DIR, sanitized));
+  }
+}
+
+// Security: Validate path is within notes directory
+function validatePath(filePath) {
+  const resolvedPath = path.resolve(filePath);
+  const resolvedNotesDir = path.resolve(NOTES_DIR);
+  
+  if (!resolvedPath.startsWith(resolvedNotesDir)) {
+    throw new Error('Access denied: Path outside notes directory');
+  }
+  
+  return resolvedPath;
+}
+
+/**
+ * GET /api/notes
+ * List all markdown notes with metadata
+ */
+router.get('/', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    const sort = req.query.sort || 'modified'; // modified, name, size
+    
+    logger.system.info('Listing notes', { limit, offset, sort });
+    
+    // Get all markdown files (excluding hidden directories)
+    const files = await fs.readdir(NOTES_DIR);
+    const mdFiles = files.filter(f => f.endsWith('.md') && !f.startsWith('.'));
+    
+    // Get file stats
+    const fileStats = await Promise.all(
+      mdFiles.map(async (filename) => {
+        const filePath = path.join(NOTES_DIR, filename);
+        
+        try {
+          const stats = await fs.stat(filePath);
+          const content = await fs.readFile(filePath, 'utf-8');
+          
+          // Extract title from first heading or use filename
+          const titleMatch = content.match(/^#\s+(.+)$/m);
+          const title = titleMatch ? titleMatch[1] : filename.replace('.md', '');
+          
+          // Get preview (first 200 chars after title)
+          const contentWithoutTitle = titleMatch 
+            ? content.substring(content.indexOf(titleMatch[0]) + titleMatch[0].length).trim()
+            : content;
+          const preview = contentWithoutTitle.substring(0, 200).replace(/\n/g, ' ');
+          
+          // Count words
+          const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
+          
+          return {
+            filename,
+            title,
+            preview,
+            size: stats.size,
+            modified: stats.mtime.getTime(),
+            created: stats.birthtime.getTime(),
+            wordCount,
+            path: '~/Notes/'
+          };
+        } catch (error) {
+          logger.system.warn('Failed to read file stats', { filename, error: error.message });
+          return null;
+        }
+      })
+    );
+    
+    // Filter out failed reads
+    const validFiles = fileStats.filter(f => f !== null);
+    
+    // Sort files
+    validFiles.sort((a, b) => {
+      switch (sort) {
+        case 'name':
+          return a.filename.localeCompare(b.filename);
+        case 'size':
+          return b.size - a.size;
+        case 'modified':
+        default:
+          return b.modified - a.modified;
+      }
+    });
+    
+    // Paginate
+    const paginatedFiles = validFiles.slice(offset, offset + limit);
+    
+    logger.system.info('Notes listed', {
+      total: validFiles.length,
+      returned: paginatedFiles.length,
+      offset,
+      limit
+    });
+    
+    return res.json({
+      success: true,
+      notes: paginatedFiles,
+      total: validFiles.length,
+      offset,
+      limit,
+      hasMore: offset + limit < validFiles.length
+    });
+    
+  } catch (error) {
+    logger.system.error('Failed to list notes', { error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to list notes',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/notes/search
+ * Search notes by filename and content
+ */
+router.get('/search', async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    const limit = parseInt(req.query.limit) || 20;
+    
+    if (!query || query.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Query must be at least 2 characters'
+      });
+    }
+    
+    logger.system.info('Searching notes', { query, limit });
+    
+    // Use ripgrep for fast full-text search
+    const rgCommand = `rg -i --type md --max-count 3 --line-number --no-heading "${query}" "${NOTES_DIR}" 2>/dev/null || true`;
+    
+    const { stdout } = await execAsync(rgCommand);
+    
+    const results = [];
+    const processedFiles = new Set();
+    
+    if (stdout) {
+      const lines = stdout.trim().split('\n');
+      
+      for (const line of lines) {
+        const match = line.match(/^(.+):(\d+):(.+)$/);
+        if (match) {
+          const [, filePath, lineNum, matchedText] = match;
+          const filename = path.basename(filePath);
+          
+          if (!processedFiles.has(filename)) {
+            processedFiles.add(filename);
+            
+            try {
+              const stats = await fs.stat(filePath);
+              const content = await fs.readFile(filePath, 'utf-8');
+              
+              // Extract title
+              const titleMatch = content.match(/^#\s+(.+)$/m);
+              const title = titleMatch ? titleMatch[1] : filename.replace('.md', '');
+              
+              // Count matches
+              const regex = new RegExp(query, 'gi');
+              const contentMatches = (content.match(regex) || []).length;
+              const filenameMatches = (filename.match(regex) || []).length;
+              
+              results.push({
+                filename,
+                title,
+                preview: matchedText.trim(),
+                size: stats.size,
+                modified: stats.mtime.getTime(),
+                matches: {
+                  content: contentMatches,
+                  filename: filenameMatches,
+                  total: contentMatches + filenameMatches
+                },
+                path: '~/Notes/'
+              });
+            } catch (error) {
+              logger.system.warn('Failed to process search result', { filename, error: error.message });
+            }
+          }
+        }
+      }
+    }
+    
+    // Sort by relevance (total matches)
+    results.sort((a, b) => b.matches.total - a.matches.total);
+    
+    // Limit results
+    const limitedResults = results.slice(0, limit);
+    
+    logger.system.info('Search completed', {
+      query,
+      resultsFound: results.length,
+      resultsReturned: limitedResults.length
+    });
+    
+    return res.json({
+      success: true,
+      query,
+      results: limitedResults,
+      total: results.length
+    });
+    
+  } catch (error) {
+    logger.system.error('Search failed', { error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Search failed',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/notes/stats/overview
+ * Get notes statistics
+ */
+router.get('/stats/overview', async (req, res) => {
+  try {
+    logger.system.info('Getting notes statistics');
+    
+    const files = await fs.readdir(NOTES_DIR);
+    const mdFiles = files.filter(f => f.endsWith('.md') && !f.startsWith('.'));
+    
+    let totalSize = 0;
+    let totalWords = 0;
+    
+    for (const filename of mdFiles.slice(0, 100)) { // Sample first 100 for performance
+      try {
+        const filePath = path.join(NOTES_DIR, filename);
+        const [content, stats] = await Promise.all([
+          fs.readFile(filePath, 'utf-8'),
+          fs.stat(filePath)
+        ]);
+        
+        totalSize += stats.size;
+        totalWords += content.split(/\s+/).filter(w => w.length > 0).length;
+      } catch {
+        // Skip files that can't be read
+      }
+    }
+    
+    return res.json({
+      success: true,
+      stats: {
+        totalNotes: mdFiles.length,
+        totalSize,
+        totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
+        avgWords: Math.round(totalWords / Math.min(mdFiles.length, 100)),
+        location: NOTES_DIR
+      }
+    });
+    
+  } catch (error) {
+    logger.system.error('Failed to get stats', { error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get statistics'
+    });
+  }
+});
+
+/**
+ * GET /api/notes/browse/*
+ * Browse folders and files in a directory
+ */
+router.get('/browse/*', async (req, res) => {
+  try {
+    const folderPath = sanitizeFolderPath(req.params[0] || '');
+    const targetDir = folderPath ? path.join(NOTES_DIR, folderPath) : NOTES_DIR;
+    const validatedDir = validatePath(targetDir);
+    
+    logger.system.info('Browsing folder', { folderPath, targetDir: validatedDir });
+    
+    // Check if directory exists
+    try {
+      const stats = await fs.stat(validatedDir);
+      if (!stats.isDirectory()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Path is not a directory'
+        });
+      }
+    } catch {
+      return res.status(404).json({
+        success: false,
+        error: 'Directory not found'
+      });
+    }
+    
+    // Read directory contents
+    const entries = await fs.readdir(validatedDir);
+    
+    // Process entries (folders and md files)
+    const items = await Promise.all(
+      entries.map(async (name) => {
+        const itemPath = path.join(validatedDir, name);
+        
+        try {
+          const stats = await fs.stat(itemPath);
+          
+          // Skip hidden files/folders
+          if (name.startsWith('.')) {
+            return null;
+          }
+          
+          if (stats.isDirectory()) {
+            // Count md files in folder
+            let fileCount = 0;
+            try {
+              const subFiles = await fs.readdir(itemPath);
+              fileCount = subFiles.filter(f => f.endsWith('.md')).length;
+            } catch {
+              fileCount = 0;
+            }
+            
+            return {
+              type: 'folder',
+              name,
+              path: folderPath ? `${folderPath}/${name}` : name,
+              modified: stats.mtime.getTime(),
+              fileCount
+            };
+          } else if (name.endsWith('.md')) {
+            // Read note metadata
+            const content = await fs.readFile(itemPath, 'utf-8');
+            const titleMatch = content.match(/^#\s+(.+)$/m);
+            const title = titleMatch ? titleMatch[1] : name.replace('.md', '');
+            const contentWithoutTitle = titleMatch 
+              ? content.substring(content.indexOf(titleMatch[0]) + titleMatch[0].length).trim()
+              : content;
+            const preview = contentWithoutTitle.substring(0, 200).replace(/\n/g, ' ');
+            const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
+            
+            return {
+              type: 'file',
+              filename: name,
+              title,
+              preview,
+              size: stats.size,
+              modified: stats.mtime.getTime(),
+              wordCount,
+              path: folderPath ? `${folderPath}/${name}` : name
+            };
+          }
+          
+          return null;
+        } catch (error) {
+          logger.system.warn('Failed to process entry', { name, error: error.message });
+          return null;
+        }
+      })
+    );
+    
+    // Filter out nulls and sort
+    const validItems = items.filter(item => item !== null);
+    
+    // Separate folders and files, sort each
+    const folders = validItems.filter(i => i.type === 'folder').sort((a, b) => a.name.localeCompare(b.name));
+    const files = validItems.filter(i => i.type === 'file').sort((a, b) => b.modified - a.modified);
+    
+    logger.system.info('Browse completed', {
+      folderPath,
+      folders: folders.length,
+      files: files.length
+    });
+    
+    return res.json({
+      success: true,
+      currentPath: folderPath || '/',
+      folders,
+      files,
+      totalFolders: folders.length,
+      totalFiles: files.length
+    });
+    
+  } catch (error) {
+    logger.system.error('Failed to browse folder', { error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to browse folder',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/notes/:filename
+ * Get content of a specific note
+ */
+router.get('/:filename(*)', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = getFilePath(filename);
+    
+    logger.system.info('Getting note', { filename });
+    
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+    } catch {
+      return res.status(404).json({
+        success: false,
+        error: 'Note not found'
+      });
+    }
+    
+    // Read file
+    const [content, stats] = await Promise.all([
+      fs.readFile(filePath, 'utf-8'),
+      fs.stat(filePath)
+    ]);
+    
+    // Extract metadata
+    const titleMatch = content.match(/^#\s+(.+)$/m);
+    const title = titleMatch ? titleMatch[1] : filename.replace('.md', '');
+    const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
+    const charCount = content.length;
+    const lineCount = content.split('\n').length;
+    
+    logger.system.info('Note retrieved', { filename, size: stats.size });
+    
+    return res.json({
+      success: true,
+      filename,
+      title,
+      content,
+      metadata: {
+        size: stats.size,
+        modified: stats.mtime.getTime(),
+        created: stats.birthtime.getTime(),
+        wordCount,
+        charCount,
+        lineCount
+      }
+    });
+    
+  } catch (error) {
+    logger.system.error('Failed to get note', { error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get note',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * PUT /api/notes/:filename
+ * Update note content
+ */
+router.put('/:filename(*)', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = getFilePath(filename);
+    const { content } = req.body;
+    
+    if (typeof content !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Content must be a string'
+      });
+    }
+    
+    // File size limit: 10MB
+    if (content.length > 10 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        error: 'File too large (max 10MB)'
+      });
+    }
+    
+    logger.system.info('Updating note', { filename, size: content.length });
+    
+    // Write file
+    await fs.writeFile(filePath, content, 'utf-8');
+    
+    // Get updated stats
+    const stats = await fs.stat(filePath);
+    
+    logger.system.info('Note updated', { filename, newSize: stats.size });
+    
+    return res.json({
+      success: true,
+      filename,
+      message: 'Note saved successfully',
+      metadata: {
+        size: stats.size,
+        modified: stats.mtime.getTime()
+      }
+    });
+    
+  } catch (error) {
+    logger.system.error('Failed to update note', { error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to save note',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/notes
+ * Create new note
+ */
+router.post('/', async (req, res) => {
+  try {
+    const { filename, content = '' } = req.body;
+    
+    if (!filename) {
+      return res.status(400).json({
+        success: false,
+        error: 'Filename is required'
+      });
+    }
+    
+    const sanitized = sanitizeFilename(filename);
+    const filePath = validatePath(path.join(NOTES_DIR, sanitized));
+    
+    logger.system.info('Creating note', { filename: sanitized });
+    
+    // Check if file already exists
+    try {
+      await fs.access(filePath);
+      return res.status(409).json({
+        success: false,
+        error: 'Note already exists'
+      });
+    } catch {
+      // File doesn't exist, good to create
+    }
+    
+    // Create file
+    await fs.writeFile(filePath, content, 'utf-8');
+    
+    const stats = await fs.stat(filePath);
+    
+    logger.system.info('Note created', { filename: sanitized });
+    
+    return res.json({
+      success: true,
+      filename: sanitized,
+      message: 'Note created successfully',
+      metadata: {
+        size: stats.size,
+        created: stats.birthtime.getTime()
+      }
+    });
+    
+  } catch (error) {
+    logger.system.error('Failed to create note', { error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to create note',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/notes/:filename
+ * Delete a note
+ */
+router.delete('/:filename(*)', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = getFilePath(filename);
+    
+    logger.system.info('Deleting note', { filename });
+    
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+    } catch {
+      return res.status(404).json({
+        success: false,
+        error: 'Note not found'
+      });
+    }
+    
+    // Delete file
+    await fs.unlink(filePath);
+    
+    logger.system.info('Note deleted', { filename });
+    
+    return res.json({
+      success: true,
+      filename,
+      message: 'Note deleted successfully'
+    });
+    
+  } catch (error) {
+    logger.system.error('Failed to delete note', { error: error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to delete note',
+      details: error.message
+    });
+  }
+});
+
+module.exports = router;

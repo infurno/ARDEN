@@ -68,14 +68,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         messageDiv.innerHTML = `
-            <div class="${type === 'user' ? 'bg-primary' : 'bg-gray-700'} rounded-lg p-4">
+            <div class="rounded-lg p-4" style="background-color: ${type === 'user' ? '#7aa2f7' : '#24283b'}">
                 <div class="flex items-start justify-between mb-1">
-                    <span class="text-xs font-semibold ${type === 'user' ? 'text-blue-100' : 'text-gray-300'}">
+                    <span class="text-xs font-semibold" style="color: ${type === 'user' ? '#1a1b26' : '#9aa5ce'}">
                         ${type === 'user' ? 'You' : 'ARDEN'}
                     </span>
-                    <span class="text-xs ${type === 'user' ? 'text-blue-200' : 'text-gray-400'}">${time}</span>
+                    <span class="text-xs" style="color: ${type === 'user' ? '#16161e' : '#565f89'}">${time}</span>
                 </div>
-                <div class="text-white whitespace-pre-wrap break-words">${escapeHtml(content)}</div>
+                <div class="whitespace-pre-wrap break-words" style="color: ${type === 'user' ? '#1a1b26' : '#c0caf5'}">${escapeHtml(content)}</div>
             </div>
         `;
         
@@ -117,14 +117,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             ttsIconOff.classList.add('hidden');
             ttsIconOn.classList.remove('hidden');
             ttsStatus.textContent = 'TTS On';
-            ttsToggle.classList.remove('text-gray-400');
-            ttsToggle.classList.add('text-green-400');
+            ttsToggle.style.color = '#9ece6a'; // Tokyo Night green
         } else {
             ttsIconOff.classList.remove('hidden');
             ttsIconOn.classList.add('hidden');
             ttsStatus.textContent = 'TTS Off';
-            ttsToggle.classList.remove('text-green-400');
-            ttsToggle.classList.add('text-gray-400');
+            ttsToggle.style.color = '#9aa5ce'; // Tokyo Night secondary text
         }
     }
     
@@ -194,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             await api.clearChat(sessionId);
             messagesContainer.innerHTML = `
-                <div class="text-center text-gray-500 py-8">
+                <div class="text-center py-8" style="color: #565f89;">
                     <p class="text-lg">👋 Welcome! Start a conversation with ARDEN.</p>
                     <p class="text-sm mt-2">Try asking about your TODOs, notes, or anything else.</p>
                 </div>
@@ -255,8 +253,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             isRecording = true;
             
             // Update UI
-            voiceButton.classList.remove('bg-gray-700', 'hover:bg-gray-600');
-            voiceButton.classList.add('bg-red-600', 'hover:bg-red-700');
+            voiceButton.style.backgroundColor = '#f7768e'; // Tokyo Night danger red
+            voiceButton.style.borderColor = '#f7768e';
             micIcon.classList.add('hidden');
             recordingIcon.classList.remove('hidden');
             messageInput.placeholder = 'Recording... Release to send';
@@ -290,8 +288,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             isRecording = false;
             
             // Reset UI
-            voiceButton.classList.remove('bg-red-600', 'hover:bg-red-700');
-            voiceButton.classList.add('bg-gray-700', 'hover:bg-gray-600');
+            voiceButton.style.backgroundColor = '#414868'; // Tokyo Night border
+            voiceButton.style.borderColor = '#414868';
             micIcon.classList.remove('hidden');
             recordingIcon.classList.add('hidden');
             messageInput.placeholder = 'Type your message or use voice...';

@@ -41,6 +41,8 @@ Use your `ARDEN_API_TOKEN` from `.env` file to login.
 - Real-time messaging with ARDEN
 - Chat history (per session)
 - Clear chat functionality
+- Voice input (hold-to-record)
+- Text-to-speech output (optional)
 
 ✅ **Dashboard**
 - System status monitoring
@@ -49,6 +51,27 @@ Use your `ARDEN_API_TOKEN` from `.env` file to login.
 - Active TODOs count
 - Voice configuration status
 - Auto-refresh every 30 seconds
+
+✅ **Notes Interface** (Full Featured)
+- Create, edit, rename, and delete notes
+- Markdown editor with live preview
+- YAML front matter support
+- Tag display and filtering
+- Live search with debouncing
+- Card grid layout (responsive)
+- Wiki-style links `[[Page Name]]`
+- Image uploads to `~/Notes/attachments/`
+- Export to multiple formats (Markdown, Hugo, Jekyll, HTML)
+- Navigation history (Back/Forward buttons + Alt+Arrow shortcuts)
+- Auto-save with 2-second debounce
+- Dark mode toggle (ultra-dark variant)
+
+✅ **Design**
+- Tokyo Night color scheme across all pages
+- Unified navigation with logo
+- Cyberpunk neon aesthetic
+- Consistent button and card styling
+- Responsive design
 
 ## Architecture
 
@@ -60,9 +83,10 @@ Use your `ARDEN_API_TOKEN` from `.env` file to login.
 
 ### Frontend (Vanilla JS + Tailwind CSS)
 - No build step required
-- Dark mode by default
+- Tokyo Night color scheme (dark mode)
 - Responsive design
 - Real-time updates
+- Neon cyberpunk aesthetic with custom logo
 
 ## File Structure
 
@@ -73,7 +97,13 @@ Use your `ARDEN_API_TOKEN` from `.env` file to login.
 │   ├── routes/
 │   │   ├── auth.js                # Authentication endpoints
 │   │   ├── chat.js                # Chat endpoints
-│   │   └── status.js              # Status endpoints
+│   │   ├── status.js              # Status endpoints
+│   │   ├── notes.js               # Notes CRUD endpoints
+│   │   └── voice.js               # Voice/STT endpoints
+│   ├── services/
+│   │   ├── database.js            # Notes database
+│   │   ├── session-store.js       # Session management
+│   │   └── skill-executor.js      # Skill execution
 │   ├── middleware/
 │   │   └── auth.js                # Auth middleware
 │   └── logs/
@@ -83,12 +113,17 @@ Use your `ARDEN_API_TOKEN` from `.env` file to login.
 │   ├── login.html                 # Login page
 │   ├── chat.html                  # Chat interface
 │   ├── dashboard.html             # Dashboard
+│   ├── notes.html                 # Notes manager
 │   └── assets/
+│       ├── images/
+│       │   └── arden-logo.png     # Neon logo
 │       └── js/
 │           ├── api.js             # API client
 │           ├── auth.js            # Auth handler
 │           ├── chat.js            # Chat handler
-│           └── dashboard.js       # Dashboard handler
+│           ├── dashboard.js       # Dashboard handler
+│           ├── notes.js           # Notes handler
+│           └── voice.js           # Voice recorder
 │
 └── scripts/
     ├── start-web.sh               # Start web server
@@ -109,6 +144,23 @@ GET    /api/auth/verify      # Check auth status
 POST   /api/chat             # Send message to ARDEN
 GET    /api/chat/history     # Get chat history
 DELETE /api/chat/clear       # Clear chat history
+```
+
+### Notes
+```
+GET    /api/notes            # List all notes
+GET    /api/notes/:name      # Get note content
+POST   /api/notes            # Create new note
+PUT    /api/notes/:name      # Update note content
+PATCH  /api/notes/:name      # Rename note
+DELETE /api/notes/:name      # Delete note
+POST   /api/notes/upload     # Upload image attachment
+```
+
+### Voice
+```
+POST   /api/voice/transcribe # Transcribe audio to text
+POST   /api/voice/synthesize # Text to speech
 ```
 
 ### Status
@@ -221,15 +273,27 @@ cd api && npm install
 ## Future Enhancements (Phase 2+)
 
 Planned features:
-- [ ] Notes management UI
 - [ ] TODO management interface
-- [ ] Skills configuration
-- [ ] Voice interface (browser-based)
+- [ ] Skills configuration UI
 - [ ] Real-time WebSocket updates
 - [ ] Analytics dashboard
 - [ ] Settings configuration UI
 - [ ] Mobile responsive improvements
 - [ ] PWA support
+- [ ] Theme customization (light mode, custom colors)
+- [ ] Collaborative note editing
+- [ ] Note templates
+
+## Design System
+
+ARDEN uses the **Tokyo Night** color scheme for a cohesive cyberpunk aesthetic.
+
+See [TOKYO_NIGHT_THEME.md](../TOKYO_NIGHT_THEME.md) for complete design documentation including:
+- Color palette reference
+- Component styling guidelines
+- Navigation structure
+- Button variants
+- Form styling
 
 ## Development
 

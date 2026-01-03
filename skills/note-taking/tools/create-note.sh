@@ -6,10 +6,26 @@
 # Arguments:
 # $1 - Note content
 # $2 - Note type (optional: quick, meeting, idea, todo)
+# -c flag: Include user context
 
 CONTENT="$1"
 NOTE_TYPE="${2:-quick}"
 NOTES_DIR="$HOME/Notes"
+ARDEN_ROOT="$HOME/ARDEN"
+
+# Check if -c flag was passed (include context)
+INCLUDE_CONTEXT=false
+if [[ "$*" == *"-c"* ]]; then
+  INCLUDE_CONTEXT=true
+fi
+
+# Get user context if requested
+USER_CONTEXT=""
+if [ "$INCLUDE_CONTEXT" = true ]; then
+  if [ -f "$ARDEN_ROOT/skills/user-context/tools/user_context.sh" ]; then
+    USER_CONTEXT=$("$ARDEN_ROOT/skills/user-context/tools/user_context.sh" compact)
+  fi
+fi
 
 # Ensure notes directory exists
 mkdir -p "$NOTES_DIR"
@@ -33,6 +49,13 @@ if [ -f "$FILEPATH" ]; then
   FILEPATH="$NOTES_DIR/$FILENAME"
 fi
 
+# Build footer with optional user context
+FOOTER="*Created via ARDEN"
+if [ -n "$USER_CONTEXT" ]; then
+  FOOTER="${FOOTER} | ${USER_CONTEXT}"
+fi
+FOOTER="${FOOTER}*"
+
 # Create note based on type
 case "$NOTE_TYPE" in
   quick)
@@ -42,7 +65,7 @@ case "$NOTE_TYPE" in
 $CONTENT
 
 ---
-*${DATE} ${TIME} - Created via ARDEN*
+${FOOTER}
 NOTEEOF
     ;;
     
@@ -62,7 +85,7 @@ $CONTENT
 - [ ] 
 
 ---
-*Created via ARDEN*
+${FOOTER}
 NOTEEOF
     ;;
     
@@ -80,11 +103,12 @@ $CONTENT
 ## Context
 
 
+
 ## Next Steps
 
 
 ---
-*Created via ARDEN*
+${FOOTER}
 NOTEEOF
     ;;
     
@@ -100,7 +124,7 @@ NOTEEOF
 $CONTENT
 
 ---
-*Created via ARDEN voice assistant*
+${FOOTER}
 NOTEEOF
     ;;
 esac

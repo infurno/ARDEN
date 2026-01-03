@@ -2,6 +2,7 @@
  * Chat Routes
  * 
  * Handles chat messages with ARDEN AI
+ * Messages are persisted to SQLite database
  */
 
 const express = require('express');
@@ -9,9 +10,13 @@ const router = express.Router();
 const logger = require('../utils/logger');
 const { executeArden } = require('../services/ai-providers');
 const { logInteraction } = require('../services/session');
-
-// In-memory chat history (per session)
-const chatSessions = new Map();
+const { executeSkillIfDetected } = require('../services/skill-executor');
+const { 
+  saveChatMessage, 
+  getChatHistory, 
+  getChatHistoryCount, 
+  clearChatHistory 
+} = require('../services/database');
 
 /**
  * POST /api/chat
@@ -36,31 +41,27 @@ router.post('/', async (req, res) => {
   });
   
   try {
-    // Execute ARDEN
-    const response = await executeArden(message);
+    // Save user message to database
+    const userMsg = saveChatMessage(currentSessionId, userId, 'user', message);
     
-    // Log interaction
+    // First, check if this is a skill request (weather, notes, etc.)
+    const skillResponse = await executeSkillIfDetected(message);
+    
+    let response;
+    if (skillResponse) {
+      // Skill was executed, use its output
+      response = skillResponse;
+      logger.system.info('Skill executed', { sessionId: currentSessionId });
+    } else {
+      // No skill detected, use AI
+      response = await executeArden(message);
+    }
+    
+    // Save AI response to database
+    const aiMsg = saveChatMessage(currentSessionId, userId, 'assistant', response);
+    
+    // Log interaction to file (for backup/analysis)
     await logInteraction(userId, 'web', message, response);
-    
-    // Store in session history
-    if (!chatSessions.has(currentSessionId)) {
-      chatSessions.set(currentSessionId, []);
-    }
-    
-    const history = chatSessions.get(currentSessionId);
-    const chatEntry = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      user: message,
-      arden: response
-    };
-    
-    history.push(chatEntry);
-    
-    // Keep only last 100 messages per session
-    if (history.length > 100) {
-      history.shift();
-    }
     
     logger.user.info('Chat response sent', {
       sessionId: currentSessionId,
@@ -71,8 +72,8 @@ router.post('/', async (req, res) => {
       success: true,
       response: response,
       sessionId: currentSessionId,
-      timestamp: chatEntry.timestamp,
-      messageId: chatEntry.id
+      timestamp: aiMsg.timestamp,
+      messageId: aiMsg.id
     });
     
   } catch (error) {
@@ -96,23 +97,51 @@ router.post('/', async (req, res) => {
 router.get('/history', (req, res) => {
   const sessionId = req.query.sessionId || req.sessionID;
   const limit = parseInt(req.query.limit) || 50;
+  const offset = parseInt(req.query.offset) || 0;
   
-  const history = chatSessions.get(sessionId) || [];
-  
-  // Return most recent messages
-  const recentHistory = history.slice(-limit);
-  
-  logger.system.info('Chat history requested', {
-    sessionId,
-    messageCount: recentHistory.length
-  });
-  
-  return res.json({
-    success: true,
-    sessionId,
-    messages: recentHistory,
-    total: history.length
-  });
+  try {
+    const messages = getChatHistory(sessionId, limit, offset);
+    const total = getChatHistoryCount(sessionId);
+    
+    // Transform database format to API format
+    const formattedMessages = [];
+    for (let i = 0; i < messages.length; i += 2) {
+      const userMsg = messages[i];
+      const aiMsg = messages[i + 1];
+      
+      if (userMsg && userMsg.role === 'user') {
+        formattedMessages.push({
+          id: userMsg.id,
+          timestamp: new Date(userMsg.timestamp).toISOString(),
+          user: userMsg.message,
+          arden: aiMsg ? aiMsg.message : ''
+        });
+      }
+    }
+    
+    logger.system.info('Chat history requested', {
+      sessionId,
+      messageCount: formattedMessages.length,
+      total
+    });
+    
+    return res.json({
+      success: true,
+      sessionId,
+      messages: formattedMessages,
+      total: Math.ceil(total / 2) // Divide by 2 since we store user + assistant separately
+    });
+  } catch (error) {
+    logger.system.error('Failed to get chat history', {
+      sessionId,
+      error: error.message
+    });
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve chat history'
+    });
+  }
 });
 
 /**
@@ -122,21 +151,26 @@ router.get('/history', (req, res) => {
 router.delete('/clear', (req, res) => {
   const sessionId = req.query.sessionId || req.sessionID;
   
-  if (chatSessions.has(sessionId)) {
-    chatSessions.delete(sessionId);
+  try {
+    const deleted = clearChatHistory(sessionId);
     
-    logger.system.info('Chat history cleared', { sessionId });
+    logger.system.info('Chat history cleared', { sessionId, deleted });
     
     return res.json({
       success: true,
-      message: 'Chat history cleared'
+      message: `Chat history cleared (${deleted} messages deleted)`
+    });
+  } catch (error) {
+    logger.system.error('Failed to clear chat history', {
+      sessionId,
+      error: error.message
+    });
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to clear chat history'
     });
   }
-  
-  return res.json({
-    success: true,
-    message: 'No history to clear'
-  });
 });
 
 module.exports = router;

@@ -5,6 +5,9 @@
 
 LOCATION="${1:-Chicago}"  # Default to Chicago if no location provided
 
+# URL encode the location (replace spaces with +)
+LOCATION_ENCODED="${LOCATION// /+}"
+
 # Fetch weather from wttr.in in format optimized for parsing
 # Format codes:
 # %C = Weather condition
@@ -17,10 +20,11 @@ LOCATION="${1:-Chicago}"  # Default to Chicago if no location provided
 # %S = Sunrise
 # %s = Sunset
 
-WEATHER_DATA=$(curl -s "https://wttr.in/${LOCATION}?format=%C+%t+feels+like+%f,+humidity+%h,+wind+%w,+precipitation+%p,+sunrise+%S,+sunset+%s" 2>/dev/null)
+WEATHER_DATA=$(curl -s --connect-timeout 10 "https://wttr.in/${LOCATION_ENCODED}?format=%C+%t+feels+like+%f,+humidity+%h,+wind+%w,+precipitation+%p,+sunrise+%S,+sunset+%s")
+CURL_EXIT=$?
 
 # Check if request succeeded
-if [ -z "$WEATHER_DATA" ]; then
+if [ -z "$WEATHER_DATA" ] || [ $CURL_EXIT -ne 0 ]; then
     echo "Error: Unable to fetch weather data. Check your internet connection."
     exit 1
 fi
@@ -32,7 +36,7 @@ if echo "$WEATHER_DATA" | grep -q "Unknown location"; then
 fi
 
 # Get location name (formatted)
-LOCATION_NAME=$(curl -s "https://wttr.in/${LOCATION}?format=%l" 2>/dev/null)
+LOCATION_NAME=$(curl -s --connect-timeout 10 "https://wttr.in/${LOCATION_ENCODED}?format=%l")
 
 # Parse the weather data
 echo "Weather for ${LOCATION_NAME}:"
@@ -41,7 +45,7 @@ echo "$WEATHER_DATA"
 # Get simple forecast for next 2 days
 echo ""
 echo "Forecast:"
-curl -s "https://wttr.in/${LOCATION}?format=Tomorrow:+%C+High+%t\nDay+after:+%C+High+%t" 2>/dev/null
+curl -s --connect-timeout 10 "https://wttr.in/${LOCATION_ENCODED}?format=Tomorrow:+%C+High+%t\nDay+after:+%C+High+%t"
 
 # Optional: Add weather recommendation
 TEMP_NUM=$(echo "$WEATHER_DATA" | grep -oE '\+?-?[0-9]+' | head -1)

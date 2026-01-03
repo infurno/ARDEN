@@ -77,9 +77,8 @@ async function handleVoiceMessage(bot, msg) {
     // Log interaction
     await logInteraction(userId, username, prompt, ardenResponse);
 
-    // Send text response
+    // Send text response (no Markdown to avoid parsing errors)
     await bot.sendMessage(chatId, ardenResponse, {
-      parse_mode: 'Markdown',
       disable_web_page_preview: true
     });
 

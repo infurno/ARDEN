@@ -8,26 +8,50 @@ Capture notes via voice or text and save them as markdown files in your notes di
 When the user wants to create a note, use the Bash tool to run:
 
 ```bash
-~/ARDEN/skills/note-taking/tools/create-note.sh "CONTENT" "TYPE"
+~/ARDEN/skills/note-taking/tools/create-note.sh "CONTENT" "TYPE" [-c]
 ```
 
 Where:
 - CONTENT = The user's note content (extract from their message)
 - TYPE = quick|meeting|idea|todo (default: quick)
+- -c = Optional flag to include user context in note footer
 
 The script will:
 1. Create a markdown file in ~/Notes/
 2. Auto-generate filename with date prefix
-3. Return the filename for confirmation
+3. Optionally include user context from user-context skill
+4. Return the filename for confirmation
 
 **Example:**
 ```bash
+# Create note without user context
 ~/ARDEN/skills/note-taking/tools/create-note.sh "Remember to follow up on IIT Pod deployment" "quick"
+
+# Create note with user context
+~/ARDEN/skills/note-taking/tools/create-note.sh "Remember to follow up on IIT Pod deployment" "quick" -c
 ```
 
 Returns: `2026-01-02-remember-to-follow-up-on-iit-pod.md`
 
 Then confirm to user: "Note saved as [filename] in your Notes folder."
+
+## User Context Integration
+
+When the `-c` flag is used, notes will include structured user context in the footer:
+
+**Without context:**
+```
+---
+*Created via ARDEN*
+```
+
+**With context:**
+```
+---
+*Created via ARDEN | Context: Hal Borland | Strategic Engineer of Infrastructure @ FedEx Freight | Chicago area | Tech: K8S, VMware, Azure, Linux*
+```
+
+This helps maintain note authorship and context when sharing notes or reviewing them later.
 
 ## When to Invoke
 This skill should be automatically invoked when the user:

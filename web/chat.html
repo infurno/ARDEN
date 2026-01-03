@@ -11,9 +11,14 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#3b82f6',
-                        background: '#1e1e1e',
-                        surface: '#2d2d2d',
+                        primary: '#7aa2f7',
+                        secondary: '#bb9af7',
+                        accent: '#9ece6a',
+                        danger: '#f7768e',
+                        warning: '#e0af68',
+                        background: '#1a1b26',
+                        surface: '#24283b',
+                        border: '#414868',
                     }
                 }
             }
@@ -21,7 +26,7 @@
     </script>
     <style>
         body {
-            background-color: #1e1e1e;
+            background-color: #1a1b26;
         }
         .chat-message {
             animation: fadeIn 0.3s ease-in;
@@ -34,21 +39,23 @@
 </head>
 <body class="min-h-screen bg-background">
     <!-- Header -->
-    <header class="bg-surface border-b border-gray-700">
+    <header class="bg-surface border-b border-border">
         <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
-                <h1 class="text-2xl font-bold text-white">ARDEN</h1>
+                <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
+                <h1 class="text-2xl font-bold" style="color: #c0caf5;">ARDEN</h1>
                 <nav class="hidden md:flex space-x-4">
                     <a href="/chat.html" class="text-primary font-medium">Chat</a>
-                    <a href="/dashboard.html" class="text-gray-400 hover:text-white">Dashboard</a>
+                    <a href="/notes.html" class="hover:text-primary" style="color: #9aa5ce;">Notes</a>
+                    <a href="/dashboard.html" class="hover:text-primary" style="color: #9aa5ce;">Dashboard</a>
                 </nav>
             </div>
             <div class="flex items-center space-x-4">
                 <div id="status-indicator" class="flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span class="text-sm text-gray-400">Connected</span>
+                    <div class="w-2 h-2 bg-accent rounded-full"></div>
+                    <span class="text-sm" style="color: #9aa5ce;">Connected</span>
                 </div>
-                <button id="logout-button" class="text-gray-400 hover:text-white text-sm">
+                <button id="logout-button" class="hover:text-danger text-sm" style="color: #9aa5ce;">
                     Logout
                 </button>
             </div>
@@ -59,10 +66,10 @@
     <main class="max-w-4xl mx-auto px-4 py-6 h-[calc(100vh-80px)] flex flex-col">
         <!-- Chat Header -->
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-white">Chat with ARDEN</h2>
+            <h2 class="text-xl font-semibold" style="color: #c0caf5;">Chat with ARDEN</h2>
             <div class="flex items-center space-x-4">
                 <!-- TTS Toggle -->
-                <button id="tts-toggle" class="flex items-center space-x-2 text-sm text-gray-400 hover:text-white transition-colors">
+                <button id="tts-toggle" class="flex items-center space-x-2 text-sm hover:text-primary transition-colors" style="color: #9aa5ce;">
                     <svg id="tts-icon-off" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>
@@ -72,7 +79,7 @@
                     </svg>
                     <span id="tts-status">TTS Off</span>
                 </button>
-                <button id="clear-chat" class="text-sm text-gray-400 hover:text-red-400 transition-colors">
+                <button id="clear-chat" class="text-sm hover:text-danger transition-colors" style="color: #9aa5ce;">
                     Clear History
                 </button>
             </div>
@@ -83,20 +90,21 @@
             <!-- Messages Area -->
             <div id="messages" class="flex-1 overflow-y-auto p-6 space-y-4">
                 <!-- Welcome Message -->
-                <div class="text-center text-gray-500 py-8">
+                <div class="text-center py-8" style="color: #565f89;">
                     <p class="text-lg">👋 Welcome! Start a conversation with ARDEN.</p>
                     <p class="text-sm mt-2">Try asking about your TODOs, notes, or anything else.</p>
                 </div>
             </div>
 
             <!-- Input Area -->
-            <div class="border-t border-gray-700 p-4">
+            <div class="border-t p-4" style="border-color: #414868;">
                 <form id="chat-form" class="flex space-x-3">
                     <!-- Voice Recording Button -->
                     <button 
                         type="button"
                         id="voice-button"
-                        class="bg-gray-700 hover:bg-gray-600 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 flex items-center"
+                        class="hover:bg-opacity-80 font-medium px-4 py-2 rounded-lg transition-colors duration-200 flex items-center"
+                        style="background-color: #414868; color: #c0caf5;"
                         title="Hold to record voice message"
                     >
                         <svg id="mic-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,13 +119,15 @@
                         type="text" 
                         id="message-input"
                         placeholder="Type your message or use voice..."
-                        class="flex-1 px-4 py-2 bg-background border border-gray-600 rounded-lg text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                        class="flex-1 px-4 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                        style="background-color: #24283b; border: 1px solid #414868; color: #c0caf5;"
                         autocomplete="off"
                     >
                     <button 
                         type="submit"
                         id="send-button"
-                        class="bg-primary hover:bg-blue-600 text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200 flex items-center"
+                        class="bg-primary hover:bg-opacity-80 font-medium px-6 py-2 rounded-lg transition-colors duration-200 flex items-center"
+                        style="color: #1a1b26;"
                     >
                         <span id="send-text">Send</span>
                         <svg id="send-spinner" class="hidden animate-spin ml-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

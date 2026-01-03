@@ -10,6 +10,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
 const { AI_PROVIDER, OLLAMA_MODEL, OPENAI_MODEL } = require('../services/ai-providers');
+const { getStats } = require('../services/database');
 
 // Load configuration
 const ARDEN_ROOT = path.resolve(__dirname, '../..');
@@ -59,6 +60,9 @@ router.get('/', async (req, res) => {
       logger.system.warn('Failed to read TODO stats', { error: error.message });
     }
     
+    // Get database stats
+    const dbStats = getStats();
+    
     const status = {
       status: 'running',
       uptime: uptime,
@@ -74,7 +78,10 @@ router.get('/', async (req, res) => {
       },
       stats: {
         notes: notesCount,
-        todos: todoCount
+        todos: todoCount,
+        sessions: dbStats.sessions,
+        chatMessages: dbStats.messages,
+        databaseSize: `${dbStats.dbSizeMB} MB`
       },
       version: config.version,
       timestamp: new Date().toISOString()

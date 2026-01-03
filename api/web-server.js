@@ -18,9 +18,13 @@ const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
 const statusRoutes = require('./routes/status');
 const voiceRoutes = require('./routes/voice');
+const notesRoutes = require('./routes/notes');
 
 // Import middleware
 const { requireAuth } = require('./middleware/auth');
+
+// Import persistent session store
+const SQLiteSessionStore = require('./services/session-store');
 
 // Initialize Express app
 const app = express();
@@ -41,8 +45,11 @@ app.use(cors({
   credentials: true
 }));
 
-// Session middleware
+// Session middleware with persistent SQLite store
 app.use(session({
+  store: new SQLiteSessionStore({
+    ttl: 24 * 60 * 60 * 1000 // 24 hours
+  }),
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -67,11 +74,16 @@ app.use((req, res, next) => {
 const webDir = path.join(__dirname, '../web');
 app.use(express.static(webDir));
 
+// Serve note attachments (images, etc.)
+const notesAttachmentsDir = path.join(process.env.HOME, 'Notes', 'attachments');
+app.use('/attachments', express.static(notesAttachmentsDir));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', requireAuth, chatRoutes);
 app.use('/api/status', requireAuth, statusRoutes);
 app.use('/api/voice', requireAuth, voiceRoutes);
+app.use('/api/notes', requireAuth, notesRoutes);
 
 // Root redirect
 app.get('/', (req, res) => {
