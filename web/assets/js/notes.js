@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNotes();
   loadStats();
   setupEventListeners();
+  setupWebSocketListeners();
   initTheme();
 });
 
@@ -238,7 +239,7 @@ function renderNotes(append = false) {
   }
   
   const html = currentNotes.map(note => `
-    <div class="note-card" data-filename="${note.filename}">
+    <div class="note-card" data-filename="${note.filename}" style="cursor: pointer;">
       <div class="note-header">
         <div>
           <div class="note-title">${escapeHtml(note.title)}</div>
@@ -257,10 +258,10 @@ function renderNotes(append = false) {
         <span>💾 ${formatBytes(note.size)}</span>
       </div>
       <div class="note-actions">
-        <button class="btn btn-primary" onclick="openNote('${escapeHtml(note.filename)}')">Open</button>
-        <button class="btn btn-secondary" onclick="editNote('${escapeHtml(note.filename)}')">Edit</button>
-        <button class="btn btn-secondary" onclick="renameNote('${escapeHtml(note.filename)}')">Rename</button>
-        <button class="btn btn-danger" onclick="deleteNote('${escapeHtml(note.filename)}')">Delete</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); openNote('${escapeHtml(note.filename)}')">Open</button>
+        <button class="btn btn-secondary" onclick="event.stopPropagation(); editNote('${escapeHtml(note.filename)}')">Edit</button>
+        <button class="btn btn-secondary" onclick="event.stopPropagation(); renameNote('${escapeHtml(note.filename)}')">Rename</button>
+        <button class="btn btn-danger" onclick="event.stopPropagation(); deleteNote('${escapeHtml(note.filename)}')">Delete</button>
       </div>
     </div>
   `).join('');
@@ -270,6 +271,18 @@ function renderNotes(append = false) {
   } else {
     notesContainer.innerHTML = html;
   }
+  
+  // Add click event listeners to all note cards
+  document.querySelectorAll('.note-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      // Don't trigger if clicking on a button or the actions area
+      if (e.target.tagName === 'BUTTON' || e.target.closest('.note-actions')) {
+        return;
+      }
+      const filename = card.dataset.filename;
+      openNote(filename);
+    });
+  });
 }
 
 // Update Load More Button
@@ -402,7 +415,12 @@ async function editNote(filename) {
 }
 
 // Create New Note
-function createNewNote() {
+async function createNewNote() {
+  // Show template selection modal
+  const useTemplate = await showTemplateSelector();
+  
+  if (useTemplate === null) return; // User cancelled
+  
   const filename = prompt('Enter note filename (e.g., my-note.md):');
   
   if (!filename) return;
@@ -410,10 +428,28 @@ function createNewNote() {
   // Ensure .md extension
   const sanitized = filename.endsWith('.md') ? filename : `${filename}.md`;
   
+  let content = `# ${sanitized.replace('.md', '')}\n\n`;
+  
+  // Load template content if selected
+  if (useTemplate) {
+    try {
+      const response = await fetch(`${API_BASE}/templates/${useTemplate}`);
+      const data = await response.json();
+      if (data.success) {
+        // Replace {{TITLE}} with the note filename (without .md extension)
+        const title = sanitized.replace('.md', '');
+        content = data.template.content.replace(/\{\{TITLE\}\}/g, title);
+      }
+    } catch (error) {
+      console.error('Failed to load template:', error);
+      // Continue with blank note if template fails
+    }
+  }
+  
   currentNote = {
     filename: sanitized,
     title: sanitized.replace('.md', ''),
-    content: `# ${sanitized.replace('.md', '')}\n\n`,
+    content: content,
     metadata: {
       wordCount: 0,
       charCount: 0,
@@ -1140,6 +1176,143 @@ function formatBytes(bytes) {
   return Math.round(bytes / Math.pow(k, i) * 10) / 10 + ' ' + sizes[i];
 }
 
+// Template Selector Modal
+async function showTemplateSelector() {
+  return new Promise(async (resolve) => {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    `;
+    
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+      background: #24283b;
+      border: 1px solid #414868;
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    `;
+    
+    modalContent.innerHTML = `
+      <h2 style="color: #c0caf5; margin-bottom: 1rem; font-size: 1.5rem;">Choose Template</h2>
+      <p style="color: #9aa5ce; margin-bottom: 1.5rem; font-size: 0.9rem;">Select a template to start with, or create a blank note.</p>
+      <div id="template-list" style="margin-bottom: 1.5rem;">
+        <div style="text-align: center; color: #9aa5ce;">Loading templates...</div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button id="template-cancel" style="
+          padding: 0.5rem 1rem;
+          background: #414868;
+          color: #c0caf5;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.9rem;
+        ">Cancel</button>
+        <button id="template-blank" style="
+          padding: 0.5rem 1rem;
+          background: #7aa2f7;
+          color: #1a1b26;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 0.9rem;
+        ">Blank Note</button>
+      </div>
+    `;
+    
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Load templates
+    try {
+      const response = await fetch(`${API_BASE}/templates`);
+      const data = await response.json();
+      
+      if (data.success && data.templates.length > 0) {
+        const templateList = document.getElementById('template-list');
+        templateList.innerHTML = data.templates.map(t => `
+          <button class="template-option" data-template-id="${t.id}" style="
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            background: #1a1b26;
+            border: 1px solid #414868;
+            border-radius: 4px;
+            color: #c0caf5;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+          " onmouseover="this.style.borderColor='#7aa2f7'; this.style.background='#24283b'" onmouseout="this.style.borderColor='#414868'; this.style.background='#1a1b26'">
+            <div style="font-weight: 500; margin-bottom: 0.25rem;">${escapeHtml(t.name)}</div>
+            <div style="font-size: 0.85rem; color: #9aa5ce;">${t.filename}</div>
+          </button>
+        `).join('');
+        
+        // Add click handlers for template buttons
+        document.querySelectorAll('.template-option').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const templateId = btn.dataset.templateId;
+            document.body.removeChild(modal);
+            resolve(templateId);
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load templates:', error);
+      document.getElementById('template-list').innerHTML = `
+        <div style="color: #f7768e; text-align: center;">Failed to load templates</div>
+      `;
+    }
+    
+    // Cancel button
+    document.getElementById('template-cancel').addEventListener('click', () => {
+      document.body.removeChild(modal);
+      resolve(null);
+    });
+    
+    // Blank note button
+    document.getElementById('template-blank').addEventListener('click', () => {
+      document.body.removeChild(modal);
+      resolve(false);
+    });
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        document.body.removeChild(modal);
+        resolve(null);
+      }
+    });
+    
+    // ESC key to close
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        document.body.removeChild(modal);
+        document.removeEventListener('keydown', escHandler);
+        resolve(null);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+  });
+}
+
 // Theme Management
 function initTheme() {
   const savedTheme = localStorage.getItem('notes-theme') || 'light';
@@ -1166,6 +1339,61 @@ function updateThemeIcon(isDark) {
     themeToggle.textContent = isDark ? '☀️' : '🌙';
     themeToggle.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
   }
+}
+
+// Setup WebSocket listeners for real-time updates
+function setupWebSocketListeners() {
+  if (window.wsClient) {
+    wsClient.on('connected', () => {
+      console.log('WebSocket connected for notes');
+    });
+    
+    wsClient.on('note_update', (data) => {
+      console.log('Received note update via WebSocket:', data);
+      
+      // Refresh the notes list when any note is created, updated, or deleted
+      if (data.action === 'create' || data.action === 'delete' || data.action === 'rename') {
+        // Reload the notes list
+        currentOffset = 0;
+        loadNotes();
+        loadStats();
+        
+        // Show notification
+        const action = data.action === 'create' ? 'created' : 
+                      data.action === 'delete' ? 'deleted' : 'renamed';
+        showNotification(`Note ${action}: ${data.filename || data.newFilename}`, 'info');
+      }
+      
+      // If the currently open note was updated by another source, reload it
+      if (data.action === 'update' && currentNote && data.filename === currentNote) {
+        // Optionally reload the note content (only if not currently editing)
+        if (activeTab === 'preview') {
+          openNote(currentNote);
+          showNotification('Note updated', 'info');
+        }
+      }
+    });
+  }
+}
+
+// Show notification helper
+function showNotification(message, type = 'info') {
+  // Create a simple toast notification
+  const notification = document.createElement('div');
+  notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white transition-opacity duration-300`;
+  notification.style.backgroundColor = type === 'info' ? '#7aa2f7' : 
+                                       type === 'success' ? '#9ece6a' : 
+                                       type === 'error' ? '#f7768e' : '#e0af68';
+  notification.textContent = message;
+  notification.style.zIndex = '9999';
+  
+  document.body.appendChild(notification);
+  
+  // Fade out and remove after 3 seconds
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
 
 // Make functions globally available

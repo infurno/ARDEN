@@ -11,6 +11,7 @@ const logger = require('../utils/logger');
 const { executeArden } = require('../services/ai-providers');
 const { logInteraction } = require('../services/session');
 const { executeSkillIfDetected } = require('../services/skill-executor');
+const wsService = require('../services/websocket');
 const { 
   saveChatMessage, 
   getChatHistory, 
@@ -62,6 +63,14 @@ router.post('/', async (req, res) => {
     
     // Log interaction to file (for backup/analysis)
     await logInteraction(userId, 'web', message, response);
+    
+    // Send WebSocket notification for real-time updates
+    wsService.notifyChatMessage(currentSessionId, {
+      role: 'assistant',
+      content: response,
+      timestamp: aiMsg.timestamp,
+      messageId: aiMsg.id
+    });
     
     logger.user.info('Chat response sent', {
       sessionId: currentSessionId,

@@ -19,12 +19,18 @@ const chatRoutes = require('./routes/chat');
 const statusRoutes = require('./routes/status');
 const voiceRoutes = require('./routes/voice');
 const notesRoutes = require('./routes/notes');
+const todosRoutes = require('./routes/todos');
+const analyticsRoutes = require('./routes/analytics');
+const skillsRoutes = require('./routes/skills');
 
 // Import middleware
 const { requireAuth } = require('./middleware/auth');
 
 // Import persistent session store
 const SQLiteSessionStore = require('./services/session-store');
+
+// Import WebSocket service
+const wsService = require('./services/websocket');
 
 // Initialize Express app
 const app = express();
@@ -84,6 +90,9 @@ app.use('/api/chat', requireAuth, chatRoutes);
 app.use('/api/status', requireAuth, statusRoutes);
 app.use('/api/voice', requireAuth, voiceRoutes);
 app.use('/api/notes', requireAuth, notesRoutes);
+app.use('/api/todos', requireAuth, todosRoutes);
+app.use('/api/analytics', requireAuth, analyticsRoutes);
+app.use('/api/skills', requireAuth, skillsRoutes);
 
 // Root redirect
 app.get('/', (req, res) => {
@@ -115,7 +124,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log('');
   console.log('🌐 ARDEN Web Interface Started');
   console.log('================================');
@@ -133,13 +142,25 @@ app.listen(PORT, HOST, () => {
   });
 });
 
+// Initialize WebSocket server
+wsService.initialize(server);
+logger.system.info('WebSocket server initialized', {
+  path: '/ws'
+});
+
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.system.info('SIGTERM received, shutting down gracefully');
-  process.exit(0);
+  wsService.close();
+  server.close(() => {
+    process.exit(0);
+  });
 });
 
 process.on('SIGINT', () => {
   logger.system.info('SIGINT received, shutting down gracefully');
-  process.exit(0);
+  wsService.close();
+  server.close(() => {
+    process.exit(0);
+  });
 });

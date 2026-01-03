@@ -130,6 +130,70 @@ class ArdenAPI {
     async getHealth() {
         return this.request('/status/health');
     }
+    
+    /**
+     * TODOs
+     */
+    async getTodos() {
+        return this.request('/todos');
+    }
+    
+    async consolidateTodos() {
+        return this.request('/todos/consolidate', {
+            method: 'POST',
+        });
+    }
+    
+    async updateTodo(id, checked) {
+        return this.request(`/todos/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ checked }),
+        });
+    }
+    
+    async createTodo(text, targetFile = null) {
+        return this.request('/todos', {
+            method: 'POST',
+            body: JSON.stringify({ text, targetFile }),
+        });
+    }
+    
+    /**
+     * Analytics
+     */
+    async getAnalytics() {
+        return this.request('/analytics');
+    }
+    
+    async getMessageStats(period = '7d') {
+        return this.request(`/analytics/messages?period=${period}`);
+    }
+    
+    async getSessionStats() {
+        return this.request('/analytics/sessions');
+    }
+    
+    async getUsageTrends(period = '30d') {
+        return this.request(`/analytics/trends?period=${period}`);
+    }
+    
+    /**
+     * Skills
+     */
+    async getSkills() {
+        return this.request('/skills');
+    }
+    
+    async getSkillDetails(skillId) {
+        return this.request(`/skills/${skillId}`);
+    }
+    
+    async executeSkill(skillId, params = {}) {
+        return this.request(`/skills/${skillId}/execute`, {
+            method: 'POST',
+            body: JSON.stringify({ params }),
+        });
+    }
 }
 
 // Create global API instance

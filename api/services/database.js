@@ -249,6 +249,103 @@ function getStats() {
 }
 
 /**
+ * Analytics Functions
+ */
+
+// Get overall analytics stats
+function getAnalyticsStats() {
+  const totalMessages = db.prepare('SELECT COUNT(*) as count FROM chat_messages').get().count;
+  const totalSessions = db.prepare('SELECT COUNT(*) as count FROM sessions').get().count;
+  const activeSessions = db.prepare('SELECT COUNT(*) as count FROM sessions WHERE expires_at > ?').get(Date.now()).count;
+  
+  const userMessages = db.prepare('SELECT COUNT(*) as count FROM chat_messages WHERE role = ?').get('user').count;
+  const assistantMessages = db.prepare('SELECT COUNT(*) as count FROM chat_messages WHERE role = ?').get('assistant').count;
+  
+  // Average session duration (in minutes)
+  const avgDuration = db.prepare(`
+    SELECT AVG(last_activity - created_at) / 60000 as avg_minutes
+    FROM sessions
+    WHERE last_activity > created_at
+  `).get().avg_minutes || 0;
+  
+  return {
+    totalMessages,
+    userMessages,
+    assistantMessages,
+    totalSessions,
+    activeSessions,
+    avgSessionDurationMinutes: Math.round(avgDuration * 10) / 10
+  };
+}
+
+// Get message statistics for a time period
+function getMessageStats(period) {
+  const periodMs = parsePeriod(period);
+  const since = Date.now() - periodMs;
+  
+  const stmt = db.prepare(`
+    SELECT 
+      COUNT(*) as total,
+      SUM(CASE WHEN role = 'user' THEN 1 ELSE 0 END) as user_messages,
+      SUM(CASE WHEN role = 'assistant' THEN 1 ELSE 0 END) as assistant_messages
+    FROM chat_messages
+    WHERE timestamp > ?
+  `);
+  
+  return stmt.get(since);
+}
+
+// Get session statistics
+function getSessionStats() {
+  const now = Date.now();
+  
+  const stats = {
+    total: db.prepare('SELECT COUNT(*) as count FROM sessions').get().count,
+    active: db.prepare('SELECT COUNT(*) as count FROM sessions WHERE expires_at > ?').get(now).count,
+    authenticated: db.prepare('SELECT COUNT(*) as count FROM sessions WHERE authenticated = 1 AND expires_at > ?').get(now).count
+  };
+  
+  return stats;
+}
+
+// Get usage trends over time
+function getUsageTrends(period) {
+  const periodMs = parsePeriod(period);
+  const since = Date.now() - periodMs;
+  
+  // Group by day
+  const stmt = db.prepare(`
+    SELECT 
+      DATE(timestamp / 1000, 'unixepoch') as date,
+      COUNT(*) as message_count,
+      COUNT(DISTINCT session_id) as unique_sessions
+    FROM chat_messages
+    WHERE timestamp > ?
+    GROUP BY date
+    ORDER BY date ASC
+  `);
+  
+  return stmt.all(since);
+}
+
+// Helper to parse period strings like '7d', '30d', '1h'
+function parsePeriod(period) {
+  const match = period.match(/^(\d+)([hdwm])$/);
+  if (!match) return 7 * 24 * 60 * 60 * 1000; // Default 7 days
+  
+  const value = parseInt(match[1]);
+  const unit = match[2];
+  
+  switch(unit) {
+    case 'h': return value * 60 * 60 * 1000;
+    case 'd': return value * 24 * 60 * 60 * 1000;
+    case 'w': return value * 7 * 24 * 60 * 60 * 1000;
+    case 'm': return value * 30 * 24 * 60 * 60 * 1000;
+    default: return 7 * 24 * 60 * 60 * 1000;
+  }
+}
+
+/**
  * Periodic cleanup (run every hour)
  */
 setInterval(() => {
@@ -286,5 +383,10 @@ module.exports = {
   getChatHistoryCount,
   clearChatHistory,
   // Stats
-  getStats
+  getStats,
+  // Analytics
+  getAnalyticsStats,
+  getMessageStats,
+  getSessionStats,
+  getUsageTrends
 };

@@ -9,6 +9,7 @@ const fs = require('fs').promises;
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const logger = require('../utils/logger');
+const wsService = require('../services/websocket');
 
 const execAsync = promisify(exec);
 const NOTES_DIR = path.join(process.env.HOME, 'Notes');
@@ -268,6 +269,96 @@ router.get('/stats/overview', async (req, res) => {
   }
 });
 
+// ====================================
+// TEMPLATE ROUTES
+// ====================================
+
+const TEMPLATES_DIR = path.join(process.env.HOME, 'Notes', 'templates');
+
+// GET /api/notes/templates - List available templates
+router.get('/templates', async (req, res) => {
+  try {
+    const files = await fs.readdir(TEMPLATES_DIR);
+    const templates = files
+      .filter(f => f.endsWith('.md'))
+      .map(f => ({
+        id: f.replace('.md', ''),
+        name: f.replace('.md', '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        filename: f
+      }));
+    
+    res.json({
+      success: true,
+      templates
+    });
+  } catch (error) {
+    logger.system.error('Failed to list templates', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load templates'
+    });
+  }
+});
+
+// GET /api/notes/templates/:id - Get template content
+router.get('/templates/:id', async (req, res) => {
+  try {
+    const templateId = req.params.id;
+    const templateFile = `${templateId}.md`;
+    const templatePath = path.join(TEMPLATES_DIR, templateFile);
+    
+    // Validate template path
+    const resolvedPath = path.resolve(templatePath);
+    const resolvedTemplatesDir = path.resolve(TEMPLATES_DIR);
+    if (!resolvedPath.startsWith(resolvedTemplatesDir)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Invalid template ID'
+      });
+    }
+    
+    const content = await fs.readFile(templatePath, 'utf8');
+    
+    // Replace template variables
+    const now = new Date();
+    const processedContent = content
+      .replace(/\{\{DATE_FULL\}\}/g, now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+      .replace(/\{\{DATE_ISO\}\}/g, now.toISOString().split('T')[0])
+      .replace(/\{\{DATE_SHORT\}\}/g, now.toLocaleDateString('en-US'))
+      .replace(/\{\{TIME_12H\}\}/g, now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }))
+      .replace(/\{\{TIME_24H\}\}/g, now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }))
+      .replace(/\{\{DAY_OF_WEEK\}\}/g, now.toLocaleDateString('en-US', { weekday: 'long' }))
+      .replace(/\{\{WEEK_NUMBER\}\}/g, getWeekNumber(now))
+      .replace(/\{\{MONTH\}\}/g, now.toLocaleDateString('en-US', { month: 'long' }))
+      .replace(/\{\{YEAR\}\}/g, now.getFullYear().toString());
+      // Note: {{TITLE}} is left as-is for frontend to replace with actual filename
+    
+    res.json({
+      success: true,
+      template: {
+        id: templateId,
+        name: templateId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        content: processedContent
+      }
+    });
+  } catch (error) {
+    logger.system.error('Failed to load template', { error: error.message, template: req.params.id });
+    res.status(500).json({
+      success: false,
+      error: 'Template not found'
+    });
+  }
+});
+
+// Helper function to get week number
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
 // GET /api/notes/:filename - Get note
 router.get('/:filename', async (req, res) => {
   try {
@@ -347,6 +438,13 @@ router.put('/:filename', async (req, res) => {
     await fs.writeFile(filePath, content, 'utf-8');
     const stats = await fs.stat(filePath);
     
+    // Send WebSocket notification
+    wsService.notifyNoteUpdate({
+      action: 'update',
+      filename,
+      timestamp: new Date().toISOString()
+    });
+    
     return res.json({
       success: true,
       filename,
@@ -394,6 +492,13 @@ router.post('/', async (req, res) => {
     await fs.writeFile(filePath, content, 'utf-8');
     const stats = await fs.stat(filePath);
     
+    // Send WebSocket notification
+    wsService.notifyNoteUpdate({
+      action: 'create',
+      filename: sanitized,
+      timestamp: new Date().toISOString()
+    });
+    
     return res.json({
       success: true,
       filename: sanitized,
@@ -429,6 +534,13 @@ router.delete('/:filename', async (req, res) => {
     }
     
     await fs.unlink(filePath);
+    
+    // Send WebSocket notification
+    wsService.notifyNoteUpdate({
+      action: 'delete',
+      filename,
+      timestamp: new Date().toISOString()
+    });
     
     return res.json({
       success: true,
@@ -487,6 +599,14 @@ router.patch('/:filename', async (req, res) => {
     await fs.rename(oldPath, newPath);
     
     logger.system.info('Note renamed', { oldFilename, newFilename: newFilename_sanitized });
+    
+    // Send WebSocket notification
+    wsService.notifyNoteUpdate({
+      action: 'rename',
+      oldFilename,
+      newFilename: newFilename_sanitized,
+      timestamp: new Date().toISOString()
+    });
     
     return res.json({
       success: true,

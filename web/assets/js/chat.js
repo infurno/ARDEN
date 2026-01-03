@@ -34,6 +34,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
+    // Setup WebSocket listeners for real-time updates
+    setupWebSocketListeners();
+    
     // Load chat history
     await loadChatHistory();
     
@@ -108,6 +111,51 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (error) {
             console.error('Failed to load chat history:', error);
+        }
+    }
+    
+    // Setup WebSocket listeners
+    function setupWebSocketListeners() {
+        // Listen for WebSocket connection status
+        if (window.wsClient) {
+            wsClient.on('connected', () => {
+                console.log('WebSocket connected for chat');
+                updateConnectionStatus(true);
+            });
+            
+            wsClient.on('disconnected', () => {
+                console.log('WebSocket disconnected');
+                updateConnectionStatus(false);
+            });
+            
+            wsClient.on('reconnect_failed', () => {
+                console.error('WebSocket reconnection failed');
+                updateConnectionStatus(false);
+            });
+            
+            // Listen for incoming chat messages (for multi-device sync in future)
+            wsClient.on('chat_message', (data) => {
+                console.log('Received chat message via WebSocket:', data);
+                // Could be used for multi-device synchronization
+                // For now, we're using HTTP responses
+            });
+        }
+    }
+    
+    // Update connection status indicator
+    function updateConnectionStatus(connected) {
+        const statusIndicator = document.getElementById('status-indicator');
+        if (!statusIndicator) return;
+        
+        const dot = statusIndicator.querySelector('.w-2');
+        const text = statusIndicator.querySelector('span');
+        
+        if (connected) {
+            dot.style.backgroundColor = '#9ece6a'; // Tokyo Night green
+            text.textContent = 'Connected';
+        } else {
+            dot.style.backgroundColor = '#f7768e'; // Tokyo Night red
+            text.textContent = 'Disconnected';
         }
     }
     
