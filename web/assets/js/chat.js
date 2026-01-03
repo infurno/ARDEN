@@ -92,6 +92,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
     
+    // Show typing indicator
+    function showTypingIndicator() {
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.classList.add('active');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
+    
+    // Hide typing indicator
+    function hideTypingIndicator() {
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.classList.remove('active');
+        }
+    }
+    
     // Load chat history
     async function loadChatHistory() {
         try {
@@ -209,8 +226,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageInput.value = '';
         setLoading(true);
         
+        // Show typing indicator
+        showTypingIndicator();
+        
         try {
             const response = await api.sendMessage(message, sessionId);
+            
+            // Hide typing indicator
+            hideTypingIndicator();
             
             // Store session ID
             if (response.sessionId) {
@@ -224,6 +247,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             await playArdenResponse(response.response);
             
         } catch (error) {
+            // Hide typing indicator on error
+            hideTypingIndicator();
+            
             console.error('Chat error:', error);
             addMessage('arden', `Error: ${error.message}`, new Date().toISOString());
         } finally {
@@ -358,8 +384,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Add user message
             addMessage('user', transcription, new Date().toISOString());
             
+            // Show typing indicator
+            showTypingIndicator();
+            
             // Send to ARDEN
             const response = await api.sendMessage(transcription, sessionId);
+            
+            // Hide typing indicator
+            hideTypingIndicator();
             
             if (response.sessionId) {
                 sessionId = response.sessionId;
@@ -375,6 +407,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             messageInput.value = '';
             
         } catch (error) {
+            // Hide typing indicator on error
+            hideTypingIndicator();
+            
             console.error('Voice message error:', error);
             addMessage('arden', `Voice error: ${error.message}`, new Date().toISOString());
         } finally {
