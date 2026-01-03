@@ -128,6 +128,18 @@
                         <option value="completed">Completed</option>
                     </select>
                 </div>
+                <div class="flex items-center space-x-2">
+                    <label style="color: #9aa5ce; font-size: 0.9rem;">Sort:</label>
+                    <select id="sort-order" class="px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                            style="background-color: #1a1b26; border: 1px solid #414868; color: #c0caf5;">
+                        <option value="file-asc">File (A-Z)</option>
+                        <option value="file-desc">File (Z-A)</option>
+                        <option value="date-desc">Date (Newest First)</option>
+                        <option value="date-asc">Date (Oldest First)</option>
+                        <option value="text-asc">Text (A-Z)</option>
+                        <option value="text-desc">Text (Z-A)</option>
+                    </select>
+                </div>
                 <button id="toggle-archive" class="px-3 py-2 rounded-lg hover:bg-opacity-80 transition-colors flex items-center space-x-2"
                         style="background-color: #414868; color: #c0caf5;"
                         title="Show/hide completed TODOs">
