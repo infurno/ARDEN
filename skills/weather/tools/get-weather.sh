@@ -3,7 +3,15 @@
 # ARDEN Weather Tool
 # Gets current weather for a location using wttr.in (free API)
 
-LOCATION="${1:-Chicago}"  # Default to Chicago if no location provided
+# Get default location from config file
+DEFAULT_LOCATION_FILE="$HOME/ARDEN/skills/weather/context/default-location.txt"
+if [ -f "$DEFAULT_LOCATION_FILE" ]; then
+    DEFAULT_LOCATION=$(head -n 1 "$DEFAULT_LOCATION_FILE" | tr -d '\n\r')
+else
+    DEFAULT_LOCATION="Farmington, AR"
+fi
+
+LOCATION="${1:-$DEFAULT_LOCATION}"  # Use provided location or default
 
 # URL encode the location (replace spaces with +)
 LOCATION_ENCODED="${LOCATION// /+}"

@@ -10,7 +10,7 @@ PROFILE_PATH="$HOME/Notes/profile.md"
 USER_NAME="Hal Borland"
 USER_ROLE="Strategic Engineer of Infrastructure"
 USER_COMPANY="FedEx Freight"
-USER_LOCATION="Chicago area"
+USER_LOCATION="Farmington, AR 72730"
 
 # Technical context
 WORK_CONTEXT_TECHNICAL_ARCHITECTURE="Infrastructure design and implementation"

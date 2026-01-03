@@ -1,9 +1,10 @@
-Chicago
+Farmington, AR
 
-# You can change this to your default location
+# Default location for weather queries
+# This should match the user's primary location
 # Examples:
-# - Chicago
+# - Farmington, AR
+# - 72730 (zip code)
 # - New York
-# - 60601 (zip code)
 # - London,UK
 # - Tokyo,Japan

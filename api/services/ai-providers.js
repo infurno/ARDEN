@@ -35,11 +35,16 @@ Available tools you can use:
    - Types: quick, meeting, idea, todo
    
 2. Weather: ~/ARDEN/skills/weather/tools/get-weather.sh "LOCATION"
-   - Use when user asks about weather, temperature, rain, forecast
-   - Default location: Chicago (can be any city or zip)
+   - Use when user asks about weather, temperature, rain, forecast, conditions
+   - LOCATION can be: city name, "City, State", zip code (e.g., "72730"), or leave empty for default
+   - Examples: "Farmington, AR", "72730", "New York", "London,UK"
+   - IMPORTANT: Extract the location from user's message carefully. If they say "Farmington, Arkansas" use "Farmington, AR"
+   - If they give just a zip code like "72730", use that directly
+   - State abbreviations: Arkansas=AR, Illinois=IL, California=CA, etc.
    
 3. Forecast: ~/ARDEN/skills/weather/tools/get-forecast.sh "LOCATION"
    - Use for multi-day forecasts or "weather this weekend"
+   - Same location format as Weather tool
 
 4. TODO Summary: ~/ARDEN/scripts/todo-summary.sh
    - Use when user asks about TODOs, tasks, what to do
