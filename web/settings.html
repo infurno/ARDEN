@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARDEN - Settings</title>
+    <link rel="stylesheet" href="/assets/css/tokyo-night.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -26,7 +27,7 @@
     </script>
     <style>
         body {
-            background-color: #1a1b26;
+            background-color: var(--bg-main); color: var(--text-main);
         }
         .section-header {
             color: #7aa2f7;
@@ -44,7 +45,7 @@
             display: block;
         }
         .form-input, .form-select, .form-textarea {
-            background-color: #1a1b26;
+            background-color: var(--bg-main); color: var(--text-main);
             border: 1px solid #414868;
             color: #c0caf5;
             padding: 0.5rem;
@@ -59,7 +60,7 @@
             ring-color: #7aa2f7;
         }
         .form-checkbox {
-            background-color: #1a1b26;
+            background-color: var(--bg-main); color: var(--text-main);
             border: 1px solid #414868;
             color: #7aa2f7;
             width: 1.25rem;
@@ -94,19 +95,19 @@
         <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
-                <h1 class="text-2xl font-bold" style="color: #c0caf5;">ARDEN</h1>
+                <h1 class="text-2xl font-bold" class="tn-text-main">ARDEN</h1>
                 <nav class="hidden md:flex space-x-4">
-                    <a href="/chat.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Chat</a>
-                    <a href="/notes.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Notes</a>
-                    <a href="/todos.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">TODOs</a>
-                    <a href="/skills.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Skills</a>
-                    <a href="/dashboard.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Dashboard</a>
+                    <a href="/chat.html" class="hover:text-primary" class="tn-text-secondary no-underline">Chat</a>
+                    <a href="/notes.html" class="hover:text-primary" class="tn-text-secondary no-underline">Notes</a>
+                    <a href="/todos.html" class="hover:text-primary" class="tn-text-secondary no-underline">TODOs</a>
+                    <a href="/skills.html" class="hover:text-primary" class="tn-text-secondary no-underline">Skills</a>
+                    <a href="/dashboard.html" class="hover:text-primary" class="tn-text-secondary no-underline">Dashboard</a>
                     <a href="/settings.html" class="text-primary font-medium" style="text-decoration: none;">Settings</a>
                 </nav>
             </div>
             <div class="flex items-center space-x-4">
                 <button id="theme-toggle" class="text-xl hover:opacity-80 transition-opacity" title="Toggle Dark Mode">🌙</button>
-                <button id="logout-button" class="hover:text-danger text-sm" style="color: #9aa5ce;">
+                <button id="logout-button" class="hover:text-danger text-sm" class="tn-text-secondary">
                     Logout
                 </button>
             </div>
@@ -121,7 +122,7 @@
     <!-- Main Content -->
     <main class="max-w-4xl mx-auto px-4 py-8">
         <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-bold" style="color: #c0caf5;">Settings</h2>
+            <h2 class="text-3xl font-bold" class="tn-text-main">Settings</h2>
             <div class="space-x-3">
                 <button id="reset-button" class="px-4 py-2 rounded hover:opacity-90 text-sm" style="background: #414868; color: #c0caf5;">
                     Reset
@@ -251,7 +252,7 @@
                 <div class="mb-4">
                     <label class="form-label" for="telegram-allowed-users">Allowed User IDs (comma-separated)</label>
                     <input type="text" id="telegram-allowed-users" name="telegram.allowed_users" class="form-input" placeholder="123456789,987654321">
-                    <p class="text-xs mt-1" style="color: #565f89;">Leave empty to allow all users</p>
+                    <p class="text-xs mt-1" class="tn-text-tertiary">Leave empty to allow all users</p>
                 </div>
             </div>
 
@@ -342,7 +343,7 @@
                 <h3 class="section-header">Routines Configuration</h3>
                 
                 <div class="mb-6">
-                    <h4 class="text-sm font-semibold mb-3" style="color: #c0caf5;">Morning Briefing</h4>
+                    <h4 class="text-sm font-semibold mb-3" class="tn-text-main">Morning Briefing</h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="form-label flex items-center">
@@ -368,7 +369,7 @@
                 </div>
 
                 <div>
-                    <h4 class="text-sm font-semibold mb-3" style="color: #c0caf5;">Evening Review</h4>
+                    <h4 class="text-sm font-semibold mb-3" class="tn-text-main">Evening Review</h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="form-label flex items-center">
@@ -397,8 +398,8 @@
 
         <!-- Info -->
         <div class="bg-surface rounded-lg shadow-lg p-4 border border-border mb-6" style="border-color: #e0af68;">
-            <p class="text-sm" style="color: #9aa5ce;">
-                <strong style="color: #e0af68;">Note:</strong> Changes to port, host, or other server settings may require restarting the ARDEN web server to take effect.
+            <p class="text-sm" class="tn-text-secondary">
+                <strong class="tn-warning">Note:</strong> Changes to port, host, or other server settings may require restarting the ARDEN web server to take effect.
             </p>
         </div>
     </main>

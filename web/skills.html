@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARDEN - Skills</title>
+    <link rel="stylesheet" href="/assets/css/tokyo-night.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -26,7 +27,7 @@
     </script>
     <style>
         body {
-            background-color: #1a1b26;
+            background-color: var(--bg-main); color: var(--text-main);
         }
         .skill-card {
             transition: all 0.2s;
@@ -50,19 +51,19 @@
         <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
-                <h1 class="text-2xl font-bold" style="color: #c0caf5;">ARDEN</h1>
+                <h1 class="text-2xl font-bold" class="tn-text-main">ARDEN</h1>
                 <nav class="hidden md:flex space-x-4">
-                    <a href="/chat.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Chat</a>
-                    <a href="/notes.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Notes</a>
-                    <a href="/todos.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">TODOs</a>
+                    <a href="/chat.html" class="hover:text-primary" class="tn-text-secondary no-underline">Chat</a>
+                    <a href="/notes.html" class="hover:text-primary" class="tn-text-secondary no-underline">Notes</a>
+                    <a href="/todos.html" class="hover:text-primary" class="tn-text-secondary no-underline">TODOs</a>
                     <a href="/skills.html" class="text-primary font-medium" style="text-decoration: none;">Skills</a>
-                    <a href="/dashboard.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Dashboard</a>
-                    <a href="/settings.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Settings</a>
+                    <a href="/dashboard.html" class="hover:text-primary" class="tn-text-secondary no-underline">Dashboard</a>
+                    <a href="/settings.html" class="hover:text-primary" class="tn-text-secondary no-underline">Settings</a>
                 </nav>
             </div>
             <div class="flex items-center space-x-4">
                 <button id="theme-toggle" class="text-xl hover:opacity-80 transition-opacity" title="Toggle Dark Mode">🌙</button>
-                <button id="logout-button" class="hover:text-danger text-sm" style="color: #9aa5ce;">
+                <button id="logout-button" class="hover:text-danger text-sm" class="tn-text-secondary">
                     Logout
                 </button>
             </div>
@@ -73,29 +74,29 @@
     <main class="max-w-6xl mx-auto px-4 py-6">
         <!-- Header -->
         <div class="mb-8">
-            <h2 class="text-2xl font-bold" style="color: #c0caf5;">🎯 Skills Configuration</h2>
-            <p class="text-sm mt-2" style="color: #9aa5ce;">Manage and configure ARDEN's capabilities</p>
+            <h2 class="text-2xl font-bold" class="tn-text-main">🎯 Skills Configuration</h2>
+            <p class="text-sm mt-2" class="tn-text-secondary">Manage and configure ARDEN's capabilities</p>
         </div>
 
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-surface border border-border rounded-lg p-4">
-                <div class="text-sm" style="color: #9aa5ce;">Total Skills</div>
-                <div class="text-2xl font-bold mt-1" style="color: #c0caf5;" id="stat-total">-</div>
+                <div class="text-sm" class="tn-text-secondary">Total Skills</div>
+                <div class="text-2xl font-bold mt-1" class="tn-text-main" id="stat-total">-</div>
             </div>
             <div class="bg-surface border border-border rounded-lg p-4">
-                <div class="text-sm" style="color: #9aa5ce;">Enabled</div>
-                <div class="text-2xl font-bold mt-1" style="color: #9ece6a;" id="stat-enabled">-</div>
+                <div class="text-sm" class="tn-text-secondary">Enabled</div>
+                <div class="text-2xl font-bold mt-1" class="tn-accent" id="stat-enabled">-</div>
             </div>
             <div class="bg-surface border border-border rounded-lg p-4">
-                <div class="text-sm" style="color: #9aa5ce;">Disabled</div>
-                <div class="text-2xl font-bold mt-1" style="color: #565f89;" id="stat-disabled">-</div>
+                <div class="text-sm" class="tn-text-secondary">Disabled</div>
+                <div class="text-2xl font-bold mt-1" class="tn-text-tertiary" id="stat-disabled">-</div>
             </div>
         </div>
 
         <!-- Skills List -->
         <div id="skills-container">
-            <div class="text-center py-12" style="color: #9aa5ce;">
+            <div class="text-center py-12" class="tn-text-secondary">
                 <div class="text-4xl mb-4">⚙️</div>
                 <p>Loading skills...</p>
             </div>
@@ -106,12 +107,12 @@
             <div class="bg-surface rounded-lg shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-hidden border border-border">
                 <!-- Modal Header -->
                 <div class="flex justify-between items-center p-6 border-b border-border">
-                    <h3 id="modal-title" class="text-xl font-bold" style="color: #c0caf5;">Skill Details</h3>
-                    <button id="modal-close" class="text-2xl hover:text-danger" style="color: #9aa5ce;">×</button>
+                    <h3 id="modal-title" class="text-xl font-bold" class="tn-text-main">Skill Details</h3>
+                    <button id="modal-close" class="text-2xl hover:text-danger" class="tn-text-secondary">×</button>
                 </div>
                 
                 <!-- Modal Content -->
-                <div id="modal-content" class="p-6 overflow-y-auto max-h-[70vh]" style="color: #c0caf5;">
+                <div id="modal-content" class="p-6 overflow-y-auto max-h-[70vh]" class="tn-text-main">
                     <!-- Content will be dynamically inserted -->
                 </div>
                 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARDEN - Chat</title>
+    <link rel="stylesheet" href="/assets/css/tokyo-night.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -26,7 +27,8 @@
     </script>
     <style>
         body {
-            background-color: #1a1b26;
+            background-color: var(--bg-main);
+            color: var(--text-main);
         }
         .chat-message {
             animation: fadeIn 0.3s ease-in;
@@ -78,23 +80,23 @@
         <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
-                <h1 class="text-2xl font-bold" style="color: #c0caf5;">ARDEN</h1>
+                <h1 class="text-2xl font-bold tn-text-main">ARDEN</h1>
                 <nav class="hidden md:flex space-x-4">
                     <a href="/chat.html" class="text-primary font-medium">Chat</a>
-                    <a href="/notes.html" class="hover:text-primary" style="color: #9aa5ce;">Notes</a>
-                    <a href="/todos.html" class="hover:text-primary" style="color: #9aa5ce;">TODOs</a>
-                    <a href="/skills.html" class="hover:text-primary" style="color: #9aa5ce;">Skills</a>
-                    <a href="/dashboard.html" class="hover:text-primary" style="color: #9aa5ce;">Dashboard</a>
-                    <a href="/settings.html" class="hover:text-primary" style="color: #9aa5ce;">Settings</a>
+                    <a href="/notes.html" class="hover:text-primary tn-text-secondary">Notes</a>
+                    <a href="/todos.html" class="hover:text-primary tn-text-secondary">TODOs</a>
+                    <a href="/skills.html" class="hover:text-primary tn-text-secondary">Skills</a>
+                    <a href="/dashboard.html" class="hover:text-primary tn-text-secondary">Dashboard</a>
+                    <a href="/settings.html" class="hover:text-primary tn-text-secondary">Settings</a>
                 </nav>
             </div>
             <div class="flex items-center space-x-4">
                 <div id="status-indicator" class="flex items-center space-x-2">
                     <div class="w-2 h-2 bg-accent rounded-full"></div>
-                    <span class="text-sm" style="color: #9aa5ce;">Connected</span>
+                    <span class="text-sm tn-text-secondary">Connected</span>
                 </div>
                 <button id="theme-toggle" class="text-xl hover:opacity-80 transition-opacity" title="Toggle Dark Mode">🌙</button>
-                <button id="logout-button" class="hover:text-danger text-sm" style="color: #9aa5ce;">
+                <button id="logout-button" class="hover:text-danger text-sm tn-text-secondary">
                     Logout
                 </button>
             </div>
@@ -105,10 +107,10 @@
     <main class="max-w-4xl mx-auto px-4 py-6 h-[calc(100vh-80px)] flex flex-col">
         <!-- Chat Header -->
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold" style="color: #c0caf5;">Chat with ARDEN</h2>
+            <h2 class="text-xl font-semibold tn-text-main">Chat with ARDEN</h2>
             <div class="flex items-center space-x-4">
                 <!-- TTS Toggle -->
-                <button id="tts-toggle" class="flex items-center space-x-2 text-sm hover:text-primary transition-colors" style="color: #9aa5ce;">
+                <button id="tts-toggle" class="flex items-center space-x-2 text-sm hover:text-primary transition-colors tn-text-secondary">
                     <svg id="tts-icon-off" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>
@@ -118,7 +120,7 @@
                     </svg>
                     <span id="tts-status">TTS Off</span>
                 </button>
-                <button id="clear-chat" class="text-sm hover:text-danger transition-colors" style="color: #9aa5ce;">
+                <button id="clear-chat" class="text-sm hover:text-danger transition-colors tn-text-secondary">
                     Clear History
                 </button>
             </div>
@@ -129,16 +131,16 @@
             <!-- Messages Area -->
             <div id="messages" class="flex-1 overflow-y-auto p-6 space-y-4">
                 <!-- Welcome Message -->
-                <div class="text-center py-8" style="color: #565f89;">
+                <div class="text-center py-8 tn-text-tertiary">
                     <p class="text-lg">👋 Welcome! Start a conversation with ARDEN.</p>
                     <p class="text-sm mt-2">Try asking about your TODOs, notes, or anything else.</p>
                 </div>
                 
                 <!-- Typing Indicator -->
                 <div id="typing-indicator" class="typing-indicator mr-auto max-w-3xl">
-                    <div class="rounded-lg p-4" style="background-color: #24283b;">
+                    <div class="rounded-lg p-4 tn-bg-surface">
                         <div class="flex items-start justify-between mb-1">
-                            <span class="text-xs font-semibold" style="color: #9aa5ce;">ARDEN</span>
+                            <span class="text-xs font-semibold tn-text-secondary">ARDEN</span>
                         </div>
                         <div class="flex items-center space-x-1">
                             <span class="typing-dot"></span>
@@ -180,7 +182,7 @@
                         type="submit"
                         id="send-button"
                         class="bg-primary hover:bg-opacity-80 font-medium px-6 py-2 rounded-lg transition-colors duration-200 flex items-center"
-                        style="color: #1a1b26;"
+                        class="tn-text-inverse"
                     >
                         <span id="send-text">Send</span>
                         <svg id="send-spinner" class="hidden animate-spin ml-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

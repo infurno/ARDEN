@@ -1,0 +1,125 @@
+/**
+ * Tokyo Night Theme - CSS Custom Properties
+ * 
+ * Official Tokyo Night color palettes using CSS variables
+ * Automatically switches between dark and light mode based on .dark class
+ * 
+ * Source: https://github.com/tokyo-night/tokyo-night-vscode-theme
+ */
+
+:root {
+    /* Tokyo Night Light (Day) - Default */
+    /* Accent Colors */
+    --color-primary: #2959aa;
+    --color-secondary: #5a3e8e;
+    --color-accent: #385f0d;
+    --color-danger: #8c4351;
+    --color-warning: #8f5e15;
+    --color-success: #385f0d;
+    --color-info: #0f4b6e;
+    
+    /* Extended Palette */
+    --color-red: #8c4351;
+    --color-orange: #965027;
+    --color-yellow: #8f5e15;
+    --color-green: #385f0d;
+    --color-teal: #33635c;
+    --color-cyan: #0f4b6e;
+    --color-blue: #2959aa;
+    --color-purple: #5a3e8e;
+    
+    /* Background Colors */
+    --color-background: #d5d6db;
+    --color-surface: #e1e2e7;
+    --color-elevated: #e6e7ed;
+    --color-border: #a8aecb;
+    --color-hover: #cbccd1;
+    
+    /* Text Colors */
+    --color-text-primary: #343b58;
+    --color-text-secondary: #565f89;
+    --color-text-tertiary: #6c6e75;
+    --color-text-inverse: #e6e7ed;
+    
+    /* Semantic UI Colors */
+    --bg-main: var(--color-background);
+    --bg-surface: var(--color-surface);
+    --bg-elevated: var(--color-elevated);
+    --bg-hover: var(--color-hover);
+    
+    --text-main: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-tertiary: var(--color-text-tertiary);
+    
+    --border-main: var(--color-border);
+}
+
+.dark, html.dark {
+    /* Tokyo Night Dark - Dark Mode */
+    /* Accent Colors */
+    --color-primary: #7aa2f7;
+    --color-secondary: #bb9af7;
+    --color-accent: #9ece6a;
+    --color-danger: #f7768e;
+    --color-warning: #e0af68;
+    --color-success: #9ece6a;
+    --color-info: #7dcfff;
+    
+    /* Extended Palette */
+    --color-red: #f7768e;
+    --color-orange: #ff9e64;
+    --color-yellow: #e0af68;
+    --color-green: #9ece6a;
+    --color-teal: #73daca;
+    --color-cyan: #7dcfff;
+    --color-blue: #7aa2f7;
+    --color-purple: #bb9af7;
+    
+    /* Background Colors */
+    --color-background: #1a1b26;
+    --color-surface: #24283b;
+    --color-elevated: #414868;
+    --color-border: #414868;
+    --color-hover: #2f3549;
+    
+    /* Text Colors */
+    --color-text-primary: #c0caf5;
+    --color-text-secondary: #9aa5ce;
+    --color-text-tertiary: #565f89;
+    --color-text-inverse: #1a1b26;
+    
+    /* Semantic UI Colors */
+    --bg-main: var(--color-background);
+    --bg-surface: var(--color-surface);
+    --bg-elevated: var(--color-elevated);
+    --bg-hover: var(--color-hover);
+    
+    --text-main: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-tertiary: var(--color-text-tertiary);
+    
+    --border-main: var(--color-border);
+}
+
+/* Utility Classes for Tokyo Night Theme */
+.tn-bg-main { background-color: var(--bg-main); }
+.tn-bg-surface { background-color: var(--bg-surface); }
+.tn-bg-elevated { background-color: var(--bg-elevated); }
+
+.tn-text-main { color: var(--text-main); }
+.tn-text-secondary { color: var(--text-secondary); }
+.tn-text-tertiary { color: var(--text-tertiary); }
+
+.tn-border { border-color: var(--border-main); }
+
+.tn-primary { color: var(--color-primary); }
+.tn-secondary { color: var(--color-secondary); }
+.tn-accent { color: var(--color-accent); }
+.tn-danger { color: var(--color-danger); }
+.tn-warning { color: var(--color-warning); }
+
+.tn-bg-primary { background-color: var(--color-primary); }
+.tn-bg-secondary { background-color: var(--color-secondary); }
+.tn-bg-accent { background-color: var(--color-accent); }
+.tn-bg-danger { background-color: var(--color-danger); }
+.tn-bg-warning { background-color: var(--color-warning); }

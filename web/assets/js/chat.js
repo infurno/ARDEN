@@ -71,14 +71,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         messageDiv.innerHTML = `
-            <div class="rounded-lg p-4" style="background-color: ${type === 'user' ? '#7aa2f7' : '#24283b'}">
+            <div class="rounded-lg p-4 ${type === 'user' ? 'tn-bg-primary' : 'tn-bg-surface'}">
                 <div class="flex items-start justify-between mb-1">
-                    <span class="text-xs font-semibold" style="color: ${type === 'user' ? '#1a1b26' : '#9aa5ce'}">
+                    <span class="text-xs font-semibold ${type === 'user' ? 'tn-text-inverse' : 'tn-text-secondary'}">
                         ${type === 'user' ? 'You' : 'ARDEN'}
                     </span>
-                    <span class="text-xs" style="color: ${type === 'user' ? '#16161e' : '#565f89'}">${time}</span>
+                    <span class="text-xs ${type === 'user' ? 'tn-text-inverse' : 'tn-text-tertiary'}">${time}</span>
                 </div>
-                <div class="whitespace-pre-wrap break-words" style="color: ${type === 'user' ? '#1a1b26' : '#c0caf5'}">${escapeHtml(content)}</div>
+                <div class="whitespace-pre-wrap break-words ${type === 'user' ? 'tn-text-inverse' : 'tn-text-main'}">${escapeHtml(content)}</div>
             </div>
         `;
         
@@ -182,12 +182,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             ttsIconOff.classList.add('hidden');
             ttsIconOn.classList.remove('hidden');
             ttsStatus.textContent = 'TTS On';
-            ttsToggle.style.color = '#9ece6a'; // Tokyo Night green
+            ttsToggle.classList.add('tn-accent');
+            ttsToggle.classList.remove('tn-text-secondary');
         } else {
             ttsIconOff.classList.remove('hidden');
             ttsIconOn.classList.add('hidden');
             ttsStatus.textContent = 'TTS Off';
-            ttsToggle.style.color = '#9aa5ce'; // Tokyo Night secondary text
+            ttsToggle.classList.remove('tn-accent');
+            ttsToggle.classList.add('tn-text-secondary');
         }
     }
     
@@ -266,7 +268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             await api.clearChat(sessionId);
             messagesContainer.innerHTML = `
-                <div class="text-center py-8" style="color: #565f89;">
+                <div class="text-center py-8 tn-text-tertiary">
                     <p class="text-lg">👋 Welcome! Start a conversation with ARDEN.</p>
                     <p class="text-sm mt-2">Try asking about your TODOs, notes, or anything else.</p>
                 </div>
