@@ -181,6 +181,26 @@ class ArdenAPI {
         return this.request('/analytics/active-sessions');
     }
     
+    async getSkillStats(period = '30d', skillId = null) {
+        const params = new URLSearchParams({ period });
+        if (skillId) params.append('skillId', skillId);
+        return this.request(`/analytics/skills?${params.toString()}`);
+    }
+    
+    async getSkillHistory(skillId = null, limit = 50) {
+        const params = new URLSearchParams({ limit });
+        if (skillId) params.append('skillId', skillId);
+        return this.request(`/analytics/skills/history?${params.toString()}`);
+    }
+    
+    async getSkillTrends(period = '30d') {
+        return this.request(`/analytics/skills/trends?period=${period}`);
+    }
+    
+    async getPopularSkills(limit = 10, period = '30d') {
+        return this.request(`/analytics/skills/popular?limit=${limit}&period=${period}`);
+    }
+    
     /**
      * Skills
      */

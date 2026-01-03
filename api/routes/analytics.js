@@ -115,4 +115,84 @@ router.get('/active-sessions', async (req, res) => {
   }
 });
 
+// GET /api/analytics/skills - Get skill execution statistics
+router.get('/skills', async (req, res) => {
+  try {
+    const { period = '30d', skillId } = req.query;
+    const stats = db.getSkillExecutionStats(skillId, period);
+    
+    res.json({
+      success: true,
+      stats,
+      period
+    });
+  } catch (error) {
+    logger.system.error('Failed to get skill stats', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load skill statistics'
+    });
+  }
+});
+
+// GET /api/analytics/skills/history - Get skill execution history
+router.get('/skills/history', async (req, res) => {
+  try {
+    const { skillId, limit = 50 } = req.query;
+    const history = db.getSkillExecutionHistory(skillId, parseInt(limit));
+    
+    res.json({
+      success: true,
+      history,
+      count: history.length
+    });
+  } catch (error) {
+    logger.system.error('Failed to get skill history', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load skill execution history'
+    });
+  }
+});
+
+// GET /api/analytics/skills/trends - Get skill usage trends
+router.get('/skills/trends', async (req, res) => {
+  try {
+    const { period = '30d' } = req.query;
+    const trends = db.getSkillUsageTrends(period);
+    
+    res.json({
+      success: true,
+      trends,
+      period
+    });
+  } catch (error) {
+    logger.system.error('Failed to get skill trends', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load skill usage trends'
+    });
+  }
+});
+
+// GET /api/analytics/skills/popular - Get most popular skills
+router.get('/skills/popular', async (req, res) => {
+  try {
+    const { limit = 10, period = '30d' } = req.query;
+    const popular = db.getMostPopularSkills(parseInt(limit), period);
+    
+    res.json({
+      success: true,
+      skills: popular,
+      period
+    });
+  } catch (error) {
+    logger.system.error('Failed to get popular skills', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load popular skills'
+    });
+  }
+});
+
 module.exports = router;

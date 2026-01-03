@@ -62,6 +62,21 @@ function initializeSchema() {
     )
   `);
   
+  // Skills execution tracking table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS skill_executions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      skill_id TEXT NOT NULL,
+      session_id TEXT,
+      user_id TEXT NOT NULL,
+      timestamp INTEGER NOT NULL,
+      success INTEGER DEFAULT 1,
+      execution_time_ms INTEGER,
+      error_message TEXT,
+      metadata TEXT
+    )
+  `);
+  
   // Create indexes for better query performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_sessions_expires 
@@ -75,6 +90,15 @@ function initializeSchema() {
     
     CREATE INDEX IF NOT EXISTS idx_chat_user 
     ON chat_messages(user_id, timestamp);
+    
+    CREATE INDEX IF NOT EXISTS idx_skill_executions_skill
+    ON skill_executions(skill_id, timestamp);
+    
+    CREATE INDEX IF NOT EXISTS idx_skill_executions_user
+    ON skill_executions(user_id, timestamp);
+    
+    CREATE INDEX IF NOT EXISTS idx_skill_executions_timestamp
+    ON skill_executions(timestamp);
   `);
   
   logger.system.info('Database schema initialized');
@@ -411,6 +435,203 @@ function getActiveSessions() {
 }
 
 /**
+ * Skills Execution Tracking
+ */
+
+// Record skill execution
+function recordSkillExecution(skillId, userId, sessionId, success, executionTimeMs, errorMessage = null, metadata = {}) {
+  const stmt = db.prepare(`
+    INSERT INTO skill_executions (skill_id, session_id, user_id, timestamp, success, execution_time_ms, error_message, metadata)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  
+  const timestamp = Date.now();
+  const result = stmt.run(
+    skillId,
+    sessionId,
+    userId,
+    timestamp,
+    success ? 1 : 0,
+    executionTimeMs,
+    errorMessage,
+    JSON.stringify(metadata)
+  );
+  
+  logger.system.info('Skill execution recorded', {
+    skillId,
+    userId,
+    success,
+    executionTimeMs,
+    executionId: result.lastInsertRowid
+  });
+  
+  return {
+    id: result.lastInsertRowid,
+    timestamp
+  };
+}
+
+// Get skill execution statistics
+function getSkillExecutionStats(skillId = null, period = '30d') {
+  const periodMs = parsePeriod(period);
+  const since = Date.now() - periodMs;
+  
+  let query;
+  let params;
+  
+  if (skillId) {
+    // Stats for specific skill
+    query = `
+      SELECT 
+        skill_id,
+        COUNT(*) as total_executions,
+        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_executions,
+        SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_executions,
+        AVG(execution_time_ms) as avg_execution_time_ms,
+        MAX(timestamp) as last_execution,
+        MIN(timestamp) as first_execution
+      FROM skill_executions
+      WHERE skill_id = ? AND timestamp > ?
+      GROUP BY skill_id
+    `;
+    params = [skillId, since];
+  } else {
+    // Stats for all skills
+    query = `
+      SELECT 
+        skill_id,
+        COUNT(*) as total_executions,
+        SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_executions,
+        SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed_executions,
+        AVG(execution_time_ms) as avg_execution_time_ms,
+        MAX(timestamp) as last_execution,
+        MIN(timestamp) as first_execution
+      FROM skill_executions
+      WHERE timestamp > ?
+      GROUP BY skill_id
+      ORDER BY total_executions DESC
+    `;
+    params = [since];
+  }
+  
+  const stmt = db.prepare(query);
+  const results = stmt.all(...params);
+  
+  // Calculate success rate and format dates
+  return results.map(row => ({
+    skillId: row.skill_id,
+    totalExecutions: row.total_executions,
+    successfulExecutions: row.successful_executions,
+    failedExecutions: row.failed_executions,
+    successRate: row.total_executions > 0 ? (row.successful_executions / row.total_executions * 100).toFixed(1) : 0,
+    avgExecutionTimeMs: row.avg_execution_time_ms ? Math.round(row.avg_execution_time_ms) : null,
+    lastExecution: row.last_execution,
+    firstExecution: row.first_execution
+  }));
+}
+
+// Get recent skill executions (execution history)
+function getSkillExecutionHistory(skillId = null, limit = 50) {
+  let query;
+  let params;
+  
+  if (skillId) {
+    query = `
+      SELECT 
+        id,
+        skill_id,
+        user_id,
+        session_id,
+        timestamp,
+        success,
+        execution_time_ms,
+        error_message,
+        metadata
+      FROM skill_executions
+      WHERE skill_id = ?
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `;
+    params = [skillId, limit];
+  } else {
+    query = `
+      SELECT 
+        id,
+        skill_id,
+        user_id,
+        session_id,
+        timestamp,
+        success,
+        execution_time_ms,
+        error_message,
+        metadata
+      FROM skill_executions
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `;
+    params = [limit];
+  }
+  
+  const stmt = db.prepare(query);
+  const results = stmt.all(...params);
+  
+  return results.map(row => ({
+    id: row.id,
+    skillId: row.skill_id,
+    userId: row.user_id,
+    sessionId: row.session_id,
+    timestamp: row.timestamp,
+    timestampDate: new Date(row.timestamp).toISOString(),
+    success: Boolean(row.success),
+    executionTimeMs: row.execution_time_ms,
+    errorMessage: row.error_message,
+    metadata: row.metadata ? JSON.parse(row.metadata) : {}
+  }));
+}
+
+// Get skill usage trends over time
+function getSkillUsageTrends(period = '30d') {
+  const periodMs = parsePeriod(period);
+  const since = Date.now() - periodMs;
+  
+  const stmt = db.prepare(`
+    SELECT 
+      DATE(timestamp / 1000, 'unixepoch') as date,
+      skill_id,
+      COUNT(*) as execution_count,
+      SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_count
+    FROM skill_executions
+    WHERE timestamp > ?
+    GROUP BY date, skill_id
+    ORDER BY date ASC, execution_count DESC
+  `);
+  
+  return stmt.all(since);
+}
+
+// Get most popular skills
+function getMostPopularSkills(limit = 10, period = '30d') {
+  const periodMs = parsePeriod(period);
+  const since = Date.now() - periodMs;
+  
+  const stmt = db.prepare(`
+    SELECT 
+      skill_id,
+      COUNT(*) as execution_count,
+      SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful_count,
+      COUNT(DISTINCT user_id) as unique_users,
+      MAX(timestamp) as last_used
+    FROM skill_executions
+    WHERE timestamp > ?
+    GROUP BY skill_id
+    ORDER BY execution_count DESC
+    LIMIT ?
+  `);
+  
+  return stmt.all(since, limit);
+}
+
+/**
  * Periodic cleanup (run every hour)
  */
 setInterval(() => {
@@ -454,5 +675,11 @@ module.exports = {
   getAnalyticsStats,
   getMessageStats,
   getSessionStats,
-  getUsageTrends
+  getUsageTrends,
+  // Skills execution tracking
+  recordSkillExecution,
+  getSkillExecutionStats,
+  getSkillExecutionHistory,
+  getSkillUsageTrends,
+  getMostPopularSkills
 };

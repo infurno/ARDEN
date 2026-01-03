@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadStatus();
     await loadAnalytics();
     await loadActiveSessions();
+    await loadSkillsAnalytics();
     
     // Setup WebSocket listeners for real-time updates
     setupWebSocketListeners();
@@ -32,12 +33,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(loadStatus, 30000);
     setInterval(loadAnalytics, 60000); // Refresh analytics every minute
     setInterval(loadActiveSessions, 30000); // Refresh sessions every 30 seconds
+    setInterval(loadSkillsAnalytics, 60000); // Refresh skills analytics every minute
     
     // Trends period change handler
     const trendsPeriodSelect = document.getElementById('trends-period');
     if (trendsPeriodSelect) {
         trendsPeriodSelect.addEventListener('change', async (e) => {
             await loadTrends(e.target.value);
+        });
+    }
+    
+    // Skills period change handler
+    const skillsPeriodSelect = document.getElementById('skills-period');
+    if (skillsPeriodSelect) {
+        skillsPeriodSelect.addEventListener('change', async (e) => {
+            await loadSkillsAnalytics(e.target.value);
         });
     }
     
@@ -246,6 +256,89 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (minutes < 60) return `${minutes}m ago`;
         if (hours < 24) return `${hours}h ago`;
         return `${days}d ago`;
+    }
+    
+    // Load and render skills analytics
+    async function loadSkillsAnalytics(period = '30d') {
+        try {
+            const response = await api.getSkillStats(period);
+            
+            if (response.success) {
+                renderSkillsAnalytics(response.stats);
+            } else {
+                document.getElementById('skills-analytics').innerHTML = 
+                    '<div class="text-center py-8" style="color: #f7768e;">Failed to load skills analytics</div>';
+            }
+        } catch (error) {
+            console.error('Failed to load skills analytics:', error);
+            document.getElementById('skills-analytics').innerHTML = 
+                '<div class="text-center py-8" style="color: #f7768e;">Error loading skills analytics</div>';
+        }
+    }
+    
+    // Render skills analytics
+    function renderSkillsAnalytics(stats) {
+        const container = document.getElementById('skills-analytics');
+        
+        if (stats.length === 0) {
+            container.innerHTML = '<div class="text-center py-8" style="color: #9aa5ce;">No skill executions yet</div>';
+            return;
+        }
+        
+        let html = '<div class="space-y-4">';
+        
+        stats.forEach(skill => {
+            const successRate = parseFloat(skill.successRate);
+            const successColor = successRate >= 90 ? '#9ece6a' : successRate >= 70 ? '#e0af68' : '#f7768e';
+            const lastUsed = skill.lastExecution ? formatRelativeTime(skill.lastExecution) : 'Never';
+            const avgTime = skill.avgExecutionTimeMs ? `${skill.avgExecutionTimeMs}ms` : 'N/A';
+            
+            html += `
+                <div class="p-4 rounded-lg" style="background: #1a1b26; border: 1px solid #414868;">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h5 class="font-semibold text-lg" style="color: #c0caf5;">${escapeHtml(skill.skillId)}</h5>
+                            <div class="text-xs mt-1" style="color: #565f89;">Last used: ${lastUsed}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold" style="color: #7aa2f7;">${skill.totalExecutions}</div>
+                            <div class="text-xs" style="color: #9aa5ce;">executions</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-3 text-sm">
+                        <div class="text-center p-2 rounded" style="background: #24283b;">
+                            <div class="font-bold" style="color: ${successColor};">${successRate}%</div>
+                            <div class="text-xs" style="color: #9aa5ce;">Success</div>
+                        </div>
+                        <div class="text-center p-2 rounded" style="background: #24283b;">
+                            <div class="font-bold" style="color: #9ece6a;">${skill.successfulExecutions}</div>
+                            <div class="text-xs" style="color: #9aa5ce;">Successful</div>
+                        </div>
+                        <div class="text-center p-2 rounded" style="background: #24283b;">
+                            <div class="font-bold" style="color: #f7768e;">${skill.failedExecutions}</div>
+                            <div class="text-xs" style="color: #9aa5ce;">Failed</div>
+                        </div>
+                    </div>
+                    
+                    ${skill.avgExecutionTimeMs ? `
+                        <div class="mt-3 text-xs" style="color: #9aa5ce;">
+                            Avg execution time: <span style="color: #e0af68;">${avgTime}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+    
+    // Escape HTML helper
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     
     // Load status from API

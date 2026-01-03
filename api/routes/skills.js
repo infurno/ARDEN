@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
 const skillsConfig = require('../services/skills-config');
+const db = require('../services/database');
 
 const ARDEN_ROOT = path.resolve(__dirname, '../..');
 const SKILLS_DIR = path.join(ARDEN_ROOT, 'skills');
@@ -67,21 +68,64 @@ router.get('/:skillId', async (req, res) => {
 
 // POST /api/skills/:skillId/execute - Execute a skill manually
 router.post('/:skillId/execute', async (req, res) => {
+  const startTime = Date.now();
+  const { skillId } = req.params;
+  const { params = {} } = req.body;
+  
   try {
-    const { skillId } = req.params;
-    const { params = {} } = req.body;
+    // Get session info
+    const sessionId = req.session?.id || 'unknown';
+    const userId = req.session?.userId || req.session?.user_id || 'web-user';
     
-    logger.system.info('Manual skill execution requested', { skillId, params });
+    logger.system.info('Manual skill execution requested', { skillId, params, userId });
     
-    // TODO: Implement skill execution based on skill type
-    // For now, return a placeholder
+    // Check if skill exists
+    const skill = await getSkillDetails(skillId);
+    if (!skill) {
+      const executionTime = Date.now() - startTime;
+      db.recordSkillExecution(skillId, userId, sessionId, false, executionTime, 'Skill not found');
+      
+      return res.status(404).json({
+        success: false,
+        error: 'Skill not found'
+      });
+    }
+    
+    // Check if skill is enabled
+    const isEnabled = await skillsConfig.isSkillEnabled(skillId);
+    if (!isEnabled) {
+      const executionTime = Date.now() - startTime;
+      db.recordSkillExecution(skillId, userId, sessionId, false, executionTime, 'Skill is disabled');
+      
+      return res.status(403).json({
+        success: false,
+        error: 'Skill is disabled'
+      });
+    }
+    
+    // TODO: Implement actual skill execution based on skill type
+    // For now, simulate execution
+    await new Promise(resolve => setTimeout(resolve, 100)); // Simulate work
+    
+    const executionTime = Date.now() - startTime;
+    
+    // Record successful execution
+    db.recordSkillExecution(skillId, userId, sessionId, true, executionTime, null, { params });
     
     res.json({
       success: true,
-      message: 'Skill execution not yet implemented',
-      skillId
+      message: 'Skill execution not yet fully implemented (placeholder)',
+      skillId,
+      executionTimeMs: executionTime
     });
   } catch (error) {
+    const executionTime = Date.now() - startTime;
+    const sessionId = req.session?.id || 'unknown';
+    const userId = req.session?.userId || req.session?.user_id || 'web-user';
+    
+    // Record failed execution
+    db.recordSkillExecution(skillId, userId, sessionId, false, executionTime, error.message);
+    
     logger.system.error('Failed to execute skill', { error: error.message });
     res.status(500).json({
       success: false,
