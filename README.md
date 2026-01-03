@@ -10,12 +10,24 @@ Voice-enabled personal AI infrastructure built on Claude Code.
 ├─────────────────────────────────────────────────────────────┤
 │  Phone/iPad/Smart Device                                    │
 │         ↓                                                    │
-│  Voice API Server (api/)                                    │
+│  Voice API Server (Telegram Bot)                            │
 │         ↓                                                    │
-│  Speech-to-Text → ARDEN CLI → Claude Code → TTS            │
+│  Speech-to-Text (Whisper) → AI Provider → TTS              │
 │         ↓                                                    │
 │  Voice Response → Device                                    │
 └─────────────────────────────────────────────────────────────┘
+
+Production Stack (Docker):
+┌────────────────────────────────────────────────────────────┐
+│ Docker Container (NVIDIA GPU enabled)                       │
+│  ├─ Node.js 20 + Telegram Bot                             │
+│  ├─ Python 3.10 + Whisper (GPU accelerated)               │
+│  ├─ FFmpeg for audio processing                           │
+│  └─ Winston structured logging                            │
+│                                                            │
+│ Optional: Ollama Container                                │
+│  └─ Local LLM with GPU acceleration                       │
+└────────────────────────────────────────────────────────────┘
 ```
 
 ## Directory Structure
@@ -45,21 +57,49 @@ Voice-enabled personal AI infrastructure built on Claude Code.
 
 ## Quick Start
 
-### 1. Voice Interaction (Recommended - Telegram Bot)
+### Production Deployment (Docker with GPU Support)
+
+**Recommended for production use with NVIDIA GPU acceleration:**
+
+```bash
+# 1. Prerequisites: Install Docker and NVIDIA Container Toolkit
+# See DEPLOYMENT.md for detailed instructions
+
+# 2. Configure environment
+cp .env.production .env
+nano .env  # Add your TELEGRAM_BOT_TOKEN and API keys
+
+# 3. Build and start services
+make build
+make up
+
+# Or with Ollama for local LLM
+make up-ollama
+
+# 4. View logs
+make logs-f
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
+
+### Development Setup (Local)
+
+#### 1. Voice Interaction (Telegram Bot)
 
 Send voice messages to your ARDEN bot on Telegram:
 ```bash
 cd ~/ARDEN/api
+npm install
 node telegram-bot.js
 ```
 
-### 2. Direct CLI
+#### 2. Direct CLI
 
 ```bash
 arden "What's on my schedule today?"
 ```
 
-### 3. Voice CLI
+#### 3. Voice CLI
 
 ```bash
 arden --voice
