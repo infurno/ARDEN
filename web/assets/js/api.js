@@ -177,6 +177,10 @@ class ArdenAPI {
         return this.request(`/analytics/trends?period=${period}`);
     }
     
+    async getActiveSessions() {
+        return this.request('/analytics/active-sessions');
+    }
+    
     /**
      * Skills
      */

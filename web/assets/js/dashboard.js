@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load initial status
     await loadStatus();
     await loadAnalytics();
+    await loadActiveSessions();
     
     // Setup WebSocket listeners for real-time updates
     setupWebSocketListeners();
@@ -30,12 +31,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Auto-refresh every 30 seconds
     setInterval(loadStatus, 30000);
     setInterval(loadAnalytics, 60000); // Refresh analytics every minute
+    setInterval(loadActiveSessions, 30000); // Refresh sessions every 30 seconds
     
     // Trends period change handler
     const trendsPeriodSelect = document.getElementById('trends-period');
     if (trendsPeriodSelect) {
         trendsPeriodSelect.addEventListener('change', async (e) => {
             await loadTrends(e.target.value);
+        });
+    }
+    
+    // Refresh sessions button
+    const refreshSessionsButton = document.getElementById('refresh-sessions');
+    if (refreshSessionsButton) {
+        refreshSessionsButton.addEventListener('click', async () => {
+            refreshSessionsButton.textContent = 'Refreshing...';
+            refreshSessionsButton.disabled = true;
+            await loadActiveSessions();
+            refreshSessionsButton.textContent = 'Refresh';
+            refreshSessionsButton.disabled = false;
         });
     }
     
@@ -125,6 +139,113 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         html += '</div>';
         container.innerHTML = html;
+    }
+    
+    // Load and render active sessions
+    async function loadActiveSessions() {
+        try {
+            const response = await api.getActiveSessions();
+            
+            if (response.success) {
+                renderActiveSessions(response.sessions, response.webSocketConnections);
+            } else {
+                document.getElementById('sessions-list').innerHTML = 
+                    '<div class="text-center py-8" style="color: #f7768e;">Failed to load sessions</div>';
+            }
+        } catch (error) {
+            console.error('Failed to load active sessions:', error);
+            document.getElementById('sessions-list').innerHTML = 
+                '<div class="text-center py-8" style="color: #f7768e;">Error loading sessions</div>';
+        }
+    }
+    
+    // Render active sessions list
+    function renderActiveSessions(sessions, wsCount) {
+        const container = document.getElementById('sessions-list');
+        
+        if (sessions.length === 0) {
+            container.innerHTML = '<div class="text-center py-8" style="color: #9aa5ce;">No active sessions</div>';
+            return;
+        }
+        
+        let html = `
+            <div class="mb-4 text-sm" style="color: #9aa5ce;">
+                <span style="color: #c0caf5; font-weight: 600;">${sessions.length}</span> active session${sessions.length !== 1 ? 's' : ''} 
+                | <span style="color: #9ece6a; font-weight: 600;">${wsCount}</span> WebSocket connection${wsCount !== 1 ? 's' : ''}
+            </div>
+            <div class="space-y-3 max-h-96 overflow-y-auto">
+        `;
+        
+        sessions.forEach(session => {
+            const idleBadge = session.isIdle 
+                ? '<span class="text-xs px-2 py-0.5 rounded" style="background: #414868; color: #9aa5ce;">Idle</span>'
+                : '<span class="text-xs px-2 py-0.5 rounded" style="background: #9ece6a; color: #1a1b26;">Active</span>';
+            
+            const wsBadge = session.hasWebSocket
+                ? '<span class="text-xs px-2 py-0.5 rounded" style="background: #7aa2f7; color: #1a1b26;">🔌 Connected</span>'
+                : '';
+            
+            const sourceBadge = {
+                'web': '<span class="text-xs px-2 py-0.5 rounded" style="background: #bb9af7; color: #1a1b26;">🌐 Web</span>',
+                'telegram': '<span class="text-xs px-2 py-0.5 rounded" style="background: #7dcfff; color: #1a1b26;">✈️ Telegram</span>',
+                'api': '<span class="text-xs px-2 py-0.5 rounded" style="background: #e0af68; color: #1a1b26;">🔧 API</span>'
+            }[session.source] || '<span class="text-xs px-2 py-0.5 rounded" style="background: #565f89; color: #c0caf5;">❓ Unknown</span>';
+            
+            const authBadge = session.authenticated
+                ? '<span class="text-xs">🔐</span>'
+                : '<span class="text-xs">🔓</span>';
+            
+            const sessionIdShort = session.sessionId.substring(0, 16) + '...';
+            const lastActivityTime = formatRelativeTime(session.lastActivity);
+            const durationText = session.durationMinutes < 1 ? '<1 min' : `${session.durationMinutes} min`;
+            
+            html += `
+                <div class="p-4 rounded-lg" style="background: #1a1b26; border: 1px solid #414868;">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            ${authBadge}
+                            <span class="font-mono text-sm" style="color: #c0caf5;" title="${session.sessionId}">${sessionIdShort}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${idleBadge}
+                        </div>
+                    </div>
+                    <div class="space-y-1 text-xs" style="color: #9aa5ce;">
+                        <div class="flex items-center space-x-2">
+                            <span>User:</span>
+                            <span style="color: #c0caf5;">${session.userId}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${sourceBadge}
+                            ${wsBadge}
+                        </div>
+                        <div class="flex items-center justify-between mt-2">
+                            <span>Duration: <span style="color: #e0af68;">${durationText}</span></span>
+                            <span>Last seen: <span style="color: #7aa2f7;">${lastActivityTime}</span></span>
+                        </div>
+                        ${session.idleMinutes > 0 ? `<div style="color: #565f89;">Idle: ${session.idleMinutes} min</div>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+    
+    // Format relative time
+    function formatRelativeTime(timestamp) {
+        const now = Date.now();
+        const diff = now - timestamp;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        
+        if (seconds < 60) return 'just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        return `${days}d ago`;
     }
     
     // Load status from API

@@ -6,6 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../services/database');
+const wsService = require('../services/websocket');
 const logger = require('../utils/logger');
 
 // GET /api/analytics - Get analytics overview
@@ -78,6 +79,38 @@ router.get('/trends', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to load usage trends'
+    });
+  }
+});
+
+// GET /api/analytics/active-sessions - Get active sessions with details
+router.get('/active-sessions', async (req, res) => {
+  try {
+    const sessions = db.getActiveSessions();
+    const wsConnections = wsService.getActiveConnections();
+    
+    // Merge WebSocket connection info with session data
+    const sessionsWithWs = sessions.map(session => {
+      const wsConnection = wsConnections.find(ws => ws.sessionId === session.sessionId);
+      return {
+        ...session,
+        hasWebSocket: !!wsConnection,
+        wsConnectedAt: wsConnection?.connectedAt || null,
+        wsConnectedMinutes: wsConnection?.connectedMinutes || null
+      };
+    });
+    
+    res.json({
+      success: true,
+      sessions: sessionsWithWs,
+      totalSessions: sessionsWithWs.length,
+      webSocketConnections: wsConnections.length
+    });
+  } catch (error) {
+    logger.system.error('Failed to get active sessions', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load active sessions'
     });
   }
 });

@@ -346,6 +346,71 @@ function parsePeriod(period) {
 }
 
 /**
+ * Get all active sessions with details
+ */
+function getActiveSessions() {
+  const stmt = db.prepare(`
+    SELECT 
+      session_id,
+      user_id,
+      authenticated,
+      created_at,
+      expires_at,
+      last_activity,
+      data
+    FROM sessions
+    WHERE expires_at > ?
+    ORDER BY last_activity DESC
+  `);
+  
+  const sessions = stmt.all(Date.now());
+  
+  // Parse session data and calculate activity
+  return sessions.map(session => {
+    const sessionData = session.data ? JSON.parse(session.data) : {};
+    const now = Date.now();
+    const createdDate = new Date(session.created_at);
+    const lastActivityDate = new Date(session.last_activity);
+    const expiresDate = new Date(session.expires_at);
+    
+    // Calculate session duration
+    const durationMs = session.last_activity - session.created_at;
+    const durationMinutes = Math.floor(durationMs / 60000);
+    
+    // Determine session source/type
+    let source = 'web';
+    if (sessionData.source) {
+      source = sessionData.source;
+    } else if (session.user_id && session.user_id.includes('telegram')) {
+      source = 'telegram';
+    }
+    
+    // Check if session is idle
+    const idleMs = now - session.last_activity;
+    const idleMinutes = Math.floor(idleMs / 60000);
+    const isIdle = idleMs > 5 * 60 * 1000; // Idle if no activity for 5 minutes
+    
+    return {
+      sessionId: session.session_id,
+      userId: session.user_id,
+      authenticated: Boolean(session.authenticated),
+      source,
+      createdAt: session.created_at,
+      createdDate: createdDate.toISOString(),
+      lastActivity: session.last_activity,
+      lastActivityDate: lastActivityDate.toISOString(),
+      expiresAt: session.expires_at,
+      expiresDate: expiresDate.toISOString(),
+      durationMinutes,
+      idleMinutes,
+      isIdle,
+      ipAddress: sessionData.ipAddress || null,
+      userAgent: sessionData.userAgent || null
+    };
+  });
+}
+
+/**
  * Periodic cleanup (run every hour)
  */
 setInterval(() => {
@@ -377,6 +442,7 @@ module.exports = {
   deleteSession,
   cleanupExpiredSessions,
   getUserSessions,
+  getActiveSessions,
   // Chat methods
   saveChatMessage,
   getChatHistory,

@@ -9,7 +9,7 @@ const logger = require('../utils/logger');
 class WebSocketService {
   constructor() {
     this.wss = null;
-    this.clients = new Map(); // sessionId -> WebSocket connection
+    this.clients = new Map(); // sessionId -> { ws, userId, connectedAt, clientId }
   }
 
   /**
@@ -49,7 +49,12 @@ class WebSocketService {
           // Support both data.sessionId and root sessionId
           sessionId = message.data?.sessionId || message.sessionId;
           userId = message.data?.userId || message.userId || 'unknown';
-          this.clients.set(sessionId, ws);
+          this.clients.set(sessionId, {
+            ws,
+            userId,
+            clientId,
+            connectedAt: Date.now()
+          });
           logger.system.info('WebSocket authenticated', { clientId, sessionId, userId });
         }
       } catch (error) {
@@ -142,9 +147,9 @@ class WebSocketService {
    * Send message to client by session ID
    */
   sendToSession(sessionId, data) {
-    const ws = this.clients.get(sessionId);
-    if (ws) {
-      this.sendToClient(ws, data);
+    const clientInfo = this.clients.get(sessionId);
+    if (clientInfo && clientInfo.ws) {
+      this.sendToClient(clientInfo.ws, data);
       return true;
     }
     return false;
@@ -256,6 +261,28 @@ class WebSocketService {
       authenticatedConnections: this.clients.size,
       uptime: process.uptime()
     };
+  }
+
+  /**
+   * Get active WebSocket connections with details
+   */
+  getActiveConnections() {
+    const connections = [];
+    this.clients.forEach((clientInfo, sessionId) => {
+      const now = Date.now();
+      const connectedDuration = now - clientInfo.connectedAt;
+      const connectedMinutes = Math.floor(connectedDuration / 60000);
+      
+      connections.push({
+        sessionId,
+        userId: clientInfo.userId,
+        clientId: clientInfo.clientId,
+        connectedAt: clientInfo.connectedAt,
+        connectedMinutes,
+        isOpen: clientInfo.ws.readyState === 1 // WebSocket.OPEN
+      });
+    });
+    return connections;
   }
 
   /**
