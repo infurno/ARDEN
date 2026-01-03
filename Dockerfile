@@ -44,7 +44,6 @@ WORKDIR /app
 
 # Copy package files first for better caching
 COPY api/package*.json ./api/
-COPY package*.json ./
 
 # Install Node.js dependencies
 RUN cd api && npm ci --only=production

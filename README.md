@@ -57,9 +57,45 @@ Production Stack (Docker):
 
 ## Quick Start
 
-### Production Deployment (Docker with GPU Support)
+### Native Setup (Recommended)
 
-**Recommended for production use with NVIDIA GPU acceleration:**
+**Run ARDEN natively on your system for best performance:**
+
+```bash
+# 1. Configure environment
+cp .env.production .env
+nano .env  # Add your TELEGRAM_BOT_TOKEN and API keys
+
+# 2. Install dependencies (if not already done)
+cd ~/ARDEN/api
+npm install
+
+# 3. Start ARDEN
+cd ~/ARDEN
+./scripts/start.sh
+
+# 4. Check status
+./scripts/status.sh
+
+# 5. Follow logs
+tail -f api/logs/arden.log
+
+# Stop ARDEN
+./scripts/stop.sh
+
+# Restart ARDEN
+./scripts/restart.sh
+```
+
+**Prerequisites:**
+- Node.js 18+ (tested with v25.2.1)
+- Python 3.10+ with virtual environment
+- FFmpeg for audio processing
+- NVIDIA GPU with drivers (optional, for GPU-accelerated Whisper)
+
+### Docker Deployment (Alternative)
+
+**For containerized deployment with NVIDIA GPU acceleration:**
 
 ```bash
 # 1. Prerequisites: Install Docker and NVIDIA Container Toolkit
@@ -81,17 +117,6 @@ make logs-f
 ```
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
-
-### Development Setup (Local)
-
-#### 1. Voice Interaction (Telegram Bot)
-
-Send voice messages to your ARDEN bot on Telegram:
-```bash
-cd ~/ARDEN/api
-npm install
-node telegram-bot.js
-```
 
 #### 2. Direct CLI
 

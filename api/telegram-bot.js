@@ -65,7 +65,13 @@ if (AI_PROVIDER === 'openai' && !OPENAI_API_KEY) {
 
 // Validate configuration on startup
 logger.system.info('Validating configuration...');
-const configValidation = validateConfig();
+let configValidation;
+try {
+  validateConfig(config);
+  configValidation = { valid: true, errors: [], warnings: [] };
+} catch (error) {
+  configValidation = { valid: false, errors: [error.message], warnings: [] };
+}
 
 if (!configValidation.valid) {
   logger.system.error('Configuration validation failed', { 
@@ -87,7 +93,7 @@ if (!configValidation.valid) {
 }
 
 // Log warnings if any
-if (configValidation.warnings.length > 0) {
+if (configValidation.warnings && configValidation.warnings.length > 0) {
   configValidation.warnings.forEach(warning => {
     logger.system.warn(`Config warning: ${warning}`);
   });
@@ -95,7 +101,7 @@ if (configValidation.warnings.length > 0) {
 
 logger.system.info('Configuration validation passed', { 
   errors: 0,
-  warnings: configValidation.warnings.length 
+  warnings: configValidation.warnings ? configValidation.warnings.length : 0
 });
 
 // Initialize bot

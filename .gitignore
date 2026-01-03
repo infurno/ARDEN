@@ -79,6 +79,9 @@ tmp/
 temp/
 *.tmp
 
+# Process ID file
+.arden.pid
+
 # macOS specific
 .AppleDouble
 .LSOverride

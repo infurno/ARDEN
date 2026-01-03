@@ -72,4 +72,44 @@ class RateLimiter {
   }
 }
 
+/**
+ * Helper function for simple rate limiting
+ * @param {number|string} userId - User identifier
+ * @param {Map} rateLimitMap - Map to store rate limit data
+ * @param {number} windowMs - Time window in milliseconds
+ * @param {number} maxRequests - Maximum requests per window
+ * @returns {Object} - { allowed: boolean, remaining: number, waitTime?: number }
+ */
+function checkRateLimit(userId, rateLimitMap, windowMs = 60000, maxRequests = 10) {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+
+  // If no record or window expired, create new record
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(userId, {
+      count: 1,
+      resetTime: now + windowMs
+    });
+    return { allowed: true, remaining: maxRequests - 1 };
+  }
+
+  // Check if limit exceeded
+  if (userLimit.count >= maxRequests) {
+    const waitTime = Math.ceil((userLimit.resetTime - now) / 1000);
+    return {
+      allowed: false,
+      remaining: 0,
+      waitTime
+    };
+  }
+
+  // Increment counter
+  userLimit.count++;
+  return {
+    allowed: true,
+    remaining: maxRequests - userLimit.count
+  };
+}
+
 module.exports = RateLimiter;
+module.exports.checkRateLimit = checkRateLimit;

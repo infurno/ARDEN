@@ -87,6 +87,28 @@ const logger = winston.createLogger({
  * Log voice processing events
  */
 logger.voice = {
+  info: (message, meta = {}) => {
+    logger.info(message, {
+      event: 'voice_info',
+      ...meta
+    });
+  },
+  
+  warn: (message, meta = {}) => {
+    logger.warn(message, {
+      event: 'voice_warn',
+      ...meta
+    });
+  },
+  
+  error: (message, meta = {}) => {
+    const errorMessage = typeof message === 'object' ? message.message : message;
+    logger.error(errorMessage || 'Voice processing error', {
+      event: 'voice_error',
+      ...meta
+    });
+  },
+  
   transcribe: (userId, duration, provider) => {
     logger.info('Voice transcription', { 
       event: 'voice_transcribe',
@@ -104,21 +126,27 @@ logger.voice = {
       provider
     });
   },
-  
-  error: (userId, error, provider) => {
-    logger.error('Voice processing error', {
-      event: 'voice_error',
-      userId,
-      error: error.message,
-      provider
-    });
-  },
 };
 
 /**
  * Log AI provider interactions
  */
 logger.ai = {
+  info: (message, meta = {}) => {
+    logger.info(message, {
+      event: 'ai_info',
+      ...meta
+    });
+  },
+  
+  error: (message, meta = {}) => {
+    const errorMessage = typeof message === 'object' ? message.message : message;
+    logger.error(errorMessage || 'AI error', {
+      event: 'ai_error',
+      ...meta
+    });
+  },
+  
   request: (userId, provider, model, promptLength) => {
     logger.info('AI request', {
       event: 'ai_request',
@@ -138,21 +166,26 @@ logger.ai = {
       duration
     });
   },
-  
-  error: (userId, provider, error) => {
-    logger.error('AI provider error', {
-      event: 'ai_error',
-      userId,
-      provider,
-      error: error.message
-    });
-  },
 };
 
 /**
  * Log rate limiting events
  */
 logger.rateLimit = {
+  info: (message, meta = {}) => {
+    logger.info(message, {
+      event: 'rate_limit_info',
+      ...meta
+    });
+  },
+  
+  warn: (message, meta = {}) => {
+    logger.warn(message, {
+      event: 'rate_limit_warn',
+      ...meta
+    });
+  },
+  
   allowed: (userId, remaining) => {
     logger.debug('Rate limit check passed', {
       event: 'rate_limit_allowed',
@@ -174,6 +207,20 @@ logger.rateLimit = {
  * Log user interactions
  */
 logger.user = {
+  info: (message, meta = {}) => {
+    logger.info(message, {
+      event: 'user_info',
+      ...meta
+    });
+  },
+  
+  error: (message, meta = {}) => {
+    logger.error(message, {
+      event: 'user_error',
+      ...meta
+    });
+  },
+  
   message: (userId, username, type) => {
     logger.info('User message received', {
       event: 'user_message',
@@ -196,6 +243,30 @@ logger.user = {
  * Log system events
  */
 logger.system = {
+  info: (message, meta = {}) => {
+    logger.info(message, {
+      event: 'system_info',
+      ...meta
+    });
+  },
+  
+  warn: (message, meta = {}) => {
+    logger.warn(message, {
+      event: 'system_warn',
+      ...meta
+    });
+  },
+  
+  error: (message, meta = {}) => {
+    const errorObj = typeof message === 'object' ? message : { message };
+    logger.error(errorObj.message || 'System error', {
+      event: 'system_error',
+      error: errorObj.message,
+      stack: errorObj.stack,
+      ...meta
+    });
+  },
+  
   startup: (config) => {
     logger.info('ARDEN bot starting', {
       event: 'system_startup',
@@ -209,14 +280,6 @@ logger.system = {
   ready: () => {
     logger.info('ARDEN bot ready', {
       event: 'system_ready'
-    });
-  },
-  
-  error: (error) => {
-    logger.error('System error', {
-      event: 'system_error',
-      error: error.message,
-      stack: error.stack
     });
   },
 };
