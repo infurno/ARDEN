@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARDEN - Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7aa2f7',
+                        secondary: '#bb9af7',
+                        accent: '#9ece6a',
+                        danger: '#f7768e',
+                        warning: '#e0af68',
+                        background: '#1a1b26',
+                        surface: '#24283b',
+                        border: '#414868',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #1a1b26;
+        }
+        .section-header {
+            color: #7aa2f7;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #414868;
+        }
+        .form-label {
+            color: #9aa5ce;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .form-input, .form-select, .form-textarea {
+            background-color: #1a1b26;
+            border: 1px solid #414868;
+            color: #c0caf5;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            width: 100%;
+            font-size: 0.875rem;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #7aa2f7;
+            ring: 1px;
+            ring-color: #7aa2f7;
+        }
+        .form-checkbox {
+            background-color: #1a1b26;
+            border: 1px solid #414868;
+            color: #7aa2f7;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.25rem;
+        }
+        .save-notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            background: #24283b;
+            border: 1px solid #414868;
+            color: #c0caf5;
+            display: none;
+            z-index: 1000;
+        }
+        .save-notification.success {
+            border-color: #9ece6a;
+            background: #24283b;
+        }
+        .save-notification.error {
+            border-color: #f7768e;
+            background: #24283b;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-background">
+    <!-- Header -->
+    <header class="bg-surface border-b border-border">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
+                <h1 class="text-2xl font-bold" style="color: #c0caf5;">ARDEN</h1>
+                <nav class="hidden md:flex space-x-4">
+                    <a href="/chat.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Chat</a>
+                    <a href="/notes.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Notes</a>
+                    <a href="/todos.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">TODOs</a>
+                    <a href="/skills.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Skills</a>
+                    <a href="/dashboard.html" class="hover:text-primary" style="color: #9aa5ce; text-decoration: none;">Dashboard</a>
+                    <a href="/settings.html" class="text-primary font-medium" style="text-decoration: none;">Settings</a>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="logout-button" class="hover:text-danger text-sm" style="color: #9aa5ce;">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Save Notification -->
+    <div id="save-notification" class="save-notification">
+        <span id="notification-message"></span>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-bold" style="color: #c0caf5;">Settings</h2>
+            <div class="space-x-3">
+                <button id="reset-button" class="px-4 py-2 rounded hover:opacity-90 text-sm" style="background: #414868; color: #c0caf5;">
+                    Reset
+                </button>
+                <button id="save-button" class="px-4 py-2 rounded hover:opacity-90 text-sm" style="background: #7aa2f7; color: #1a1b26; font-weight: 500;">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+
+        <form id="settings-form">
+            <!-- Voice Settings -->
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border mb-6">
+                <h3 class="section-header">Voice Configuration</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="voice-enabled" name="voice.enabled" class="form-checkbox mr-2">
+                            Voice Enabled
+                        </label>
+                    </div>
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="voice-notifications" name="voice.notifications" class="form-checkbox mr-2">
+                            Voice Notifications
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label" for="stt-provider">Speech-to-Text Provider</label>
+                        <select id="stt-provider" name="voice.stt_provider" class="form-select">
+                            <option value="local-whisper">Local Whisper</option>
+                            <option value="openai-whisper">OpenAI Whisper</option>
+                            <option value="google">Google STT</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="stt-model">STT Model</label>
+                        <select id="stt-model" name="voice.stt_config.model" class="form-select">
+                            <option value="tiny">Tiny</option>
+                            <option value="base">Base</option>
+                            <option value="small">Small</option>
+                            <option value="medium">Medium</option>
+                            <option value="large">Large</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label" for="tts-provider">Text-to-Speech Provider</label>
+                        <select id="tts-provider" name="voice.tts_provider" class="form-select">
+                            <option value="edge-tts">Edge TTS</option>
+                            <option value="piper">Piper TTS</option>
+                            <option value="openai">OpenAI TTS</option>
+                            <option value="google">Google TTS</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="tts-voice">TTS Voice</label>
+                        <input type="text" id="tts-voice" name="voice.tts_config.voice" class="form-input" placeholder="en-US-BrianNeural">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label" for="wake-word">Wake Word</label>
+                    <input type="text" id="wake-word" name="voice.wake_word" class="form-input" placeholder="Hey ARDEN">
+                </div>
+            </div>
+
+            <!-- API Settings -->
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border mb-6">
+                <h3 class="section-header">API Configuration</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="api-enabled" name="api.enabled" class="form-checkbox mr-2">
+                            API Enabled
+                        </label>
+                    </div>
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="api-cors" name="api.cors_enabled" class="form-checkbox mr-2">
+                            CORS Enabled
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label" for="api-port">Port</label>
+                        <input type="number" id="api-port" name="api.port" class="form-input" placeholder="3000">
+                    </div>
+                    <div>
+                        <label class="form-label" for="api-host">Host</label>
+                        <input type="text" id="api-host" name="api.host" class="form-input" placeholder="0.0.0.0">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label" for="rate-limit-window">Rate Limit Window (ms)</label>
+                        <input type="number" id="rate-limit-window" name="api.rate_limit.window_ms" class="form-input" placeholder="900000">
+                    </div>
+                    <div>
+                        <label class="form-label" for="rate-limit-max">Max Requests</label>
+                        <input type="number" id="rate-limit-max" name="api.rate_limit.max_requests" class="form-input" placeholder="100">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Telegram Settings -->
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border mb-6">
+                <h3 class="section-header">Telegram Configuration</h3>
+                
+                <div class="mb-4">
+                    <label class="form-label flex items-center">
+                        <input type="checkbox" id="telegram-enabled" name="telegram.enabled" class="form-checkbox mr-2">
+                        Telegram Bot Enabled
+                    </label>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="telegram-allowed-users">Allowed User IDs (comma-separated)</label>
+                    <input type="text" id="telegram-allowed-users" name="telegram.allowed_users" class="form-input" placeholder="123456789,987654321">
+                    <p class="text-xs mt-1" style="color: #565f89;">Leave empty to allow all users</p>
+                </div>
+            </div>
+
+            <!-- Context Settings -->
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border mb-6">
+                <h3 class="section-header">Context Configuration</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="context-auto-load" name="context.auto_load_skills" class="form-checkbox mr-2">
+                            Auto-load Skills
+                        </label>
+                    </div>
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="context-history" name="context.history_enabled" class="form-checkbox mr-2">
+                            History Enabled
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label" for="context-directories">Context Directories (one per line)</label>
+                    <textarea id="context-directories" name="context.directories" rows="4" class="form-textarea" placeholder="~/ARDEN/context&#10;~/Notes&#10;~/Documents"></textarea>
+                </div>
+            </div>
+
+            <!-- Security Settings -->
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border mb-6">
+                <h3 class="section-header">Security Configuration</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="security-audit" name="security.audit_logging" class="form-checkbox mr-2">
+                            Audit Logging
+                        </label>
+                    </div>
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="security-validation" name="security.command_validation" class="form-checkbox mr-2">
+                            Command Validation
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="security-blocked">Blocked Commands (one per line)</label>
+                    <textarea id="security-blocked" name="security.blocked_commands" rows="3" class="form-textarea" placeholder="rm -rf /&#10;dd if="></textarea>
+                </div>
+            </div>
+
+            <!-- Hooks Settings -->
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border mb-6">
+                <h3 class="section-header">Hooks Configuration</h3>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="hook-session-start" name="hooks.session_start" class="form-checkbox mr-2">
+                            Session Start
+                        </label>
+                    </div>
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="hook-pre-tool" name="hooks.pre_tool_use" class="form-checkbox mr-2">
+                            Pre Tool Use
+                        </label>
+                    </div>
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="hook-post-tool" name="hooks.post_tool_use" class="form-checkbox mr-2">
+                            Post Tool Use
+                        </label>
+                    </div>
+                    <div>
+                        <label class="form-label flex items-center">
+                            <input type="checkbox" id="hook-stop" name="hooks.stop" class="form-checkbox mr-2">
+                            Stop
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Routines Settings -->
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border mb-6">
+                <h3 class="section-header">Routines Configuration</h3>
+                
+                <div class="mb-6">
+                    <h4 class="text-sm font-semibold mb-3" style="color: #c0caf5;">Morning Briefing</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="form-label flex items-center">
+                                <input type="checkbox" id="routine-morning-enabled" name="routines.morning_briefing.enabled" class="form-checkbox mr-2">
+                                Enabled
+                            </label>
+                        </div>
+                        <div>
+                            <label class="form-label" for="routine-morning-time">Time</label>
+                            <input type="time" id="routine-morning-time" name="routines.morning_briefing.time" class="form-input">
+                        </div>
+                        <div>
+                            <label class="form-label" for="routine-morning-agent">Agent</label>
+                            <select id="routine-morning-agent" name="routines.morning_briefing.agent" class="form-select">
+                                <option value="assistant">Assistant</option>
+                                <option value="strategist">Strategist</option>
+                                <option value="researcher">Researcher</option>
+                                <option value="engineer">Engineer</option>
+                                <option value="analyst">Analyst</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-sm font-semibold mb-3" style="color: #c0caf5;">Evening Review</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="form-label flex items-center">
+                                <input type="checkbox" id="routine-evening-enabled" name="routines.evening_review.enabled" class="form-checkbox mr-2">
+                                Enabled
+                            </label>
+                        </div>
+                        <div>
+                            <label class="form-label" for="routine-evening-time">Time</label>
+                            <input type="time" id="routine-evening-time" name="routines.evening_review.time" class="form-input">
+                        </div>
+                        <div>
+                            <label class="form-label" for="routine-evening-agent">Agent</label>
+                            <select id="routine-evening-agent" name="routines.evening_review.agent" class="form-select">
+                                <option value="analyst">Analyst</option>
+                                <option value="assistant">Assistant</option>
+                                <option value="strategist">Strategist</option>
+                                <option value="researcher">Researcher</option>
+                                <option value="engineer">Engineer</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Info -->
+        <div class="bg-surface rounded-lg shadow-lg p-4 border border-border mb-6" style="border-color: #e0af68;">
+            <p class="text-sm" style="color: #9aa5ce;">
+                <strong style="color: #e0af68;">Note:</strong> Changes to port, host, or other server settings may require restarting the ARDEN web server to take effect.
+            </p>
+        </div>
+    </main>
+
+    <script src="/assets/js/api.js?v=2"></script>
+    <script src="/assets/js/settings.js?v=1"></script>
+</body>
+</html>

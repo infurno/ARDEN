@@ -97,3 +97,4 @@ temp/
 # Web server process ID file
 .arden-web.pid
 data/
+config/*.backup.*

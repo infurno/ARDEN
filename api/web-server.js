@@ -22,6 +22,7 @@ const notesRoutes = require('./routes/notes');
 const todosRoutes = require('./routes/todos');
 const analyticsRoutes = require('./routes/analytics');
 const skillsRoutes = require('./routes/skills');
+const settingsRoutes = require('./routes/settings');
 
 // Import middleware
 const { requireAuth } = require('./middleware/auth');
@@ -93,6 +94,7 @@ app.use('/api/notes', requireAuth, notesRoutes);
 app.use('/api/todos', requireAuth, todosRoutes);
 app.use('/api/analytics', requireAuth, analyticsRoutes);
 app.use('/api/skills', requireAuth, skillsRoutes);
+app.use('/api/settings', requireAuth, settingsRoutes);
 
 // Root redirect
 app.get('/', (req, res) => {
