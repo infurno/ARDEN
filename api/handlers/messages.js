@@ -36,6 +36,32 @@ function isAuthorized(userId) {
 }
 
 /**
+ * Escape special characters for Telegram Markdown
+ */
+function escapeMarkdown(text) {
+  // Escape special Markdown characters for Telegram
+  return text
+    .replace(/\*/g, '\\*')
+    .replace(/_/g, '\\_')
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/~/g, '\\~')
+    .replace(/`/g, '\\`')
+    .replace(/>/g, '\\>')
+    .replace(/#/g, '\\#')
+    .replace(/\+/g, '\\+')
+    .replace(/-/g, '\\-')
+    .replace(/=/g, '\\=')
+    .replace(/\|/g, '\\|')
+    .replace(/\{/g, '\\{')
+    .replace(/\}/g, '\\}')
+    .replace(/\./g, '\\.')
+    .replace(/!/g, '\\!');
+}
+
+/**
  * Handle text message
  */
 async function handleTextMessage(bot, msg, prompt) {
@@ -55,9 +81,9 @@ async function handleTextMessage(bot, msg, prompt) {
     // Log interaction
     await logInteraction(userId, username, prompt, ardenResponse);
 
-    // Send text response
+    // Send text response without Markdown parsing to avoid parsing errors
+    // Plain text is more reliable for AI-generated responses
     await bot.sendMessage(chatId, ardenResponse, {
-      parse_mode: 'Markdown',
       disable_web_page_preview: true
     });
 

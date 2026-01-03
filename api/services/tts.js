@@ -82,9 +82,26 @@ async function ttsElevenLabs(text) {
 async function ttsEdge(text) {
   const voice = config.voice.tts_config.voice || 'en-US-AriaNeural';
   const outputPath = path.join(RESPONSE_DIR, `response_${Date.now()}.mp3`);
-  const edgeTtsPath = path.join(ARDEN_ROOT, 'venv/bin/edge-tts');
+  
+  // Try multiple possible locations for edge-tts
+  const possiblePaths = [
+    path.join(ARDEN_ROOT, 'venv/bin/edge-tts'),
+    path.join(process.env.HOME, '.local/bin/edge-tts'),
+    'edge-tts' // Use PATH
+  ];
+  
+  let edgeTtsPath = 'edge-tts'; // Default to PATH
+  for (const testPath of possiblePaths) {
+    try {
+      await fs.access(testPath);
+      edgeTtsPath = testPath;
+      break;
+    } catch (err) {
+      // Try next path
+    }
+  }
 
-  logger.voice.info('Using Edge TTS', { voice, textLength: text.length });
+  logger.voice.info('Using Edge TTS', { voice, textLength: text.length, path: edgeTtsPath });
 
   return new Promise((resolve, reject) => {
     const command = `"${edgeTtsPath}" --voice "${voice}" --text "${text.replace(/"/g, '\\"')}" --write-media "${outputPath}"`;
@@ -92,7 +109,7 @@ async function ttsEdge(text) {
     exec(command, (error) => {
       if (error) {
         logger.voice.error('Edge TTS error', { error: error.message });
-        reject(new Error('Edge TTS failed. Make sure it is installed in venv.'));
+        reject(new Error('Edge TTS failed. Make sure it is installed (pip install edge-tts).'));
         return;
       }
       logger.voice.info('Edge TTS successful', { outputPath });

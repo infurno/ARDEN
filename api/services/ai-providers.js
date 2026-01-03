@@ -12,6 +12,7 @@ const { exec } = require('child_process');
 const path = require('path');
 const axios = require('axios');
 const logger = require('../utils/logger');
+const { getContextForPrompt } = require('./context-loader');
 
 // Ensure we're working from the correct directory
 const ARDEN_ROOT = path.resolve(__dirname, '../..');
@@ -24,8 +25,8 @@ const LMSTUDIO_URL = process.env.LMSTUDIO_URL || 'http://localhost:1234';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// System prompt template for tool-enabled providers
-const SYSTEM_PROMPT = `You are ARDEN (AI Routine Daily Engagement Nexus), a helpful AI assistant.
+// System prompt template for tool-enabled providers (base version - will be enhanced with context)
+const BASE_SYSTEM_PROMPT = `You are ARDEN (AI Routine Daily Engagement Nexus), a helpful AI assistant.
 
 Available tools you can use:
 1. Note-taking: ~/ARDEN/skills/note-taking/tools/create-note.sh "CONTENT" "TYPE"
@@ -39,8 +40,34 @@ Available tools you can use:
 3. Forecast: ~/ARDEN/skills/weather/tools/get-forecast.sh "LOCATION"
    - Use for multi-day forecasts or "weather this weekend"
 
+4. TODO Summary: ~/ARDEN/scripts/todo-summary.sh
+   - Use when user asks about TODOs, tasks, what to do
+   - Shows consolidated TODO list statistics and recent items
+
+5. Consolidate TODOs: ~/ARDEN/scripts/consolidate-todos.sh
+   - Use when user asks to update, refresh, or consolidate TODOs
+   - Scans all notes and rebuilds the consolidated TODO list
+
 When you use a tool, execute it via bash and share the results with the user in a conversational way.
 Keep responses concise and friendly, especially for voice interactions.`;
+
+/**
+ * Build system prompt with user context
+ */
+async function buildSystemPrompt() {
+  let prompt = BASE_SYSTEM_PROMPT;
+  
+  try {
+    const userContext = await getContextForPrompt();
+    if (userContext) {
+      prompt += userContext;
+    }
+  } catch (error) {
+    logger.system.warn('Failed to load user context for prompt', { error: error.message });
+  }
+  
+  return prompt;
+}
 
 /**
  * Execute with Claude Code CLI
@@ -83,11 +110,13 @@ async function executeOllama(prompt) {
   });
 
   try {
+    const systemPrompt = await buildSystemPrompt();
+    
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
       model: OLLAMA_MODEL,
       prompt: prompt,
       stream: false,
-      system: SYSTEM_PROMPT
+      system: systemPrompt
     });
     
     const result = response.data.response;
@@ -115,6 +144,8 @@ async function executeOpenAI(prompt) {
   });
 
   try {
+    const systemPrompt = await buildSystemPrompt();
+    
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -122,7 +153,7 @@ async function executeOpenAI(prompt) {
         messages: [
           {
             role: 'system',
-            content: SYSTEM_PROMPT
+            content: systemPrompt
           },
           {
             role: 'user',
@@ -165,13 +196,15 @@ async function executeLMStudio(prompt) {
   });
 
   try {
+    const systemPrompt = await buildSystemPrompt();
+    
     const response = await axios.post(
       `${LMSTUDIO_URL}/v1/chat/completions`,
       {
         messages: [
           {
             role: 'system',
-            content: SYSTEM_PROMPT
+            content: systemPrompt
           },
           {
             role: 'user',

@@ -39,6 +39,7 @@
   "context": {
     "directories": [
       "~/ARDEN/context",
+      "~/Notes",
       "~/Documents",
       "~/Projects"
     ],
