@@ -20,50 +20,45 @@ LOCATION="${1:-$DEFAULT_LOCATION}"  # Use provided location or default
 # URL encode the location (replace spaces with +)
 LOCATION_ENCODED="${LOCATION// /+}"
 
-# Fetch weather from wttr.in in format optimized for parsing
-# Format codes:
-# %C = Weather condition
-# %t = Temperature
-# %f = Feels like
-# %h = Humidity  
-# %w = Wind
-# %p = Precipitation
-# %m = Moon phase
-# %S = Sunrise
-# %s = Sunset
-
-WEATHER_DATA=$(curl -s --connect-timeout 10 "https://wttr.in/${LOCATION_ENCODED}?format=%C+%t+feels+like+%f,+humidity+%h,+wind+%w,+precipitation+%p,+sunrise+%S,+sunset+%s")
-CURL_EXIT=$?
+# Fetch weather data in a single call (faster and more reliable)
+WEATHER_RAW=$(curl -s --connect-timeout 5 --max-time 8 "https://wttr.in/${LOCATION_ENCODED}?format=%l|%C|%t|%f|%h|%w|%p" 2>/dev/null)
 
 # Check if request succeeded
-if [ -z "$WEATHER_DATA" ] || [ $CURL_EXIT -ne 0 ]; then
+if [ -z "$WEATHER_RAW" ]; then
     echo "Error: Unable to fetch weather data. Check your internet connection."
     exit 1
 fi
 
 # Check for "Unknown location" error
-if echo "$WEATHER_DATA" | grep -q "Unknown location"; then
+if echo "$WEATHER_RAW" | grep -q "Unknown location"; then
     echo "Error: Unknown location '$LOCATION'. Please try a different city name or zip code."
     exit 1
 fi
 
-# Get location name (formatted)
-LOCATION_NAME=$(curl -s --connect-timeout 10 "https://wttr.in/${LOCATION_ENCODED}?format=%l")
+# Parse the pipe-separated data
+IFS='|' read -r LOCATION_NAME CONDITION TEMP FEELS_LIKE HUMIDITY WIND PRECIPITATION <<< "$WEATHER_RAW"
 
-# Parse the weather data
-echo "Weather for ${LOCATION_NAME}:"
-echo "$WEATHER_DATA"
-
-# Skip forecast for now - wttr.in forecast endpoint is unreliable
-# Just show current conditions which are accurate
+# Display weather in clean format
+echo "Location: ${LOCATION_NAME}"
+echo "Condition: ${CONDITION}"
+echo "Temperature: ${TEMP}"
+echo "Feels like: ${FEELS_LIKE}"
+echo "Humidity: ${HUMIDITY}"
+echo "Wind: ${WIND}"
+echo "Precipitation: ${PRECIPITATION}"
+echo ""
+echo ""
 
 # Optional: Add weather recommendation
-TEMP_NUM=$(echo "$WEATHER_DATA" | grep -oE '\+?-?[0-9]+' | head -1)
-CONDITIONS=$(echo "$WEATHER_DATA" | awk '{print $1}')
+TEMP_NUM=$(echo "$TEMP" | grep -oE '\+?-?[0-9]+' | head -1)
 
-echo ""
 echo "Recommendation:"
-if echo "$WEATHER_DATA" | grep -qi "rain\|shower"; then
+
+# Extract temperature number for recommendations
+TEMP_NUM=$(echo "$TEMP" | grep -oE '\+?-?[0-9]+' | head -1)
+WIND_SPEED=$(echo "$WIND" | grep -oE '[0-9]+' | head -1)
+
+if echo "$CONDITION" | grep -qi "rain\|shower"; then
     echo "- Bring an umbrella"
 fi
 
@@ -82,6 +77,6 @@ if [ ! -z "$TEMP_NUM" ]; then
     fi
 fi
 
-if echo "$WEATHER_DATA" | grep -qi "wind.*[2-9][0-9]"; then
+if [ ! -z "$WIND_SPEED" ] && [ "$WIND_SPEED" -gt 20 ]; then
     echo "- Windy conditions, secure loose items"
 fi
