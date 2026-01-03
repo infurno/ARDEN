@@ -21,11 +21,16 @@ const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
 
+// Ensure we're working from the correct directory
+// This allows the script to be run from anywhere
+const ARDEN_ROOT = path.resolve(__dirname, '..');
+process.chdir(ARDEN_ROOT);
+
 // Load environment variables from .env file
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config({ path: path.join(ARDEN_ROOT, '.env') });
 
 // Load configuration
-const config = require('../config/arden.json');
+const config = require(path.join(ARDEN_ROOT, 'config/arden.json'));
 
 // Environment variables
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -60,9 +65,48 @@ if (AI_PROVIDER === 'openai' && !OPENAI_API_KEY) {
 // Initialize bot
 const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 
-// Paths
-const VOICE_DIR = path.join(__dirname, '../voice/recordings');
-const RESPONSE_DIR = path.join(__dirname, '../voice/responses');
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 10;  // Max 10 requests per minute per user
+const rateLimitMap = new Map(); // userId -> { count, resetTime }
+
+/**
+ * Check if user has exceeded rate limit
+ */
+function checkRateLimit(userId) {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+
+  // If no record or window expired, create new record
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(userId, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS
+    });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+  }
+
+  // Check if limit exceeded
+  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    const waitTime = Math.ceil((userLimit.resetTime - now) / 1000);
+    return {
+      allowed: false,
+      remaining: 0,
+      waitTime
+    };
+  }
+
+  // Increment counter
+  userLimit.count++;
+  return {
+    allowed: true,
+    remaining: RATE_LIMIT_MAX_REQUESTS - userLimit.count
+  };
+}
+
+// Paths - now using ARDEN_ROOT for absolute paths
+const VOICE_DIR = path.join(ARDEN_ROOT, 'voice/recordings');
+const RESPONSE_DIR = path.join(ARDEN_ROOT, 'voice/responses');
 
 // Ensure directories exist
 async function initDirectories() {
@@ -73,42 +117,107 @@ async function initDirectories() {
 /**
  * Convert voice message to text using Local Whisper
  */
-async function speechToText(filePath) {
-  try {
-    const whisperPath = path.join(__dirname, '../venv/bin/whisper');
-    const model = config.voice.stt_config.model || 'base';
-    const language = config.voice.stt_config.language || 'en';
+async function speechToTextLocal(filePath) {
+  const whisperPath = path.join(ARDEN_ROOT, 'venv/bin/whisper');
+  const model = config.voice.stt_config.model || 'base';
+  const language = config.voice.stt_config.language || 'en';
 
-    // Run local Whisper
-    return new Promise((resolve, reject) => {
-      const command = `"${whisperPath}" "${filePath}" --model ${model} --language ${language} --output_format txt --output_dir /tmp`;
+  return new Promise((resolve, reject) => {
+    const command = `"${whisperPath}" "${filePath}" --model ${model} --language ${language} --output_format txt --output_dir /tmp`;
 
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          console.error('Local Whisper error:', error.message);
-          reject(new Error('Local Whisper transcription failed'));
-          return;
-        }
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Local Whisper error:', error.message);
+        reject(new Error(`Local Whisper failed: ${error.message}`));
+        return;
+      }
 
-        // Whisper saves output as filename.txt
-        const baseName = path.basename(filePath, path.extname(filePath));
-        const outputFile = `/tmp/${baseName}.txt`;
+      // Whisper saves output as filename.txt
+      const baseName = path.basename(filePath, path.extname(filePath));
+      const outputFile = `/tmp/${baseName}.txt`;
 
-        fs.readFile(outputFile)
-          .then(content => {
-            // Clean up temp file
-            fs.unlink(outputFile).catch(() => {});
-            resolve(content.toString().trim());
-          })
-          .catch(err => {
-            console.error('Error reading Whisper output:', err.message);
-            reject(err);
+      fs.readFile(outputFile)
+        .then(content => {
+          // Clean up temp file
+          fs.unlink(outputFile).catch(err => {
+            console.warn('Failed to cleanup temp file:', outputFile, err.message);
           });
-      });
+          resolve(content.toString().trim());
+        })
+        .catch(err => {
+          console.error('Error reading Whisper output:', err.message);
+          reject(new Error(`Failed to read Whisper output: ${err.message}`));
+        });
     });
+  });
+}
+
+/**
+ * Convert voice message to text using OpenAI Whisper API
+ */
+async function speechToTextOpenAI(filePath) {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  const formData = new FormData();
+  formData.append('file', await fs.readFile(filePath), {
+    filename: path.basename(filePath),
+    contentType: 'audio/ogg',
+  });
+  formData.append('model', 'whisper-1');
+  formData.append('language', config.voice.stt_config.language || 'en');
+
+  const response = await axios.post(
+    'https://api.openai.com/v1/audio/transcriptions',
+    formData,
+    {
+      headers: {
+        ...formData.getHeaders(),
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+    }
+  );
+
+  return response.data.text;
+}
+
+/**
+ * Convert voice message to text with automatic fallback
+ * Tries local Whisper first, falls back to OpenAI API if local fails
+ */
+async function speechToText(filePath) {
+  const provider = config.voice.stt_provider || 'local-whisper';
+  
+  try {
+    // Try primary provider first
+    if (provider === 'openai-whisper') {
+      console.log('Using OpenAI Whisper API');
+      return await speechToTextOpenAI(filePath);
+    } else {
+      console.log('Using local Whisper');
+      return await speechToTextLocal(filePath);
+    }
   } catch (error) {
-    console.error('Speech-to-text error:', error.message);
-    throw error;
+    console.error(`Primary STT provider (${provider}) failed:`, error.message);
+    
+    // Try fallback if available
+    if (provider === 'local-whisper' && OPENAI_API_KEY) {
+      console.log('Falling back to OpenAI Whisper API...');
+      try {
+        const result = await speechToTextOpenAI(filePath);
+        console.log('✓ Fallback successful');
+        return result;
+      } catch (fallbackError) {
+        console.error('Fallback to OpenAI also failed:', fallbackError.message);
+        throw new Error('All speech-to-text providers failed. Please check your configuration.');
+      }
+    } else if (provider === 'openai-whisper') {
+      // No fallback for OpenAI provider (local Whisper might not be installed)
+      throw new Error(`OpenAI Whisper failed and no fallback available: ${error.message}`);
+    } else {
+      throw new Error(`Speech-to-text failed: ${error.message}. Consider setting OPENAI_API_KEY for fallback.`);
+    }
   }
 }
 
@@ -119,6 +228,7 @@ async function textToSpeech(text) {
   const provider = config.voice.tts_provider;
 
   try {
+    console.log(`Using TTS provider: ${provider}`);
     switch (provider) {
       case 'elevenlabs':
         return await ttsElevenLabs(text);
@@ -129,11 +239,12 @@ async function textToSpeech(text) {
       case 'openai-tts':
         return await ttsOpenAI(text);
       default:
-        console.log(`TTS provider '${provider}' not configured, skipping`);
+        console.log(`TTS provider '${provider}' not configured, skipping voice response`);
         return null;
     }
   } catch (error) {
-    console.error('Text-to-speech error:', error.message);
+    console.error(`Text-to-speech error with ${provider}:`, error.message);
+    console.log('Continuing without voice response...');
     return null;
   }
 }
@@ -178,7 +289,7 @@ async function ttsElevenLabs(text) {
 async function ttsEdge(text) {
   const voice = config.voice.tts_config.voice || 'en-US-AriaNeural';
   const outputPath = path.join(RESPONSE_DIR, `response_${Date.now()}.mp3`);
-  const edgeTtsPath = path.join(__dirname, '../venv/bin/edge-tts');
+  const edgeTtsPath = path.join(ARDEN_ROOT, 'venv/bin/edge-tts');
 
   return new Promise((resolve, reject) => {
     const command = `"${edgeTtsPath}" --voice "${voice}" --text "${text.replace(/"/g, '\\"')}" --write-media "${outputPath}"`;
@@ -275,7 +386,7 @@ async function executeClaude(prompt) {
     const command = `claude -p "${prompt.replace(/"/g, '\\"')}"`;
 
     exec(command, {
-      cwd: path.join(__dirname, '..'),
+      cwd: ARDEN_ROOT,
       maxBuffer: 1024 * 1024 * 10, // 10MB buffer
     }, (error, stdout, stderr) => {
       if (error) {
@@ -427,7 +538,7 @@ Keep responses concise and friendly, especially for voice interactions.`;
 async function logInteraction(userId, username, prompt, response) {
   const timestamp = new Date().toISOString();
   const date = timestamp.split('T')[0];
-  const sessionDir = path.join(__dirname, '../history/sessions', date);
+  const sessionDir = path.join(ARDEN_ROOT, 'history/sessions', date);
 
   await fs.mkdir(sessionDir, { recursive: true });
 
@@ -458,6 +569,23 @@ bot.on('message', async (msg) => {
     return;
   }
 
+  // Rate limiting check
+  const rateCheck = checkRateLimit(userId);
+  if (!rateCheck.allowed) {
+    await bot.sendMessage(
+      chatId,
+      `⏱️ Rate limit exceeded. Please wait ${rateCheck.waitTime} seconds before sending another message.\n\n` +
+      `Limit: ${RATE_LIMIT_MAX_REQUESTS} requests per minute.`
+    );
+    console.log(`Rate limit exceeded for user ${userId}`);
+    return;
+  }
+
+  // Log remaining requests for user awareness (only on first few requests)
+  if (rateCheck.remaining <= 3) {
+    console.log(`User ${userId} has ${rateCheck.remaining} requests remaining`);
+  }
+
   try {
     let prompt;
 
@@ -479,7 +607,9 @@ bot.on('message', async (msg) => {
       await bot.sendMessage(chatId, `📝 You said: "${prompt}"`);
 
       // Clean up voice file
-      await fs.unlink(voiceFilePath).catch(() => {});
+      await fs.unlink(voiceFilePath).catch(err => {
+        console.warn('Failed to cleanup voice file:', err.message);
+      });
     }
     // Handle text messages
     else if (msg.text) {
@@ -570,11 +700,19 @@ async function handleCommand(msg) {
         tts_provider: config.voice.tts_provider,
         tts_available: !!ELEVENLABS_API_KEY,
       };
+      
+      const userRateLimit = rateLimitMap.get(msg.from.id);
+      const rateLimitInfo = userRateLimit 
+        ? `${userRateLimit.count}/${RATE_LIMIT_MAX_REQUESTS} (resets in ${Math.ceil((userRateLimit.resetTime - Date.now()) / 1000)}s)`
+        : `0/${RATE_LIMIT_MAX_REQUESTS}`;
+      
       await bot.sendMessage(chatId,
         '📊 System Status\n\n' +
         `Voice: ${status.voice_enabled ? '✅' : '❌'}\n` +
         `STT: ${status.stt_provider}\n` +
-        `TTS: ${status.tts_provider} ${status.tts_available ? '✅' : '❌'}\n`
+        `TTS: ${status.tts_provider} ${status.tts_available ? '✅' : '❌'}\n` +
+        `AI Provider: ${AI_PROVIDER}\n` +
+        `Rate Limit: ${rateLimitInfo}\n`
       );
       break;
 
@@ -604,6 +742,7 @@ bot.on('polling_error', (error) => {
 (async () => {
   await initDirectories();
   console.log('🤖 ARDEN Telegram Bot started');
+  console.log(`📁 Working directory: ${ARDEN_ROOT}`);
   console.log('📱 Send voice or text messages to interact');
   console.log(`AI Provider: ${AI_PROVIDER}`);
   if (AI_PROVIDER === 'ollama') console.log(`Ollama model: ${OLLAMA_MODEL}`);
