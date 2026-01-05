@@ -1,6 +1,6 @@
 # ARDEN Native Setup Guide
 
-This guide covers running ARDEN natively on your system without Docker.
+This guide covers running ARDEN on your system.
 
 ## Prerequisites
 
@@ -357,5 +357,5 @@ journalctl -u arden -f
 
 - Read [GET_STARTED.md](GET_STARTED.md) for ARDEN features
 - Explore the [skills/](skills/) directory for domain expertise modules
-- Check [DEPLOYMENT.md](DEPLOYMENT.md) for Docker deployment options
 - See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for architecture overview
+- Access the web interface at http://localhost:3001

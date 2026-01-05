@@ -295,7 +295,7 @@ skills/daily-planning/
 - PM2 (process management)
 - iOS Shortcuts (Siri integration)
 - Android Tasker (automation)
-- Docker + NVIDIA GPU support
+- NVIDIA GPU drivers (for GPU-accelerated Whisper)
 
 ## Voice Providers Configured
 

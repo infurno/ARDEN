@@ -17,15 +17,16 @@ Voice-enabled personal AI infrastructure built on Claude Code.
 │  Voice Response → Device                                    │
 └─────────────────────────────────────────────────────────────┘
 
-Production Stack (Docker):
+Production Stack:
 ┌────────────────────────────────────────────────────────────┐
-│ Docker Container (NVIDIA GPU enabled)                       │
-│  ├─ Node.js 20 + Telegram Bot                             │
-│  ├─ Python 3.10 + Whisper (GPU accelerated)               │
+│ Native Node.js + Python Environment                        │
+│  ├─ Node.js 18+ + Telegram Bot                            │
+│  ├─ Python 3.10+ + Whisper (GPU accelerated)              │
 │  ├─ FFmpeg for audio processing                           │
-│  └─ Winston structured logging                            │
+│  ├─ Winston structured logging                            │
+│  └─ SQLite database for persistence                       │
 │                                                            │
-│ Optional: Ollama Container                                │
+│ Optional: Ollama                                           │
 │  └─ Local LLM with GPU acceleration                       │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -57,9 +58,9 @@ Production Stack (Docker):
 
 ## Quick Start
 
-### Native Setup (Recommended)
+### Setup
 
-**Run ARDEN natively on your system for best performance:**
+**Run ARDEN natively on your system:**
 
 ```bash
 # 1. Configure environment
@@ -74,14 +75,20 @@ npm install
 cd ~/ARDEN
 ./scripts/start.sh
 
-# 4. Check status
+# 4. Start Web Interface
+./scripts/start-web.sh
+
+# 5. Check status
 ./scripts/status.sh
 
-# 5. Follow logs
+# 6. Follow logs
 tail -f api/logs/arden.log
 
 # Stop ARDEN
 ./scripts/stop.sh
+
+# Stop Web Interface
+./scripts/stop-web.sh
 
 # Restart ARDEN
 ./scripts/restart.sh
@@ -93,38 +100,33 @@ tail -f api/logs/arden.log
 - FFmpeg for audio processing
 - NVIDIA GPU with drivers (optional, for GPU-accelerated Whisper)
 
-### Docker Deployment (Alternative)
+**Access Web Interface:**
+- http://localhost:3001
 
-**For containerized deployment with NVIDIA GPU acceleration:**
+## Usage
 
-```bash
-# 1. Prerequisites: Install Docker and NVIDIA Container Toolkit
-# See DEPLOYMENT.md for detailed instructions
+## Usage
 
-# 2. Configure environment
-cp .env.production .env
-nano .env  # Add your TELEGRAM_BOT_TOKEN and API keys
+#### 1. Telegram Bot
 
-# 3. Build and start services
-make build
-make up
+Send voice or text messages to your bot.
 
-# Or with Ollama for local LLM
-make up-ollama
+#### 2. Web Interface
 
-# 4. View logs
-make logs-f
-```
+Access the dashboard at http://localhost:3001 for:
+- Chat interface
+- Notes management
+- TODO tracking
+- System monitoring
+- Skills configuration
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
-
-#### 2. Direct CLI
+#### 3. Direct CLI
 
 ```bash
 arden "What's on my schedule today?"
 ```
 
-#### 3. Voice CLI
+#### 4. Voice CLI
 
 ```bash
 arden --voice
