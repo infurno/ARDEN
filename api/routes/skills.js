@@ -224,8 +224,7 @@ async function discoverSkills() {
           const skill = await parseSkillMd(entry.name, skillMdPath);
           skills.push(skill);
         } catch {
-          // No SKILL.md found, skip
-          logger.system.debug('Skipping directory without SKILL.md', { dir: entry.name });
+          // No SKILL.md found, skip (silently - this is expected for non-skill directories)
         }
       }
     }

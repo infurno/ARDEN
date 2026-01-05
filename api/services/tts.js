@@ -13,6 +13,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
 const logger = require('../utils/logger');
+const db = require('./database');
 
 // Ensure we're working from the correct directory
 const ARDEN_ROOT = path.resolve(__dirname, '../..');
@@ -30,7 +31,7 @@ const RESPONSE_DIR = path.join(ARDEN_ROOT, 'voice/responses');
 /**
  * ElevenLabs TTS
  */
-async function ttsElevenLabs(text) {
+async function ttsElevenLabs(text, userId = 'system', sessionId = null) {
   if (!ELEVENLABS_API_KEY) {
     logger.voice.warn('ElevenLabs API key not set, skipping TTS');
     return null;
@@ -43,11 +44,13 @@ async function ttsElevenLabs(text) {
 
   try {
     const voiceId = config.voice.tts_config.voice_id;
+    const modelId = config.voice.tts_config.model || 'eleven_turbo_v2_5';
+    
     const response = await axios.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
       {
         text,
-        model_id: config.voice.tts_config.model,
+        model_id: modelId,
         voice_settings: {
           stability: config.voice.tts_config.stability,
           similarity_boost: config.voice.tts_config.similarity_boost,
@@ -65,9 +68,40 @@ async function ttsElevenLabs(text) {
     const outputPath = path.join(RESPONSE_DIR, `response_${Date.now()}.mp3`);
     await fs.writeFile(outputPath, response.data);
     
-    logger.voice.info('ElevenLabs TTS successful', { outputPath });
+    // Track API usage (characters = tokens for TTS)
+    const characterCount = text.length;
+    db.recordApiUsage(
+      'elevenlabs',
+      modelId,
+      userId,
+      sessionId,
+      characterCount, // prompt_tokens = character count
+      0,              // completion_tokens = 0 for TTS
+      'tts',
+      true,
+      null
+    );
+    
+    logger.voice.info('ElevenLabs TTS successful', { 
+      outputPath, 
+      characters: characterCount,
+      model: modelId
+    });
     return outputPath;
   } catch (error) {
+    // Track failed API call
+    db.recordApiUsage(
+      'elevenlabs',
+      config.voice.tts_config.model || 'eleven_turbo_v2_5',
+      userId,
+      sessionId,
+      0,
+      0,
+      'tts',
+      false,
+      error.message
+    );
+    
     logger.voice.error('ElevenLabs TTS error', { 
       error: error.message,
       status: error.response?.status 
@@ -149,7 +183,7 @@ async function ttsPiper(text) {
 /**
  * OpenAI TTS (Affordable - ~$1/month)
  */
-async function ttsOpenAI(text) {
+async function ttsOpenAI(text, userId = 'system', sessionId = null) {
   if (!OPENAI_API_KEY) {
     logger.voice.warn('OpenAI API key not set');
     return null;
@@ -180,9 +214,40 @@ async function ttsOpenAI(text) {
     const outputPath = path.join(RESPONSE_DIR, `response_${Date.now()}.mp3`);
     await fs.writeFile(outputPath, response.data);
     
-    logger.voice.info('OpenAI TTS successful', { outputPath });
+    // Track API usage (characters = tokens for TTS)
+    const characterCount = text.length;
+    db.recordApiUsage(
+      'openai',
+      model,
+      userId,
+      sessionId,
+      characterCount, // prompt_tokens = character count
+      0,              // completion_tokens = 0 for TTS
+      'tts',
+      true,
+      null
+    );
+    
+    logger.voice.info('OpenAI TTS successful', { 
+      outputPath,
+      characters: characterCount,
+      model
+    });
     return outputPath;
   } catch (error) {
+    // Track failed API call
+    db.recordApiUsage(
+      'openai',
+      model,
+      userId,
+      sessionId,
+      0,
+      0,
+      'tts',
+      false,
+      error.message
+    );
+    
     logger.voice.error('OpenAI TTS error', { 
       error: error.message,
       status: error.response?.status 
@@ -192,9 +257,47 @@ async function ttsOpenAI(text) {
 }
 
 /**
+ * Format text for voice output by removing markdown and verbose labels
+ * Only returns clean command output unless debug mode is enabled
+ */
+function formatForVoice(text) {
+  // If debug mode is enabled, return the full text with all details
+  if (config.voice.debug_mode) {
+    logger.voice.info('Voice debug mode enabled, keeping full response');
+    return text;
+  }
+
+  let cleanText = text;
+
+  // Remove markdown formatting
+  cleanText = cleanText
+    // Remove bold markers
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    // Remove italic markers
+    .replace(/\*(.*?)\*/g, '$1')
+    // Remove inline code markers
+    .replace(/`([^`]+)`/g, '$1')
+    // Remove code block markers
+    .replace(/```[\s\S]*?```/g, '')
+    // Remove command output labels
+    .replace(/\*\*Command Output:\*\*/gi, '')
+    .replace(/\*\*Command Error:\*\*/gi, 'Error: ')
+    // Clean up extra whitespace and newlines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  logger.voice.info('Formatted text for voice', { 
+    originalLength: text.length, 
+    cleanedLength: cleanText.length 
+  });
+
+  return cleanText;
+}
+
+/**
  * Convert text to speech using configured provider
  */
-async function textToSpeech(text) {
+async function textToSpeech(text, userId = 'system', sessionId = null) {
   const provider = config.voice.tts_provider;
 
   logger.voice.info('Starting text-to-speech', { provider, textLength: text.length });
@@ -202,13 +305,13 @@ async function textToSpeech(text) {
   try {
     switch (provider) {
       case 'elevenlabs':
-        return await ttsElevenLabs(text);
+        return await ttsElevenLabs(text, userId, sessionId);
       case 'edge-tts':
         return await ttsEdge(text);
       case 'piper':
         return await ttsPiper(text);
       case 'openai-tts':
-        return await ttsOpenAI(text);
+        return await ttsOpenAI(text, userId, sessionId);
       default:
         logger.voice.warn(`TTS provider '${provider}' not configured, skipping voice response`);
         return null;
@@ -222,6 +325,7 @@ async function textToSpeech(text) {
 
 module.exports = {
   textToSpeech,
+  formatForVoice,
   ttsElevenLabs,
   ttsEdge,
   ttsPiper,

@@ -1,15 +1,16 @@
 #!/bin/bash
 #
 # Add TODO Skill Tool
-# Adds a new TODO item to todo.md in Notes directory
+# Adds a new TODO item to the appropriate category file in Notes/todos/ directory
 #
-# Usage: add-todo.sh "TODO text" [target-file]
+# Usage: add-todo.sh "TODO text" [category]
 #   - TODO text: The text of the TODO item (required)
-#   - target-file: Optional filename to add TODO to (default: todo.md)
+#   - category: work, personal, or side-projects (default: personal)
 #
 # Examples:
-#   add-todo.sh "Review pull request #42"
-#   add-todo.sh "Deploy to production" "deployment-checklist.md"
+#   add-todo.sh "Review pull request #42" "work"
+#   add-todo.sh "Buy groceries" "personal"
+#   add-todo.sh "Deploy to production"  # defaults to personal
 #
 
 set -e  # Exit on error
@@ -20,27 +21,52 @@ ARDEN_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Configuration
 NOTES_DIR="${HOME}/Notes"
-DEFAULT_TODO_FILE="todo.md"
+TODOS_DIR="${NOTES_DIR}/todos"
+DEFAULT_CATEGORY="personal"
 CONSOLIDATE_SCRIPT="${ARDEN_ROOT}/scripts/consolidate-todos.sh"
 
 # Parse arguments
 TODO_TEXT="$1"
-TARGET_FILE="${2:-$DEFAULT_TODO_FILE}"
+CATEGORY="${2:-$DEFAULT_CATEGORY}"
+
+# Validate category and map to filename
+case "$CATEGORY" in
+    work)
+        TARGET_FILE="work.md"
+        CATEGORY_NAME="Work"
+        ;;
+    personal)
+        TARGET_FILE="personal.md"
+        CATEGORY_NAME="Personal"
+        ;;
+    side-projects|side_projects|sideprojects)
+        TARGET_FILE="side-projects.md"
+        CATEGORY_NAME="Side Projects"
+        ;;
+    *)
+        # Default to personal for unknown categories
+        TARGET_FILE="personal.md"
+        CATEGORY_NAME="Personal"
+        ;;
+esac
 
 # Validate TODO text
 if [ -z "$TODO_TEXT" ]; then
     echo "❌ Error: TODO text is required"
     echo ""
-    echo "Usage: $0 \"TODO text\" [target-file]"
+    echo "Usage: $0 \"TODO text\" [category]"
+    echo ""
+    echo "Categories: work, personal, side-projects (default: personal)"
     echo ""
     echo "Examples:"
-    echo "  $0 \"Review pull request #42\""
-    echo "  $0 \"Deploy to production\" \"deployment-checklist.md\""
+    echo "  $0 \"Review pull request #42\" \"work\""
+    echo "  $0 \"Buy groceries\" \"personal\""
+    echo "  $0 \"Deploy to production\"  # defaults to personal"
     exit 1
 fi
 
 # Build full path to target file
-TARGET_PATH="${NOTES_DIR}/${TARGET_FILE}"
+TARGET_PATH="${TODOS_DIR}/${TARGET_FILE}"
 
 # Ensure Notes directory exists
 if [ ! -d "$NOTES_DIR" ]; then
@@ -48,11 +74,13 @@ if [ ! -d "$NOTES_DIR" ]; then
     exit 1
 fi
 
+# Ensure todos directory exists
+mkdir -p "$TODOS_DIR"
+
 # Create target file if it doesn't exist
 if [ ! -f "$TARGET_PATH" ]; then
-    echo "# TODOs" > "$TARGET_PATH"
+    echo "# ${CATEGORY_NAME} TODOs" > "$TARGET_PATH"
     echo "" >> "$TARGET_PATH"
-    echo "📝 Created new TODO file: $TARGET_FILE"
 fi
 
 # Add the TODO item
@@ -67,9 +95,10 @@ fi
 echo "✅ TODO added successfully!"
 echo ""
 echo "📋 TODO: ${TODO_TEXT}"
-echo "📄 File: ${TARGET_FILE}"
+echo "🏷️  Category: ${CATEGORY_NAME}"
+echo "📄 File: todos/${TARGET_FILE}"
 echo "📍 Location: ${TARGET_PATH}"
 
 # Return the TODO text for confirmation
 echo ""
-echo "RESULT: TODO added to ${TARGET_FILE}"
+echo "RESULT: TODO added to ${CATEGORY_NAME} category"

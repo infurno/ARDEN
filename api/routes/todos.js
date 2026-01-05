@@ -13,8 +13,16 @@ const wsService = require('../services/websocket');
 
 const execAsync = promisify(exec);
 const NOTES_DIR = path.join(process.env.HOME, 'Notes');
+const TODOS_DIR = path.join(NOTES_DIR, 'todos');
 const TODO_FILE = path.join(NOTES_DIR, 'todo.md');
 const CONSOLIDATE_SCRIPT = path.join(__dirname, '../../scripts/consolidate-todos.sh');
+
+// Available TODO categories/files
+const TODO_CATEGORIES = {
+  work: path.join(TODOS_DIR, 'work.md'),
+  personal: path.join(TODOS_DIR, 'personal.md'),
+  'side-projects': path.join(TODOS_DIR, 'side-projects.md')
+};
 
 // GET /api/todos - Get all TODOs (parsed from consolidated todo.md)
 router.get('/', async (req, res) => {
@@ -47,6 +55,68 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/todos/categories - Get available TODO categories
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = [];
+    
+    // Scan todos directory for all .md files
+    try {
+      await fs.access(TODOS_DIR);
+      const files = await fs.readdir(TODOS_DIR);
+      
+      for (const file of files) {
+        if (file.endsWith('.md')) {
+          const filePath = path.join(TODOS_DIR, file);
+          try {
+            const stats = await fs.stat(filePath);
+            const content = await fs.readFile(filePath, 'utf-8');
+            
+            // Count TODOs in this file
+            const unchecked = (content.match(/- \[ \]/g) || []).length;
+            const checked = (content.match(/- \[x\]/gi) || []).length;
+            
+            // Convert filename to category id (remove .md and convert to kebab-case)
+            const categoryId = file.replace('.md', '');
+            const categoryName = categoryId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            
+            categories.push({
+              id: categoryId,
+              name: categoryName,
+              filename: file,
+              path: filePath,
+              todoCount: unchecked + checked,
+              unchecked,
+              checked,
+              modified: stats.mtime,
+              exists: true
+            });
+          } catch (error) {
+            logger.system.warn('Failed to read category file', { file, error: error.message });
+          }
+        }
+      }
+    } catch (error) {
+      // Directory doesn't exist yet
+      logger.system.warn('Todos directory does not exist', { error: error.message });
+    }
+    
+    // Sort by name
+    categories.sort((a, b) => a.name.localeCompare(b.name));
+    
+    res.json({
+      success: true,
+      categories
+    });
+  } catch (error) {
+    logger.system.error('Failed to get TODO categories', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get categories'
+    });
+  }
+});
+
 // POST /api/todos/consolidate - Trigger TODO consolidation
 router.post('/consolidate', async (req, res) => {
   try {
@@ -68,6 +138,71 @@ router.post('/consolidate', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to consolidate TODOs'
+    });
+  }
+});
+
+// POST /api/todos/categories - Create a new TODO category
+router.post('/categories', async (req, res) => {
+  try {
+    const { name } = req.body;
+    
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Category name is required'
+      });
+    }
+    
+    // Convert name to kebab-case for filename
+    const categoryId = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid category name'
+      });
+    }
+    
+    const categoryFilePath = path.join(TODOS_DIR, `${categoryId}.md`);
+    
+    // Check if category already exists
+    try {
+      await fs.access(categoryFilePath);
+      return res.status(409).json({
+        success: false,
+        error: 'Category already exists'
+      });
+    } catch {
+      // File doesn't exist, continue
+    }
+    
+    // Ensure todos directory exists
+    await fs.mkdir(TODOS_DIR, { recursive: true });
+    
+    // Create new category file with header
+    const categoryName = name.trim().split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const initialContent = `# ${categoryName} TODOs\n\n`;
+    
+    await fs.writeFile(categoryFilePath, initialContent, 'utf-8');
+    
+    logger.system.info('Created new TODO category', { categoryId, name: categoryName });
+    
+    res.json({
+      success: true,
+      message: 'Category created successfully',
+      category: {
+        id: categoryId,
+        name: categoryName,
+        filename: `${categoryId}.md`,
+        path: categoryFilePath
+      }
+    });
+  } catch (error) {
+    logger.system.error('Failed to create category', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create category'
     });
   }
 });
@@ -150,7 +285,7 @@ router.patch('/:id', async (req, res) => {
 // POST /api/todos - Create a new TODO
 router.post('/', async (req, res) => {
   try {
-    const { text, targetFile } = req.body;
+    const { text, category, targetFile } = req.body;
     
     if (!text) {
       return res.status(400).json({
@@ -159,10 +294,18 @@ router.post('/', async (req, res) => {
       });
     }
     
-    // Default target file is todo.md
-    const targetFilePath = targetFile 
-      ? path.join(NOTES_DIR, targetFile)
-      : TODO_FILE;
+    // Determine target file
+    let targetFilePath;
+    if (category) {
+      // Use category-based file (supports dynamic categories)
+      targetFilePath = path.join(TODOS_DIR, `${category}.md`);
+    } else if (targetFile) {
+      // Use custom target file (legacy support)
+      targetFilePath = path.join(NOTES_DIR, targetFile);
+    } else {
+      // Default to personal.md
+      targetFilePath = path.join(TODOS_DIR, 'personal.md');
+    }
     
     // Validate path
     const resolvedPath = path.resolve(targetFilePath);
@@ -174,13 +317,17 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // Ensure todos directory exists
+    await fs.mkdir(TODOS_DIR, { recursive: true });
+    
     // Read existing content or create new file
     let content = '';
     try {
       content = await fs.readFile(targetFilePath, 'utf-8');
     } catch {
       // File doesn't exist, create with basic structure
-      content = `# TODOs\n\n`;
+      const categoryName = (category || 'personal').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      content = `# ${categoryName} TODOs\n\n`;
     }
     
     // Add new TODO at the end
@@ -189,7 +336,7 @@ router.post('/', async (req, res) => {
     
     await fs.writeFile(targetFilePath, content, 'utf-8');
     
-    logger.system.info('Created new TODO', { text, file: path.basename(targetFilePath) });
+    logger.system.info('Created new TODO', { text, category: category || 'default', file: path.basename(targetFilePath) });
     
     // Re-consolidate
     await consolidateTodos();
@@ -198,18 +345,169 @@ router.post('/', async (req, res) => {
     wsService.notifyTodoUpdate({
       action: 'create',
       text,
+      category: category || 'personal',
       timestamp: new Date().toISOString()
     });
     
     res.json({
       success: true,
-      message: 'TODO created successfully'
+      message: 'TODO created successfully',
+      category: category || 'personal'
     });
   } catch (error) {
     logger.system.error('Failed to create TODO', { error: error.message });
     res.status(500).json({
       success: false,
       error: 'Failed to create TODO'
+    });
+  }
+});
+
+// DELETE /api/todos/:id - Delete a TODO
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Read todo.md
+    const content = await fs.readFile(TODO_FILE, 'utf-8');
+    const todos = parseTodoFile(content);
+    
+    // Find the TODO
+    const todo = todos.items.find(t => t.id === id);
+    if (!todo) {
+      return res.status(404).json({
+        success: false,
+        error: 'TODO not found'
+      });
+    }
+    
+    // Delete from source file
+    if (todo.sourceFile && todo.sourceLine) {
+      const sourceFilePath = path.join(NOTES_DIR, todo.sourceFile);
+      const sourceContent = await fs.readFile(sourceFilePath, 'utf-8');
+      const lines = sourceContent.split('\n');
+      
+      // Find the line (sourceLine is 1-based)
+      const lineIndex = todo.sourceLine - 1;
+      if (lineIndex >= 0 && lineIndex < lines.length) {
+        // Remove the TODO line and any source comment line that follows
+        lines.splice(lineIndex, 1);
+        
+        // Check if next line is a source comment and remove it too
+        if (lineIndex < lines.length && lines[lineIndex].match(/^\s*\*Source:/)) {
+          lines.splice(lineIndex, 1);
+        }
+        
+        await fs.writeFile(sourceFilePath, lines.join('\n'), 'utf-8');
+        
+        logger.system.info('Deleted TODO', { id, file: todo.sourceFile });
+        
+        // Re-consolidate to update todo.md
+        await consolidateTodos();
+        
+        // Send WebSocket notification
+        wsService.notifyTodoUpdate({
+          action: 'delete',
+          todoId: id,
+          timestamp: new Date().toISOString()
+        });
+        
+        res.json({
+          success: true,
+          message: 'TODO deleted successfully'
+        });
+      } else {
+        throw new Error('Invalid source line number');
+      }
+    } else {
+      throw new Error('TODO source information missing');
+    }
+  } catch (error) {
+    logger.system.error('Failed to delete TODO', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to delete TODO'
+    });
+  }
+});
+
+// PUT /api/todos/:id - Update TODO text and/or due date
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, dueDate } = req.body;
+    
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'TODO text is required'
+      });
+    }
+    
+    // Read todo.md
+    const content = await fs.readFile(TODO_FILE, 'utf-8');
+    const todos = parseTodoFile(content);
+    
+    // Find the TODO
+    const todo = todos.items.find(t => t.id === id);
+    if (!todo) {
+      return res.status(404).json({
+        success: false,
+        error: 'TODO not found'
+      });
+    }
+    
+    // Update the source file
+    if (todo.sourceFile && todo.sourceLine) {
+      const sourceFilePath = path.join(NOTES_DIR, todo.sourceFile);
+      const sourceContent = await fs.readFile(sourceFilePath, 'utf-8');
+      const lines = sourceContent.split('\n');
+      
+      // Find the line (sourceLine is 1-based)
+      const lineIndex = todo.sourceLine - 1;
+      if (lineIndex >= 0 && lineIndex < lines.length) {
+        const oldLine = lines[lineIndex];
+        const checkboxState = todo.checked ? '[x]' : '[ ]';
+        
+        // Build new TODO text with optional due date
+        let newText = text.trim();
+        if (dueDate) {
+          newText += ` 📅 ${dueDate}`;
+        }
+        
+        const newLine = `- ${checkboxState} ${newText}`;
+        lines[lineIndex] = newLine;
+        
+        await fs.writeFile(sourceFilePath, lines.join('\n'), 'utf-8');
+        
+        logger.system.info('Updated TODO text', { id, text: newText, file: todo.sourceFile });
+        
+        // Re-consolidate to update todo.md
+        await consolidateTodos();
+        
+        // Send WebSocket notification
+        wsService.notifyTodoUpdate({
+          action: 'update',
+          todoId: id,
+          text: newText,
+          timestamp: new Date().toISOString()
+        });
+        
+        res.json({
+          success: true,
+          message: 'TODO updated successfully'
+        });
+      } else {
+        throw new Error('Invalid source line number');
+      }
+    } else {
+      throw new Error('TODO source information missing');
+    }
+  } catch (error) {
+    logger.system.error('Failed to update TODO', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update TODO'
     });
   }
 });
@@ -280,7 +578,16 @@ function parseTodoFile(content) {
     // Extract TODO items
     if (line.match(/^\s*- \[([ xX])\]/)) {
       const checked = line.match(/- \[x\]/i) !== null;
-      const text = line.replace(/^\s*- \[([ xX])\]\s*/, '').trim();
+      let text = line.replace(/^\s*- \[([ xX])\]\s*/, '').trim();
+      
+      // Extract due date if present (format: 📅 YYYY-MM-DD or @due YYYY-MM-DD)
+      let dueDate = null;
+      const dueDateMatch = text.match(/📅\s*(\d{4}-\d{2}-\d{2})|@due\s*(\d{4}-\d{2}-\d{2})/);
+      if (dueDateMatch) {
+        dueDate = dueDateMatch[1] || dueDateMatch[2];
+        // Remove due date from text
+        text = text.replace(/📅\s*\d{4}-\d{2}-\d{2}|@due\s*\d{4}-\d{2}-\d{2}/, '').trim();
+      }
       
       // Look for source reference on next line
       if (i + 1 < lines.length) {
@@ -316,6 +623,7 @@ function parseTodoFile(content) {
         id: `todo-${idCounter++}`,
         text,
         checked,
+        dueDate,
         sourceFile: currentSource,
         sourceLine: currentSourceLine,
         isArchived: isArchived || checked // Mark as archived if from completed file OR checked

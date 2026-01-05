@@ -13,7 +13,7 @@ const path = require('path');
 const axios = require('axios');
 const logger = require('../utils/logger');
 const { speechToText } = require('../services/stt');
-const { textToSpeech } = require('../services/tts');
+const { textToSpeech, formatForVoice } = require('../services/tts');
 const { executeArden } = require('../services/ai-providers');
 const { logInteraction } = require('../services/session');
 
@@ -85,7 +85,9 @@ async function handleVoiceMessage(bot, msg) {
     // Send voice response if enabled and TTS is configured
     if (config.voice.enabled && ELEVENLABS_API_KEY) {
       await bot.sendChatAction(chatId, 'record_voice');
-      const voiceResponse = await textToSpeech(ardenResponse);
+      // Format response for voice - removes markdown and verbose labels
+      const formattedText = formatForVoice(ardenResponse);
+      const voiceResponse = await textToSpeech(formattedText, `telegram-${userId}`, null);
 
       if (voiceResponse) {
         await bot.sendVoice(chatId, voiceResponse);

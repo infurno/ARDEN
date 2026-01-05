@@ -1,36 +1,36 @@
 # TODO Management Skill
 
 ## Purpose
-Quickly add TODO items via chat, voice, or web interface. TODOs are saved as markdown checkboxes in your Notes directory and automatically consolidated.
+Quickly add TODO items to the appropriate category (work, personal, or side-projects) via chat, voice, or web interface. TODOs are saved as markdown checkboxes in categorized files and automatically consolidated.
 
 ## How to Execute This Skill
 
-When the user wants to add a TODO, use the Bash tool to run:
+When the user wants to add a TODO, analyze the content to determine the category, then use the Bash tool to run:
 
 ```bash
-~/ARDEN/skills/todo-management/tools/add-todo.sh "TODO_TEXT" [target-file]
+~/ARDEN/skills/todo-management/tools/add-todo.sh "TODO_TEXT" "category"
 ```
 
 Where:
 - TODO_TEXT = The TODO item text (extract from user's message)
-- target-file = Optional filename (default: todo.md)
+- category = work, personal, or side-projects (determine from context)
 
 The script will:
-1. Add the TODO to the specified file in ~/Notes/
+1. Add the TODO to the appropriate category file in ~/Notes/todos/
 2. Format it as a markdown checkbox: `- [ ] TODO_TEXT`
 3. Run consolidation to update the master todo.md
-4. Return confirmation with file location
+4. Return confirmation with category and file location
 
 **Examples:**
 ```bash
-# Add to default todo.md
-~/ARDEN/skills/todo-management/tools/add-todo.sh "Review pull request #42"
+# Work TODO
+~/ARDEN/skills/todo-management/tools/add-todo.sh "Review pull request #42" "work"
 
-# Add to specific file
-~/ARDEN/skills/todo-management/tools/add-todo.sh "Deploy to production" "deployment-checklist.md"
+# Personal TODO
+~/ARDEN/skills/todo-management/tools/add-todo.sh "Buy groceries" "personal"
 
-# Add task with details
-~/ARDEN/skills/todo-management/tools/add-todo.sh "Follow up with Sarah about Q1 planning meeting"
+# Side project TODO
+~/ARDEN/skills/todo-management/tools/add-todo.sh "Add feature to ARDEN" "side-projects"
 ```
 
 **Sample Output:**
@@ -38,13 +38,46 @@ The script will:
 ✅ TODO added successfully!
 
 📋 TODO: Review pull request #42
-📄 File: todo.md
-📍 Location: /home/hal/Notes/todo.md
+🏷️  Category: Work
+📄 File: todos/work.md
+📍 Location: /home/hal/Notes/todos/work.md
 
-RESULT: TODO added to todo.md
+RESULT: TODO added to Work category
 ```
 
-Then confirm to user: "Added to your TODO list: [TODO_TEXT]"
+Then confirm to user: "Added to your work TODOs: [TODO_TEXT]"
+
+## TODO Categories
+
+TODOs are organized into three categories:
+
+### Work
+- Professional tasks, meetings, projects
+- Code reviews, deployments, documentation
+- Client communications, reports, presentations
+- **File:** `~/Notes/todos/work.md`
+
+### Personal
+- Household tasks, errands, appointments
+- Family, friends, health, fitness
+- Personal finances, shopping, home maintenance
+- **File:** `~/Notes/todos/personal.md`
+
+### Side Projects
+- ARDEN improvements and features
+- Learning new technologies, tutorials
+- Personal coding projects, experiments
+- **File:** `~/Notes/todos/side-projects.md`
+
+## Category Detection
+
+Analyze the TODO content to determine the appropriate category:
+
+**Work indicators:** deploy, review PR, meeting, client, presentation, report, team
+**Personal indicators:** buy, groceries, family names, doctor, gym, clean, bills
+**Side Projects indicators:** ARDEN, learn, experiment, tutorial, side project
+
+**Default:** When unclear, use **personal** category.
 
 ## When to Invoke
 
@@ -60,28 +93,65 @@ This skill should be automatically invoked when the user:
 
 ## Capabilities
 
+- **Smart Categorization**: Automatically determines category from TODO content
 - **Quick Capture**: Add TODOs in seconds via any interface
-- **Flexible Targeting**: Add to default todo.md or any specific file
+- **Three Categories**: Organized into work, personal, and side-projects
 - **Markdown Format**: Uses standard markdown checkbox syntax
 - **Auto-Consolidation**: Automatically runs consolidation script
 - **Voice-Friendly**: Works seamlessly with voice input
-- **Web Integration**: Integrates with existing web TODO interface
-- **File Organization**: Keeps TODOs organized in Notes directory
+- **Web Integration**: Integrates with web TODO interface with category badges
+- **Category Filtering**: Filter TODOs by category in web interface
 
 ## Workflows
 
-See `workflows/add-todo.md` for detailed workflow
+See `workflows/add-todo.md` for detailed workflow including category detection guidelines
 
 ## Tools
 
-- `add-todo.sh` - Main script to add TODO items
+- `add-todo.sh` - Main script to add TODO items with category support
 
 ## Context Files
 
-- `todo-location.md` - Where TODOs are saved (~/Notes/)
+- `todo-location.md` - Where TODOs are saved (~/Notes/todos/)
 - `todo-format.md` - Markdown checkbox format specification
 
 ## Voice Interaction Design
+
+### Best Practices for User Input
+
+**Clear, Direct Patterns (Recommended):**
+- "Add a TODO to [action]"
+- "Remind me to [action]"
+- "I need to [action]"
+- "Add to my TODO list: [action]"
+
+**For Best Results:**
+1. **Be specific and actionable** - Start with a verb
+   - ✅ "Review pull request #42"
+   - ❌ "The pull request thing"
+
+2. **Include context when needed**
+   - ✅ "Send Q1 report to Sarah by Friday"
+   - ❌ "Send report"
+
+3. **One TODO at a time** (or clearly separate multiple TODOs)
+   - ✅ "Add three TODOs: review code, buy milk, learn Rust"
+   - ❌ "I need to do some coding stuff and also personal things"
+
+4. **Use trigger phrases**
+   - "Add a TODO..."
+   - "Remind me to..."
+   - "I need to..."
+   - "Don't forget to..."
+
+5. **Trust the AI for category detection**, but be explicit if uncertain
+   - It knows: "deploy" = work, "groceries" = personal, "ARDEN" = side-projects
+   - If unsure, just say "work TODO" or "personal TODO"
+
+**What to Avoid:**
+- ❌ Too vague: "Remember something", "Add that thing"
+- ❌ Too conversational/rambling: "So I was thinking maybe I should probably at some point review the code"
+- ❌ Multiple TODOs in complex sentences without clear separation
 
 ### Input Patterns
 
@@ -97,6 +167,39 @@ Natural language patterns that should trigger this skill:
 - "I have to [task]"
 - "Remember to [task]"
 
+### Category-Specific Examples
+
+**For Work TODOs** (use work-related keywords):
+```
+"Add a TODO to review the deployment logs"
+"Remind me to send the quarterly report"
+"I need to fix the authentication bug"
+"Add to my work TODOs: prepare presentation for client meeting"
+```
+
+**For Personal TODOs** (use personal/household keywords):
+```
+"Remind me to buy groceries"
+"I need to call the dentist"
+"Add a TODO to pay the electricity bill"
+"Don't forget to pick up dry cleaning"
+```
+
+**For Side Projects** (mention ARDEN or learning):
+```
+"I need to improve ARDEN's voice recognition"
+"Add a TODO to learn Rust programming"
+"Remind me to work on my side project"
+"Add a TODO to experiment with the new API"
+```
+
+**Explicit Category** (Most Reliable):
+```
+"Add a work TODO to [action]"
+"Add a personal TODO to [action]"
+"Add a side project TODO to [action]"
+```
+
 ### Output Format
 
 Voice responses should be:
@@ -106,53 +209,63 @@ Voice responses should be:
 
 ### Example Voice Interactions
 
-**Example 1: Simple TODO**
+**Example 1: Work TODO**
 ```
 User: "Add a TODO to review the deployment logs"
-ARDEN: "Added to your TODO list: Review the deployment logs"
+Analysis: "deployment" → work category
+ARDEN: "Added to your work TODOs: Review the deployment logs"
 ```
 
-**Example 2: Natural language**
+**Example 2: Personal TODO**
 ```
-User: "Remind me to call Sarah about the Q1 budget meeting"
-ARDEN: "Added: Call Sarah about the Q1 budget meeting"
+User: "Remind me to buy groceries"
+Analysis: "buy groceries" → personal category
+ARDEN: "Added to personal: Buy groceries"
 ```
 
-**Example 3: Implied TODO**
+**Example 3: Side Project TODO**
 ```
-User: "I need to update the documentation for the API changes"
-ARDEN: "Added to your TODO list: Update the documentation for the API changes"
+User: "I need to add a new feature to ARDEN"
+Analysis: "ARDEN" → side-projects category
+ARDEN: "Added to side projects: Add a new feature to ARDEN"
 ```
 
 **Example 4: Multiple TODOs**
 ```
-User: "Add three TODOs: review pull request, deploy to staging, and send status update"
-ARDEN: "Added 3 items to your TODO list"
+User: "Add three TODOs: review pull request, buy milk, and learn Rust"
+Analysis: work, personal, side-projects
+ARDEN: "Added 3 items: 1 to work, 1 to personal, and 1 to side projects"
+```
+
+**Example 5: Explicit Category**
+```
+User: "Add a work TODO to send the quarterly report"
+Analysis: User explicitly said "work TODO"
+ARDEN: "Added to work: Send the quarterly report"
 ```
 
 ## Web Interface Integration
 
-The skill integrates with the existing web TODO interface at `/todos.html`:
+The skill integrates with the web TODO interface at `/todos.html`:
 
-- TODOs added via skill appear in the web UI
-- Web UI uses same consolidation system
+- TODOs added via skill appear in the web UI with category badges
+- Color-coded badges: Work (blue), Personal (green), Side Projects (purple)
+- Filter by category using the category dropdown
 - Real-time updates via WebSocket
 - Can toggle TODO status in web UI
 - Full sync between chat, voice, and web
 
 ## File Organization
 
-### Default Target
-- Primary file: `~/Notes/todo.md`
-- All TODOs are consolidated here automatically
+### Category Files
+- **Work:** `~/Notes/todos/work.md`
+- **Personal:** `~/Notes/todos/personal.md`
+- **Side Projects:** `~/Notes/todos/side-projects.md`
 
-### Custom Targets
-You can add TODOs to specific files:
-- Project TODOs: `project-name.md`
-- Meeting TODOs: `meeting-YYYY-MM-DD.md`
-- Topic-specific: `deployment-checklist.md`
+### Consolidated File
+- **Master:** `~/Notes/todo.md` (auto-generated from all category files)
 
-All files are scanned and consolidated into master `todo.md`
+**Important:** Only files in `~/Notes/todos/` directory are scanned for TODOs. Regular notes in `~/Notes/` are NOT included in TODO consolidation.
 
 ## TODO Format
 
@@ -187,45 +300,60 @@ add-todo.sh "Send follow-up email to Sarah"
 
 ## Configuration
 
-### Notes Directory
-Default: `~/Notes/`
+### TODOs Directory
+Default: `~/Notes/todos/`
 
-To change, update the `NOTES_DIR` variable in `add-todo.sh`
+Category files:
+- `work.md`
+- `personal.md`
+- `side-projects.md`
 
-### Default TODO File
-Default: `todo.md`
+### Default Category
+Default: `personal` (used when category cannot be determined)
 
-To change, update the `DEFAULT_TODO_FILE` variable in `add-todo.sh`
+To change, update the `DEFAULT_CATEGORY` variable in `add-todo.sh`
 
 ### Consolidation Script
 Location: `~/ARDEN/scripts/consolidate-todos.sh`
 
 Automatically runs after each TODO addition to keep master list updated.
+Only scans `~/Notes/todos/` directory (regular notes are excluded).
 
 ## Examples
 
-### Example 1: Development Task
+### Example 1: Work - Development Task
 ```
 User: "Add a TODO to fix the authentication bug in the login flow"
-ARDEN: "Added to your TODO list: Fix the authentication bug in the login flow"
+Category: work (technical task)
+ARDEN: "Added to work: Fix the authentication bug in the login flow"
 ```
 
-### Example 2: Meeting Follow-up
+### Example 2: Work - Meeting Follow-up
 ```
 User: "Remind me to send the Q1 report to the team by Friday"
-ARDEN: "Added: Send the Q1 report to the team by Friday"
+Category: work (team, report)
+ARDEN: "Added to work: Send the Q1 report to the team by Friday"
 ```
 
-### Example 3: Project Task
+### Example 3: Personal - Errands
 ```
-User: "I need to deploy the new features to the staging environment"
-ARDEN: "Added to your TODO list: Deploy the new features to the staging environment"
+User: "Don't forget to buy milk and eggs"
+Category: personal (groceries)
+ARDEN: "Added to personal: Buy milk and eggs"
 ```
 
-### Example 4: Quick Capture
+### Example 4: Side Projects - ARDEN Improvement
 ```
-User: "Don't forget to buy milk"
-ARDEN: "Added: Buy milk"
+User: "I need to improve ARDEN's voice recognition accuracy"
+Category: side-projects (ARDEN mentioned)
+ARDEN: "Added to side projects: Improve ARDEN's voice recognition accuracy"
+```
+
+### Example 5: Side Projects - Learning
+```
+User: "Add a TODO to learn Rust programming"
+Category: side-projects (learning)
+ARDEN: "Added to side projects: Learn Rust programming"
 ```
 
 ## Error Handling
@@ -244,16 +372,22 @@ The script handles common errors:
 
 ## Testing
 
-Test the skill:
+Test the skill with different categories:
 ```bash
-# Test basic addition
-./skills/todo-management/tools/add-todo.sh "Test TODO item"
+# Test work TODO
+./skills/todo-management/tools/add-todo.sh "Deploy new feature" "work"
 
-# Test custom file
-./skills/todo-management/tools/add-todo.sh "Test custom file" "test.md"
+# Test personal TODO
+./skills/todo-management/tools/add-todo.sh "Buy groceries" "personal"
 
-# Test missing argument (should show error)
-./skills/todo-management/tools/add-todo.sh
+# Test side project TODO
+./skills/todo-management/tools/add-todo.sh "Add ARDEN feature" "side-projects"
+
+# Test default (personal)
+./skills/todo-management/tools/add-todo.sh "Call dentist"
+
+# Test invalid category (falls back to personal)
+./skills/todo-management/tools/add-todo.sh "Test task" "invalid"
 ```
 
 ## Agent Preferences
@@ -266,11 +400,11 @@ Best used with:
 ## Future Enhancements
 
 Potential improvements:
-- [ ] Priority levels (high/medium/low)
-- [ ] Due dates
-- [ ] Tags/categories
+- [ ] Priority levels (high/medium/low) within categories
+- [ ] Due dates for TODOs
 - [ ] Recurring TODOs
 - [ ] Sub-tasks
-- [ ] Assignees (for team TODOs)
+- [ ] Smart category suggestions based on user patterns
 - [ ] Integration with calendar
 - [ ] Smart reminders
+- [ ] Category customization (add new categories)

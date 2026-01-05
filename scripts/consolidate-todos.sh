@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # ARDEN TODO Consolidation Script
-# Parses all notes in ~/Notes for TODO items and consolidates them into todo.md
+# Parses TODO files in ~/Notes/todos/ and consolidates them into todo.md
 
 NOTES_DIR="$HOME/Notes"
+TODOS_DIR="$NOTES_DIR/todos"
 OUTPUT_FILE="$NOTES_DIR/todo.md"
 TEMP_FILE="/tmp/arden-todos-$$.md"
 STATS_FILE="/tmp/arden-stats-$$.txt"
@@ -15,8 +16,35 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}=== ARDEN TODO Consolidator ===${NC}"
-echo -e "Scanning: $NOTES_DIR"
+echo -e "Scanning: $TODOS_DIR"
 echo -e "Output: $OUTPUT_FILE\n"
+
+# Check if todos directory exists
+if [ ! -d "$TODOS_DIR" ]; then
+    echo -e "${YELLOW}Creating todos directory: $TODOS_DIR${NC}"
+    mkdir -p "$TODOS_DIR"
+    
+    # Create initial TODO files
+    cat > "$TODOS_DIR/work.md" << 'EOF'
+# Work TODOs
+
+- [ ] Example work task
+EOF
+    
+    cat > "$TODOS_DIR/personal.md" << 'EOF'
+# Personal TODOs
+
+- [ ] Example personal task
+EOF
+    
+    cat > "$TODOS_DIR/side-projects.md" << 'EOF'
+# Side Projects
+
+- [ ] Example side project task
+EOF
+    
+    echo -e "${GREEN}✓${NC} Created initial TODO files in $TODOS_DIR"
+fi
 
 # Create header for TODO file
 cat > "$TEMP_FILE" << 'HEADER'
@@ -26,14 +54,17 @@ title: Consolidated TODO List
 author: Hal Borland
 last_updated: TIMESTAMP
 generated_by: ARDEN
+source: todos directory only
 ---
 
 # Consolidated TODO List
 
 > **Auto-generated** by ARDEN TODO Consolidator
 > Last updated: TIMESTAMP
+> Source: Only scans `~/Notes/todos/` directory (work, personal, side projects)
 
-This file contains all TODO items found across your Notes directory.
+This file contains all TODO items from your dedicated TODO files.
+**Note**: TODOs in regular notes are NOT included.
 
 ---
 
@@ -47,12 +78,36 @@ sed -i "s/TIMESTAMP/$TIMESTAMP/g" "$TEMP_FILE"
 echo "0 0 0 0" > "$STATS_FILE"
 
 # Find all markdown files and search for TODOs
-echo -e "${YELLOW}Scanning markdown files...${NC}\n"
+echo -e "${YELLOW}Scanning TODO files in todos/ directory...${NC}\n"
 
-# Create a temporary file list
+# Create a temporary file list - only scan todos/ directory
 FILELIST="/tmp/arden-files-$$.txt"
-find "$NOTES_DIR" -type f -name "*.md" -not -name "todo.md" -printf '%T@ %p\n' | \
+find "$TODOS_DIR" -type f -name "*.md" -printf '%T@ %p\n' 2>/dev/null | \
 sort -rn | cut -d' ' -f2- > "$FILELIST"
+
+# Check if any files were found
+if [ ! -s "$FILELIST" ]; then
+    echo -e "${YELLOW}No TODO files found in $TODOS_DIR${NC}"
+    echo -e "${YELLOW}Creating default TODO files...${NC}\n"
+    
+    # Create default files if none exist
+    mkdir -p "$TODOS_DIR"
+    echo "# Work TODOs" > "$TODOS_DIR/work.md"
+    echo "" >> "$TODOS_DIR/work.md"
+    echo "- [ ] Example work task" >> "$TODOS_DIR/work.md"
+    
+    echo "# Personal TODOs" > "$TODOS_DIR/personal.md"
+    echo "" >> "$TODOS_DIR/personal.md"
+    echo "- [ ] Example personal task" >> "$TODOS_DIR/personal.md"
+    
+    echo "# Side Projects" > "$TODOS_DIR/side-projects.md"
+    echo "" >> "$TODOS_DIR/side-projects.md"
+    echo "- [ ] Example side project task" >> "$TODOS_DIR/side-projects.md"
+    
+    # Re-scan
+    find "$TODOS_DIR" -type f -name "*.md" -printf '%T@ %p\n' 2>/dev/null | \
+    sort -rn | cut -d' ' -f2- > "$FILELIST"
+fi
 
 # Process each file
 while read -r file; do
@@ -67,6 +122,7 @@ while read -r file; do
     TODOS=$(grep -niE '(- \[ \]|- \[x\]|- \[X\]|TODO:|todo:|#todo)' "$file" 2>/dev/null)
     
     if [ -n "$TODOS" ]; then
+        # Make path relative to Notes directory for cleaner display
         RELPATH="${file#$NOTES_DIR/}"
         
         echo -e "${GREEN}✓${NC} Found TODOs in: $RELPATH"

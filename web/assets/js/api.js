@@ -131,11 +131,26 @@ class ArdenAPI {
         return this.request('/status/health');
     }
     
+    async getSystemStats() {
+        return this.request('/status/system');
+    }
+    
     /**
      * TODOs
      */
     async getTodos() {
         return this.request('/todos');
+    }
+    
+    async getTodoCategories() {
+        return this.request('/todos/categories');
+    }
+    
+    async createTodoCategory(name) {
+        return this.request('/todos/categories', {
+            method: 'POST',
+            body: JSON.stringify({ name }),
+        });
     }
     
     async consolidateTodos() {
@@ -151,10 +166,23 @@ class ArdenAPI {
         });
     }
     
-    async createTodo(text, targetFile = null) {
+    async createTodo(text, category = 'personal', targetFile = null) {
         return this.request('/todos', {
             method: 'POST',
-            body: JSON.stringify({ text, targetFile }),
+            body: JSON.stringify({ text, category, targetFile }),
+        });
+    }
+    
+    async deleteTodo(id) {
+        return this.request(`/todos/${id}`, {
+            method: 'DELETE',
+        });
+    }
+    
+    async editTodo(id, text, dueDate = null) {
+        return this.request(`/todos/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ text, dueDate }),
         });
     }
     
@@ -224,7 +252,8 @@ class ArdenAPI {
             completionTokens: stat.total_completion_tokens,
             totalTokens: stat.total_tokens,
             totalCost: stat.total_cost_usd,
-            successRate: ((stat.successful_requests / stat.total_requests) * 100).toFixed(1)
+            successRate: ((stat.successful_requests / stat.total_requests) * 100).toFixed(1),
+            isLocal: stat.isLocal || false
         }));
         
         return { success: true, costs };

@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Load initial status
     await loadStatus();
+    await loadSystemStats();
     await loadAnalytics();
     await loadActiveSessions();
     await loadSkillsAnalytics();
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Auto-refresh every 30 seconds
     setInterval(loadStatus, 30000);
+    setInterval(loadSystemStats, 5000); // Refresh system stats every 5 seconds
     setInterval(loadAnalytics, 60000); // Refresh analytics every minute
     setInterval(loadActiveSessions, 30000); // Refresh sessions every 30 seconds
     setInterval(loadSkillsAnalytics, 60000); // Refresh skills analytics every minute
@@ -71,6 +73,99 @@ document.addEventListener('DOMContentLoaded', async () => {
             refreshSessionsButton.textContent = 'Refresh';
             refreshSessionsButton.disabled = false;
         });
+    }
+    
+    // Load system resource stats
+    async function loadSystemStats() {
+        try {
+            const response = await api.getSystemStats();
+            
+            if (response.success) {
+                const stats = response.stats;
+                
+                // Update CPU
+                const cpuUsage = parseFloat(stats.cpu.usage).toFixed(1);
+                document.getElementById('cpu-usage').textContent = cpuUsage;
+                document.getElementById('cpu-bar').style.width = `${cpuUsage}%`;
+                document.getElementById('cpu-model').textContent = `Model: ${stats.cpu.model}`;
+                document.getElementById('cpu-cores').textContent = `Cores: ${stats.cpu.cores}`;
+                
+                // Color code CPU bar
+                const cpuBar = document.getElementById('cpu-bar');
+                if (cpuUsage > 80) {
+                    cpuBar.style.backgroundColor = '#f7768e'; // Red
+                } else if (cpuUsage > 60) {
+                    cpuBar.style.backgroundColor = '#e0af68'; // Yellow
+                } else {
+                    cpuBar.style.backgroundColor = '#7aa2f7'; // Blue
+                }
+                
+                // Update Memory
+                const memoryUsage = parseFloat(stats.memory.usagePercent);
+                document.getElementById('memory-usage').textContent = memoryUsage;
+                document.getElementById('memory-bar').style.width = `${memoryUsage}%`;
+                document.getElementById('memory-used').textContent = `Used: ${stats.memory.usedGB} GB`;
+                document.getElementById('memory-total').textContent = `Total: ${stats.memory.totalGB} GB`;
+                
+                // Color code memory bar
+                const memoryBar = document.getElementById('memory-bar');
+                if (memoryUsage > 80) {
+                    memoryBar.style.backgroundColor = '#f7768e'; // Red
+                } else if (memoryUsage > 60) {
+                    memoryBar.style.backgroundColor = '#e0af68'; // Yellow
+                } else {
+                    memoryBar.style.backgroundColor = '#bb9af7'; // Purple
+                }
+                
+                // Update GPU
+                const gpuContent = document.getElementById('gpu-content');
+                if (stats.gpu.available && stats.gpu.gpus.length > 0) {
+                    let gpuHtml = '';
+                    
+                    stats.gpu.gpus.forEach((gpu, index) => {
+                        const memUsage = parseFloat(gpu.memory.usagePercent);
+                        const utilization = gpu.utilization;
+                        
+                        // Determine bar color based on memory usage
+                        let barColor = '#9ece6a'; // Green
+                        if (memUsage > 80) barColor = '#f7768e'; // Red
+                        else if (memUsage > 60) barColor = '#e0af68'; // Yellow
+                        
+                        gpuHtml += `
+                            <div class="${index > 0 ? 'mt-4 pt-4 border-t' : ''}" style="${index > 0 ? 'border-color: #414868;' : ''}">
+                                <div class="mb-3">
+                                    <div class="flex items-end space-x-2">
+                                        <span class="text-3xl font-bold" style="color: #c0caf5;">${memUsage}</span>
+                                        <span class="text-lg mb-1" style="color: #9aa5ce;">%</span>
+                                    </div>
+                                </div>
+                                <div class="w-full bg-surface rounded-full h-3 overflow-hidden" style="border: 1px solid #414868;">
+                                    <div class="h-full transition-all duration-500" style="width: ${memUsage}%; background-color: ${barColor};"></div>
+                                </div>
+                                <div class="mt-3 text-xs space-y-1" style="color: #9aa5ce;">
+                                    <div title="${gpu.name}">${gpu.name.length > 25 ? gpu.name.substring(0, 25) + '...' : gpu.name}</div>
+                                    <div>Used: ${gpu.memory.usedGB} GB / ${gpu.memory.totalGB} GB</div>
+                                    <div>Utilization: <span style="color: #7aa2f7;">${utilization}%</span></div>
+                                    <div>Temp: <span style="color: ${gpu.temperature > 80 ? '#f7768e' : '#9ece6a'};">${gpu.temperature}°C</span></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    gpuContent.innerHTML = gpuHtml;
+                } else {
+                    gpuContent.innerHTML = `
+                        <div class="text-center py-8" style="color: #9aa5ce;">
+                            <div class="text-4xl mb-2">🚫</div>
+                            <div class="text-sm">No GPU detected</div>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load system stats:', error);
+            // Don't show error UI, just log it
+        }
     }
     
     // Load analytics data
@@ -359,37 +454,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.success) {
                 renderApiCosts(response.costs);
             } else {
-                document.getElementById('api-costs-container').innerHTML = 
+                document.getElementById('api-costs').innerHTML = 
                     '<div class="text-center py-8" style="color: #f7768e;">Failed to load API costs</div>';
             }
         } catch (error) {
             console.error('Failed to load API costs:', error);
-            document.getElementById('api-costs-container').innerHTML = 
+            document.getElementById('api-costs').innerHTML = 
                 '<div class="text-center py-8" style="color: #f7768e;">Error loading API costs</div>';
         }
     }
     
     // Render API costs
     function renderApiCosts(costs) {
-        const container = document.getElementById('api-costs-container');
+        const container = document.getElementById('api-costs');
         
         if (!costs || costs.length === 0) {
             container.innerHTML = '<div class="text-center py-8" style="color: #9aa5ce;">No API usage yet</div>';
             return;
         }
         
-        // Calculate totals
-        const totalCost = costs.reduce((sum, cost) => sum + parseFloat(cost.totalCost), 0);
-        const totalTokens = costs.reduce((sum, cost) => sum + parseInt(cost.totalTokens), 0);
-        const totalCalls = costs.reduce((sum, cost) => sum + parseInt(cost.totalCalls), 0);
+        // Separate local and API-based models
+        const localModels = costs.filter(c => c.isLocal);
+        const apiModels = costs.filter(c => !c.isLocal);
+        
+        // Calculate totals (only for API models)
+        const totalCost = apiModels.reduce((sum, cost) => sum + parseFloat(cost.totalCost || cost.total_cost_usd), 0);
+        const totalTokens = costs.reduce((sum, cost) => sum + parseInt(cost.totalTokens || cost.total_tokens), 0);
+        const totalCalls = costs.reduce((sum, cost) => sum + parseInt(cost.totalCalls || cost.total_requests), 0);
         
         let html = `
             <div class="mb-6 p-4 rounded-lg" style="background: #1a1b26; border: 2px solid #7aa2f7;">
                 <h4 class="font-semibold mb-4" style="color: #c0caf5;">Total Usage</h4>
                 <div class="grid grid-cols-3 gap-4">
                     <div class="text-center">
-                        <div class="text-3xl font-bold" style="color: #f7768e;">$${totalCost.toFixed(4)}</div>
-                        <div class="text-xs mt-1" style="color: #9aa5ce;">Total Cost</div>
+                        <div class="text-3xl font-bold" style="color: ${totalCost > 0 ? '#f7768e' : '#9ece6a'};">$${totalCost.toFixed(4)}</div>
+                        <div class="text-xs mt-1" style="color: #9aa5ce;">API Cost</div>
                     </div>
                     <div class="text-center">
                         <div class="text-3xl font-bold" style="color: #7aa2f7;">${totalTokens.toLocaleString()}</div>
@@ -397,62 +496,128 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <div class="text-center">
                         <div class="text-3xl font-bold" style="color: #9ece6a;">${totalCalls}</div>
-                        <div class="text-xs mt-1" style="color: #9aa5ce;">API Calls</div>
+                        <div class="text-xs mt-1" style="color: #9aa5ce;">Total Calls</div>
                     </div>
                 </div>
+                ${localModels.length > 0 ? `
+                    <div class="mt-4 p-3 rounded" style="background: #24283b; border: 1px solid #9ece6a;">
+                        <div class="text-sm" style="color: #9ece6a;">
+                            ✓ ${localModels.length} local model${localModels.length !== 1 ? 's' : ''} running (zero cost)
+                        </div>
+                    </div>
+                ` : ''}
             </div>
-            
-            <div class="space-y-4">
         `;
         
-        costs.forEach(cost => {
-            const costValue = parseFloat(cost.totalCost);
-            const costColor = costValue === 0 ? '#9aa5ce' : '#f7768e';
-            const successRate = parseFloat(cost.successRate);
-            const successColor = successRate >= 90 ? '#9ece6a' : successRate >= 70 ? '#e0af68' : '#f7768e';
+        // Render API models first (if any)
+        if (apiModels.length > 0) {
+            html += '<h5 class="font-semibold mb-3" style="color: #c0caf5;">API Models</h5>';
+            html += '<div class="space-y-4 mb-6">';
             
-            html += `
-                <div class="p-4 rounded-lg" style="background: #1a1b26; border: 1px solid #414868;">
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <h5 class="font-semibold text-lg" style="color: #c0caf5;">${escapeHtml(cost.provider)}</h5>
-                            <div class="text-sm mt-1" style="color: #7aa2f7;">${escapeHtml(cost.model)}</div>
+            apiModels.forEach(cost => {
+                const costValue = parseFloat(cost.totalCost || cost.total_cost_usd);
+                const tokens = parseInt(cost.totalTokens || cost.total_tokens);
+                const promptTokens = parseInt(cost.promptTokens || cost.total_prompt_tokens);
+                const completionTokens = parseInt(cost.completionTokens || cost.total_completion_tokens);
+                const calls = parseInt(cost.totalCalls || cost.total_requests);
+                const successRate = parseFloat(cost.successRate || (cost.successful_requests / cost.total_requests * 100));
+                const successColor = successRate >= 90 ? '#9ece6a' : successRate >= 70 ? '#e0af68' : '#f7768e';
+                
+                html += `
+                    <div class="p-4 rounded-lg" style="background: #1a1b26; border: 1px solid #414868;">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h5 class="font-semibold text-lg" style="color: #c0caf5;">${escapeHtml(cost.provider)}</h5>
+                                    <span class="text-xs px-2 py-0.5 rounded" style="background: #f7768e; color: #1a1b26;">💳 API</span>
+                                </div>
+                                <div class="text-sm mt-1" style="color: #7aa2f7;">${escapeHtml(cost.model)}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold" style="color: #f7768e;">$${costValue.toFixed(4)}</div>
+                                <div class="text-xs" style="color: #9aa5ce;">${calls} calls</div>
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-2xl font-bold" style="color: ${costColor};">$${costValue.toFixed(4)}</div>
-                            <div class="text-xs" style="color: #9aa5ce;">${cost.totalCalls} calls</div>
+                        
+                        <div class="grid grid-cols-4 gap-3 text-sm">
+                            <div class="text-center p-2 rounded" style="background: #24283b;">
+                                <div class="font-bold" style="color: #bb9af7;">${tokens.toLocaleString()}</div>
+                                <div class="text-xs" style="color: #9aa5ce;">Tokens</div>
+                            </div>
+                            <div class="text-center p-2 rounded" style="background: #24283b;">
+                                <div class="font-bold" style="color: #7dcfff;">${promptTokens.toLocaleString()}</div>
+                                <div class="text-xs" style="color: #9aa5ce;">Prompt</div>
+                            </div>
+                            <div class="text-center p-2 rounded" style="background: #24283b;">
+                                <div class="font-bold" style="color: #e0af68;">${completionTokens.toLocaleString()}</div>
+                                <div class="text-xs" style="color: #9aa5ce;">Completion</div>
+                            </div>
+                            <div class="text-center p-2 rounded" style="background: #24283b;">
+                                <div class="font-bold" style="color: ${successColor};">${successRate.toFixed(1)}%</div>
+                                <div class="text-xs" style="color: #9aa5ce;">Success</div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="grid grid-cols-4 gap-3 text-sm">
-                        <div class="text-center p-2 rounded" style="background: #24283b;">
-                            <div class="font-bold" style="color: #bb9af7;">${parseInt(cost.totalTokens).toLocaleString()}</div>
-                            <div class="text-xs" style="color: #9aa5ce;">Tokens</div>
-                        </div>
-                        <div class="text-center p-2 rounded" style="background: #24283b;">
-                            <div class="font-bold" style="color: #7dcfff;">${parseInt(cost.promptTokens).toLocaleString()}</div>
-                            <div class="text-xs" style="color: #9aa5ce;">Prompt</div>
-                        </div>
-                        <div class="text-center p-2 rounded" style="background: #24283b;">
-                            <div class="font-bold" style="color: #e0af68;">${parseInt(cost.completionTokens).toLocaleString()}</div>
-                            <div class="text-xs" style="color: #9aa5ce;">Completion</div>
-                        </div>
-                        <div class="text-center p-2 rounded" style="background: #24283b;">
-                            <div class="font-bold" style="color: ${successColor};">${successRate}%</div>
-                            <div class="text-xs" style="color: #9aa5ce;">Success</div>
-                        </div>
-                    </div>
-                    
-                    ${costValue === 0 ? `
-                        <div class="mt-3 text-xs text-center p-2 rounded" style="background: #24283b; color: #9ece6a;">
-                            ✓ Free (Local/Self-hosted)
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        });
+                `;
+            });
+            
+            html += '</div>';
+        }
         
-        html += '</div>';
+        // Render local models (if any)
+        if (localModels.length > 0) {
+            html += '<h5 class="font-semibold mb-3" style="color: #c0caf5;">Local Models (Zero Cost)</h5>';
+            html += '<div class="space-y-4">';
+            
+            localModels.forEach(cost => {
+                const tokens = parseInt(cost.totalTokens || cost.total_tokens);
+                const promptTokens = parseInt(cost.promptTokens || cost.total_prompt_tokens);
+                const completionTokens = parseInt(cost.completionTokens || cost.total_completion_tokens);
+                const calls = parseInt(cost.totalCalls || cost.total_requests);
+                const successRate = parseFloat(cost.successRate || (cost.successful_requests / cost.total_requests * 100));
+                const successColor = successRate >= 90 ? '#9ece6a' : successRate >= 70 ? '#e0af68' : '#f7768e';
+                
+                html += `
+                    <div class="p-4 rounded-lg" style="background: #1a1b26; border: 1px solid #9ece6a;">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h5 class="font-semibold text-lg" style="color: #c0caf5;">${escapeHtml(cost.provider)}</h5>
+                                    <span class="text-xs px-2 py-0.5 rounded" style="background: #9ece6a; color: #1a1b26;">🏠 Local</span>
+                                </div>
+                                <div class="text-sm mt-1" style="color: #7aa2f7;">${escapeHtml(cost.model)}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold" style="color: #9ece6a;">FREE</div>
+                                <div class="text-xs" style="color: #9aa5ce;">${calls} calls</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-4 gap-3 text-sm">
+                            <div class="text-center p-2 rounded" style="background: #24283b;">
+                                <div class="font-bold" style="color: #bb9af7;">${tokens.toLocaleString()}</div>
+                                <div class="text-xs" style="color: #9aa5ce;">Tokens</div>
+                            </div>
+                            <div class="text-center p-2 rounded" style="background: #24283b;">
+                                <div class="font-bold" style="color: #7dcfff;">${promptTokens.toLocaleString()}</div>
+                                <div class="text-xs" style="color: #9aa5ce;">Prompt</div>
+                            </div>
+                            <div class="text-center p-2 rounded" style="background: #24283b;">
+                                <div class="font-bold" style="color: #e0af68;">${completionTokens.toLocaleString()}</div>
+                                <div class="text-xs" style="color: #9aa5ce;">Completion</div>
+                            </div>
+                            <div class="text-center p-2 rounded" style="background: #24283b;">
+                                <div class="font-bold" style="color: ${successColor};">${successRate.toFixed(1)}%</div>
+                                <div class="text-xs" style="color: #9aa5ce;">Success</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+        }
+        
         container.innerHTML = html;
     }
     

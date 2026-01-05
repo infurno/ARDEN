@@ -7,14 +7,16 @@
     "stt_provider": "local-whisper",
     "stt_config": {
       "model": "base",
-      "language": "en"
+      "language": "en",
+      "device": "cpu"
     },
     "tts_provider": "edge-tts",
     "tts_config": {
-      "voice": "en-US-BrianNeural"
+      "voice": "en-US-AndrewNeural"
     },
     "wake_word": "Hey ARDEN",
-    "notifications": true
+    "notifications": true,
+    "debug_mode": false
   },
   "api": {
     "enabled": true,

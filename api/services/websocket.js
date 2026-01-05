@@ -166,7 +166,7 @@ class WebSocketService {
         sent++;
       }
     });
-    logger.system.debug('Broadcasted message', { recipients: sent });
+    // Successfully broadcasted (don't log - too verbose)
     return sent;
   }
 

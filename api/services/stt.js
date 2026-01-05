@@ -31,12 +31,13 @@ async function speechToTextLocal(filePath) {
   const whisperPath = path.join(ARDEN_ROOT, 'venv/bin/whisper');
   const model = config.voice.stt_config.model || 'base';
   const language = config.voice.stt_config.language || 'en';
+  const device = config.voice.stt_config.device || 'cpu';
 
-  logger.voice.info('Using local Whisper', { model, language, filePath });
+  logger.voice.info('Using local Whisper', { model, language, device, filePath });
 
   return new Promise((resolve, reject) => {
-    // Use GPU for faster transcription (llama3.2 uses minimal VRAM)
-    const command = `"${whisperPath}" "${filePath}" --model ${model} --language ${language} --output_format txt --output_dir /tmp`;
+    // Use configured device (cpu or cuda)
+    const command = `"${whisperPath}" "${filePath}" --model ${model} --language ${language} --device ${device} --output_format txt --output_dir /tmp`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {

@@ -21,6 +21,18 @@ let navigationHistory = []; // Stack of previously viewed notes
 let navigationHistoryIndex = -1; // Current position in history
 let searchTimer = null; // Debounce timer for live search
 
+// CodeMirror editor instance
+let codeMirrorEditor = null;
+
+// Editor settings (persisted in localStorage)
+let editorSettings = {
+  vimMode: false,
+  lineNumbers: true,
+  lineWrapping: true,
+  highlightActiveLine: true,
+  autoCloseBrackets: false
+};
+
 // API Base URL
 const API_BASE = '/api/notes';
 
@@ -46,11 +58,13 @@ const saveStatus = document.getElementById('saveStatus');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+  loadEditorSettings();
   loadNotes();
   loadStats();
   setupEventListeners();
   setupWebSocketListeners();
   initTheme();
+  setupEditorSettingsModal();
 });
 
 // Setup Event Listeners
@@ -201,7 +215,23 @@ async function loadNotes(append = false) {
       notesContainer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading notes...</p></div>';
     }
     
-    const response = await fetch(`${API_BASE}?limit=${currentLimit}&offset=${currentOffset}&sort=${currentSort}`);
+    const response = await fetch(`${API_BASE}?limit=${currentLimit}&offset=${currentOffset}&sort=${currentSort}`, {
+      credentials: 'include'
+    });
+    
+    // Check if we got redirected to login
+    if (response.redirected || response.url.includes('/login.html')) {
+      window.location.href = '/login.html';
+      return;
+    }
+    
+    // Check content type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      window.location.href = '/login.html';
+      return;
+    }
+    
     const data = await response.json();
     
     if (!data.success) {
@@ -297,7 +327,23 @@ function updateLoadMore() {
 // Load Statistics
 async function loadStats() {
   try {
-    const response = await fetch(`${API_BASE}/stats/overview`);
+    const response = await fetch(`${API_BASE}/stats/overview`, {
+      credentials: 'include'
+    });
+    
+    // Check if we got redirected to login
+    if (response.redirected || response.url.includes('/login.html')) {
+      // Don't redirect here, let loadNotes handle it
+      return;
+    }
+    
+    // Check content type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      // Likely redirected to login, skip stats
+      return;
+    }
+    
     const data = await response.json();
     
     if (data.success) {
@@ -310,6 +356,7 @@ async function loadStats() {
     }
   } catch (error) {
     console.error('Failed to load stats:', error);
+    // Don't show error in UI, stats are not critical
   }
 }
 
@@ -325,7 +372,23 @@ async function handleSearch() {
   try {
     notesContainer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Searching...</p></div>';
     
-    const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`, {
+      credentials: 'include'
+    });
+    
+    // Check if we got redirected to login
+    if (response.redirected || response.url.includes('/login.html')) {
+      window.location.href = '/login.html';
+      return;
+    }
+    
+    // Check content type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      window.location.href = '/login.html';
+      return;
+    }
+    
     const data = await response.json();
     
     if (!data.success) {
@@ -506,13 +569,16 @@ function switchTab(tabName) {
     }
   });
   
+  // Destroy existing CodeMirror instance
+  destroyCodeMirror();
+  
   // Render editor content
   if (tabName === 'edit') {
     editorContent.innerHTML = `
-      <div class="editor-pane" style="flex: 1;">
-        <textarea class="editor-textarea" id="noteTextarea">${escapeHtml(currentNote.content)}</textarea>
-      </div>
+      <div class="editor-pane" style="flex: 1;" id="editorPane"></div>
     `;
+    const pane = document.getElementById('editorPane');
+    codeMirrorEditor = initCodeMirror(pane, currentNote.content);
   } else if (tabName === 'preview') {
     editorContent.innerHTML = `
       <div class="editor-pane preview-pane" style="flex: 1;">
@@ -522,41 +588,25 @@ function switchTab(tabName) {
     renderPreview();
   } else if (tabName === 'split') {
     editorContent.innerHTML = `
-      <div class="editor-pane" style="flex: 1;">
-        <textarea class="editor-textarea" id="noteTextarea">${escapeHtml(currentNote.content)}</textarea>
-      </div>
+      <div class="editor-pane" style="flex: 1;" id="editorPane"></div>
       <div class="editor-pane preview-pane" style="flex: 1;">
         <div class="preview-content" id="previewContent"></div>
       </div>
     `;
-    setupEditorListeners();
+    const pane = document.getElementById('editorPane');
+    codeMirrorEditor = initCodeMirror(pane, currentNote.content);
     renderPreview();
   }
   
-  if (tabName === 'edit' || tabName === 'split') {
-    setupEditorListeners();
+  if (codeMirrorEditor) {
+    updateEditorStats();
   }
 }
 
 // Setup Editor Listeners
 function setupEditorListeners() {
-  const textarea = document.getElementById('noteTextarea');
-  if (!textarea) return;
-  
-  textarea.addEventListener('input', () => {
-    currentNote.content = textarea.value;
-    isDirty = true;
-    updateSaveStatus();
-    updateEditorStats();
-    
-    if (currentView === 'split') {
-      renderPreview();
-    }
-    
-    // Trigger auto-save
-    triggerAutoSave();
-  });
-  
+  // CodeMirror handles its own listeners now
+  // This function is kept for backward compatibility
   updateEditorStats();
 }
 
@@ -861,13 +911,9 @@ async function handleImageUpload(event) {
   }
   
   try {
-    // Show uploading status
-    const textarea = document.querySelector('#editorContentTextarea');
-    const originalPlaceholder = textarea ? textarea.placeholder : '';
-    if (textarea) {
-      textarea.placeholder = 'Uploading image...';
-      textarea.disabled = true;
-    }
+    // Show uploading status in save status
+    const originalStatus = saveStatus.textContent;
+    saveStatus.textContent = 'Uploading image...';
     
     // Create form data
     const formData = new FormData();
@@ -886,26 +932,24 @@ async function handleImageUpload(event) {
     }
     
     // Insert markdown at cursor position
-    if (textarea) {
-      const cursorPos = textarea.selectionStart;
-      const textBefore = textarea.value.substring(0, cursorPos);
-      const textAfter = textarea.value.substring(cursorPos);
+    if (codeMirrorEditor) {
+      const cursor = codeMirrorEditor.getCursor();
+      const line = codeMirrorEditor.getLine(cursor.line);
       
       // Add newlines if needed
-      const prefix = textBefore.endsWith('\n\n') ? '' : (textBefore.endsWith('\n') ? '\n' : '\n\n');
-      const suffix = textAfter.startsWith('\n\n') ? '' : (textAfter.startsWith('\n') ? '\n' : '\n\n');
+      const prefix = line === '' ? '' : '\n\n';
+      const suffix = '\n\n';
       
-      textarea.value = textBefore + prefix + data.markdown + suffix + textAfter;
+      codeMirrorEditor.replaceRange(prefix + data.markdown + suffix, cursor);
       
-      // Set cursor after inserted text
-      const newCursorPos = cursorPos + prefix.length + data.markdown.length + suffix.length;
-      textarea.selectionStart = newCursorPos;
-      textarea.selectionEnd = newCursorPos;
-      textarea.focus();
+      // Move cursor after inserted text
+      const newLine = cursor.line + (prefix ? 2 : 0) + 1;
+      codeMirrorEditor.setCursor(newLine, 0);
+      codeMirrorEditor.focus();
       
       // Mark as dirty and trigger preview update
       isDirty = true;
-      currentNote.content = textarea.value;
+      currentNote.content = codeMirrorEditor.getValue();
       updateSaveStatus();
       if (currentView === 'split' || currentView === 'preview') {
         renderPreview();
@@ -914,17 +958,13 @@ async function handleImageUpload(event) {
     }
     
     console.log('Image uploaded:', data.filename);
+    saveStatus.textContent = originalStatus;
     
   } catch (error) {
     console.error('Failed to upload image:', error);
     alert(`Failed to upload image: ${error.message}`);
+    saveStatus.textContent = originalStatus;
   } finally {
-    // Reset textarea
-    const textarea = document.querySelector('#editorContentTextarea');
-    if (textarea) {
-      textarea.disabled = false;
-      textarea.placeholder = '';
-    }
     // Clear file input so same file can be uploaded again
     event.target.value = '';
   }
@@ -1394,6 +1434,202 @@ function showNotification(message, type = 'info') {
     notification.style.opacity = '0';
     setTimeout(() => notification.remove(), 300);
   }, 3000);
+}
+
+// ============================================================================
+// CodeMirror Editor Integration
+// ============================================================================
+
+// Load editor settings from localStorage
+function loadEditorSettings() {
+  const saved = localStorage.getItem('ardenEditorSettings');
+  if (saved) {
+    try {
+      editorSettings = { ...editorSettings, ...JSON.parse(saved) };
+    } catch (e) {
+      console.error('Failed to load editor settings:', e);
+    }
+  }
+}
+
+// Save editor settings to localStorage
+function saveEditorSettings() {
+  localStorage.setItem('ardenEditorSettings', JSON.stringify(editorSettings));
+}
+
+// Initialize CodeMirror editor
+function initCodeMirror(element, initialContent = '') {
+  const config = {
+    value: initialContent,
+    mode: 'markdown',
+    theme: 'default',
+    lineNumbers: editorSettings.lineNumbers,
+    lineWrapping: editorSettings.lineWrapping,
+    styleActiveLine: editorSettings.highlightActiveLine,
+    autoCloseBrackets: editorSettings.autoCloseBrackets,
+    extraKeys: {
+      'Enter': 'newlineAndIndentContinueMarkdownList',
+      'Ctrl-S': () => saveCurrentNote(false),
+      'Cmd-S': () => saveCurrentNote(false)
+    },
+    placeholder: 'Start writing your note...'
+  };
+
+  // Add Vim keymap if enabled
+  if (editorSettings.vimMode) {
+    config.keyMap = 'vim';
+  }
+
+  const editor = CodeMirror(element, config);
+
+  // Apply custom styling
+  editor.getWrapperElement().style.height = '100%';
+  editor.getWrapperElement().style.fontSize = '14px';
+
+  // Listen for changes
+  editor.on('change', (cm) => {
+    currentNote.content = cm.getValue();
+    isDirty = true;
+    updateSaveStatus();
+    updateEditorStats();
+
+    if (currentView === 'split') {
+      renderPreview();
+    }
+
+    // Trigger auto-save
+    triggerAutoSave();
+  });
+
+  // Vim mode indicator
+  if (editorSettings.vimMode) {
+    const vimIndicator = document.getElementById('vimModeIndicator');
+    
+    editor.on('vim-mode-change', (e) => {
+      const mode = e.mode.toUpperCase();
+      vimIndicator.textContent = mode;
+      vimIndicator.className = 'vim-mode-indicator visible ' + e.mode;
+    });
+
+    // Set initial mode
+    vimIndicator.textContent = 'NORMAL';
+    vimIndicator.className = 'vim-mode-indicator visible normal';
+  }
+
+  return editor;
+}
+
+// Destroy CodeMirror instance
+function destroyCodeMirror() {
+  if (codeMirrorEditor) {
+    const element = codeMirrorEditor.getWrapperElement();
+    if (element && element.parentNode) {
+      element.parentNode.removeChild(element);
+    }
+    codeMirrorEditor = null;
+
+    // Hide Vim indicator
+    const vimIndicator = document.getElementById('vimModeIndicator');
+    if (vimIndicator) {
+      vimIndicator.classList.remove('visible');
+    }
+  }
+}
+
+// Update editor options
+function updateEditorOptions() {
+  if (!codeMirrorEditor) return;
+
+  codeMirrorEditor.setOption('lineNumbers', editorSettings.lineNumbers);
+  codeMirrorEditor.setOption('lineWrapping', editorSettings.lineWrapping);
+  codeMirrorEditor.setOption('styleActiveLine', editorSettings.highlightActiveLine);
+  codeMirrorEditor.setOption('autoCloseBrackets', editorSettings.autoCloseBrackets);
+
+  // Update Vim mode
+  const vimIndicator = document.getElementById('vimModeIndicator');
+  if (editorSettings.vimMode) {
+    codeMirrorEditor.setOption('keyMap', 'vim');
+    if (vimIndicator) {
+      vimIndicator.textContent = 'NORMAL';
+      vimIndicator.classList.add('visible');
+    }
+  } else {
+    codeMirrorEditor.setOption('keyMap', 'default');
+    if (vimIndicator) {
+      vimIndicator.classList.remove('visible');
+    }
+  }
+
+  saveEditorSettings();
+}
+
+// Setup editor settings modal
+function setupEditorSettingsModal() {
+  const modal = document.getElementById('editorSettingsModal');
+  const btn = document.getElementById('editorSettingsBtn');
+  const closeBtn = document.getElementById('closeEditorSettingsBtn');
+
+  // Checkboxes
+  const vimModeToggle = document.getElementById('vimModeToggle');
+  const lineNumbersToggle = document.getElementById('lineNumbersToggle');
+  const lineWrappingToggle = document.getElementById('lineWrappingToggle');
+  const highlightActiveLineToggle = document.getElementById('highlightActiveLineToggle');
+  const autoCloseBracketsToggle = document.getElementById('autoCloseBracketsToggle');
+
+  // Load current settings
+  vimModeToggle.checked = editorSettings.vimMode;
+  lineNumbersToggle.checked = editorSettings.lineNumbers;
+  lineWrappingToggle.checked = editorSettings.lineWrapping;
+  highlightActiveLineToggle.checked = editorSettings.highlightActiveLine;
+  autoCloseBracketsToggle.checked = editorSettings.autoCloseBrackets;
+
+  // Open modal
+  if (btn) {
+    btn.addEventListener('click', () => {
+      modal.classList.add('visible');
+    });
+  }
+
+  // Close modal
+  const closeModal = () => {
+    modal.classList.remove('visible');
+  };
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeModal);
+  }
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  // Handle setting changes
+  vimModeToggle.addEventListener('change', (e) => {
+    editorSettings.vimMode = e.target.checked;
+    updateEditorOptions();
+  });
+
+  lineNumbersToggle.addEventListener('change', (e) => {
+    editorSettings.lineNumbers = e.target.checked;
+    updateEditorOptions();
+  });
+
+  lineWrappingToggle.addEventListener('change', (e) => {
+    editorSettings.lineWrapping = e.target.checked;
+    updateEditorOptions();
+  });
+
+  highlightActiveLineToggle.addEventListener('change', (e) => {
+    editorSettings.highlightActiveLine = e.target.checked;
+    updateEditorOptions();
+  });
+
+  autoCloseBracketsToggle.addEventListener('change', (e) => {
+    editorSettings.autoCloseBrackets = e.target.checked;
+    updateEditorOptions();
+  });
 }
 
 // Make functions globally available

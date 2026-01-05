@@ -663,7 +663,7 @@ function getMostPopularSkills(limit = 10, period = '30d') {
  * API Usage Tracking
  */
 
-// Model pricing (USD per 1K tokens)
+// Model pricing (USD per 1K tokens/characters)
 const MODEL_PRICING = {
   // OpenAI
   'gpt-4': { prompt: 0.03, completion: 0.06 },
@@ -672,11 +672,22 @@ const MODEL_PRICING = {
   'gpt-4o-mini': { prompt: 0.00015, completion: 0.0006 },
   'gpt-3.5-turbo': { prompt: 0.0005, completion: 0.0015 },
   
+  // OpenAI TTS (per 1K characters)
+  'tts-1': { prompt: 0.015, completion: 0 },
+  'tts-1-hd': { prompt: 0.030, completion: 0 },
+  
   // Anthropic Claude
   'claude-3-opus': { prompt: 0.015, completion: 0.075 },
   'claude-3-sonnet': { prompt: 0.003, completion: 0.015 },
   'claude-3-haiku': { prompt: 0.00025, completion: 0.00125 },
   'claude-3-5-sonnet': { prompt: 0.003, completion: 0.015 },
+  
+  // ElevenLabs TTS (per 1K characters)
+  'elevenlabs': { prompt: 0.0003, completion: 0 },
+  'eleven_turbo_v2': { prompt: 0.0003, completion: 0 },
+  'eleven_turbo_v2_5': { prompt: 0.0003, completion: 0 },
+  'eleven_multilingual_v2': { prompt: 0.0003, completion: 0 },
+  'eleven_monolingual_v1': { prompt: 0.0003, completion: 0 },
   
   // Ollama (local - free)
   'ollama': { prompt: 0, completion: 0 },
@@ -713,6 +724,28 @@ function calculateCost(model, promptTokens, completionTokens) {
   const completionCost = (completionTokens / 1000) * pricing.completion;
   
   return promptCost + completionCost;
+}
+
+// Check if a model is local/free (Ollama, LM Studio, or other local models)
+function isLocalModel(provider, model) {
+  const normalizedProvider = provider.toLowerCase();
+  const normalizedModel = model.toLowerCase();
+  
+  // Known local providers
+  const localProviders = ['ollama', 'lmstudio', 'local'];
+  
+  // Check if provider is in local providers list
+  if (localProviders.includes(normalizedProvider)) {
+    return true;
+  }
+  
+  // Check model name patterns for local models
+  if (normalizedModel.includes('ollama') || normalizedModel.includes('lmstudio')) {
+    return true;
+  }
+  
+  // Not a local model
+  return false;
 }
 
 // Record API usage
@@ -805,7 +838,13 @@ function getApiUsageStats(period = '30d', provider = null) {
   }
   
   const stmt = db.prepare(query);
-  return stmt.all(...params);
+  const results = stmt.all(...params);
+  
+  // Add isLocal flag to each result
+  return results.map(row => ({
+    ...row,
+    isLocal: isLocalModel(row.provider, row.model)
+  }));
 }
 
 // Get API usage trends over time
@@ -965,5 +1004,6 @@ module.exports = {
   getApiUsageStats,
   getApiUsageTrends,
   getApiCostSummary,
-  getApiUsageHistory
+  getApiUsageHistory,
+  isLocalModel
 };

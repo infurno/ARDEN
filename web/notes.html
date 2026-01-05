@@ -989,6 +989,179 @@
       background: #414868;
       border-color: #7aa2f7;
     }
+
+    /* CodeMirror Custom Styles */
+    .CodeMirror {
+      height: 100% !important;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      background: #1a1b26 !important;
+      color: #c0caf5 !important;
+    }
+
+    .CodeMirror-gutters {
+      background: #16161e !important;
+      border-right: 1px solid #414868 !important;
+    }
+
+    .CodeMirror-linenumber {
+      color: #565f89 !important;
+    }
+
+    .CodeMirror-cursor {
+      border-left-color: #c0caf5 !important;
+    }
+
+    .CodeMirror-selected {
+      background: #283457 !important;
+    }
+
+    .CodeMirror-activeline-background {
+      background: #1f2335 !important;
+    }
+
+    body.dark-mode .CodeMirror {
+      background: #fff !important;
+      color: #24283b !important;
+    }
+
+    body.dark-mode .CodeMirror-gutters {
+      background: #f5f5f5 !important;
+      border-right: 1px solid #ddd !important;
+    }
+
+    body.dark-mode .CodeMirror-linenumber {
+      color: #999 !important;
+    }
+
+    body.dark-mode .CodeMirror-cursor {
+      border-left-color: #24283b !important;
+    }
+
+    body.dark-mode .CodeMirror-selected {
+      background: #e0e7ff !important;
+    }
+
+    body.dark-mode .CodeMirror-activeline-background {
+      background: #f7f9fc !important;
+    }
+
+    /* Editor Settings Modal */
+    .editor-settings-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .editor-settings-modal.visible {
+      display: flex;
+    }
+
+    .editor-settings-content {
+      background: #24283b;
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .editor-settings-content h3 {
+      margin: 0 0 1.5rem 0;
+      color: #c0caf5;
+      font-size: 1.3rem;
+    }
+
+    .setting-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .setting-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      padding: 0.75rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .setting-group label:hover {
+      background: #2f3549;
+    }
+
+    .setting-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .setting-group .setting-label {
+      flex: 1;
+    }
+
+    .setting-group .setting-name {
+      font-weight: 500;
+      color: #c0caf5;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .setting-group .setting-description {
+      font-size: 0.85rem;
+      color: #565f89;
+    }
+
+    .editor-settings-footer {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    /* Vim mode indicator */
+    .vim-mode-indicator {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #414868;
+      color: #c0caf5;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      z-index: 9999;
+      display: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .vim-mode-indicator.visible {
+      display: block;
+    }
+
+    .vim-mode-indicator.normal {
+      background: #7aa2f7;
+      color: #1a1b26;
+    }
+
+    .vim-mode-indicator.insert {
+      background: #9ece6a;
+      color: #1a1b26;
+    }
+
+    .vim-mode-indicator.visual {
+      background: #bb9af7;
+      color: #1a1b26;
+    }
   </style>
 </head>
 <body>
@@ -1087,6 +1260,9 @@
           <button class="btn btn-icon" id="exportBtn" title="Export note" style="margin-right: 0.5rem;">
             📤
           </button>
+          <button class="btn btn-icon" id="editorSettingsBtn" title="Editor settings" style="margin-right: 0.5rem;">
+            ⚙️
+          </button>
         </div>
         <input type="file" id="imageUploadInput" accept="image/*" style="display: none;" />
 
@@ -1110,11 +1286,90 @@
       </div>
     </div>
   </div>
+  
+  <!-- Editor Settings Modal -->
+  <div class="editor-settings-modal" id="editorSettingsModal">
+    <div class="editor-settings-content">
+      <h3>⚙️ Editor Settings</h3>
+      
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="vimModeToggle">
+          <div class="setting-label">
+            <span class="setting-name">Vim Mode</span>
+            <span class="setting-description">Enable Vim keybindings (hjkl navigation, modes, etc.)</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="lineNumbersToggle" checked>
+          <div class="setting-label">
+            <span class="setting-name">Line Numbers</span>
+            <span class="setting-description">Show line numbers in the editor</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="lineWrappingToggle" checked>
+          <div class="setting-label">
+            <span class="setting-name">Line Wrapping</span>
+            <span class="setting-description">Wrap long lines instead of horizontal scrolling</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="highlightActiveLineToggle" checked>
+          <div class="setting-label">
+            <span class="setting-name">Highlight Active Line</span>
+            <span class="setting-description">Highlight the line where the cursor is</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="autoCloseBracketsToggle">
+          <div class="setting-label">
+            <span class="setting-name">Auto-close Brackets</span>
+            <span class="setting-description">Automatically close brackets and quotes</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="editor-settings-footer">
+        <button class="btn btn-secondary" id="closeEditorSettingsBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vim Mode Indicator -->
+  <div class="vim-mode-indicator" id="vimModeIndicator">
+    NORMAL
+  </div>
 
   <!-- Marked.js for Markdown rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
   <!-- DOMPurify for XSS protection -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+  
+  <!-- CodeMirror for advanced editor -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/markdown/markdown.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/keymap/vim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/continuelist.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/display/placeholder.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/search/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/search/searchcursor.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/dialog/dialog.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/dialog/dialog.min.css">
   
   <script src="/assets/js/websocket.js?v=1"></script>
   <script src="/assets/js/notes.js"></script>

@@ -11,7 +11,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
 const { speechToText } = require('../services/stt');
-const { textToSpeech } = require('../services/tts');
+const { textToSpeech, formatForVoice } = require('../services/tts');
 
 // Ensure we're working from the correct directory
 const ARDEN_ROOT = path.resolve(__dirname, '../..');
@@ -114,6 +114,7 @@ router.post('/tts', async (req, res) => {
   }
 
   const userId = req.session?.userId || 'web-user';
+  const sessionId = req.session?.sessionId || null;
 
   logger.voice.info('TTS request received', {
     userId,
@@ -121,8 +122,11 @@ router.post('/tts', async (req, res) => {
   });
 
   try {
+    // Format text for voice output (removes markdown and verbose labels)
+    const formattedText = formatForVoice(text);
+    
     // Generate speech
-    const audioPath = await textToSpeech(text);
+    const audioPath = await textToSpeech(formattedText, userId, sessionId);
 
     if (!audioPath) {
       throw new Error('TTS generation failed - no audio file produced');
