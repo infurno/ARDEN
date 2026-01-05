@@ -98,3 +98,8 @@ temp/
 .arden-web.pid
 data/
 config/*.backup.*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
