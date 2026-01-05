@@ -5,6 +5,24 @@ Voice-enabled personal AI infrastructure built on Claude Code
 
 ---
 
+## Recent Updates (January 2026)
+
+### Latest Features
+- ✅ **Multi-Provider AI Support** - Anthropic Claude, Google Gemini, Groq, and Ollama
+- ✅ **Advanced TODO Management** - Categories (work, personal, side-projects), priorities, due dates
+- ✅ **System Resource Monitoring** - Real-time CPU, memory, GPU, and disk usage tracking
+- ✅ **Enhanced Voice Services** - Text formatting for natural speech output
+- ✅ **Database Schema Updates** - Sessions and interactions tracking
+- ✅ **Rich Text Editor** - Full-featured Markdown editor with live preview
+- ✅ **Theme Variants** - Tokyo Night Dark and Light themes
+- ✅ **Skills Analytics** - Usage tracking and statistics dashboard
+- ✅ **API Cost Tracking** - Monitor AI provider usage and costs
+- ✅ **WebSocket Updates** - Real-time notifications across all pages
+- ✅ **Ollama Integration** - Updated to llama3.3:70b-instruct-q4_K_M model
+- ✅ **Test Infrastructure** - Comprehensive test suites for TODO management skill
+
+---
+
 ## What Was Built
 
 A complete personal AI infrastructure system with voice interaction capabilities, inspired by Daniel Miessler's PAI but enhanced with comprehensive voice processing for use on any device (phone, iPad, tablet, smart speakers).
@@ -47,7 +65,12 @@ Device → Telegram/API → STT (Whisper) → ARDEN → TTS (ElevenLabs) → Dev
 
 ### 3. **Skills System** ✅
 
-**Example Skill Created:** Daily Planning
+**Available Skills:**
+1. **Daily Planning** - Morning briefings and day planning
+2. **Note Taking** - Capture and organize notes
+3. **Weather** - Location-based weather forecasts
+4. **User Context** - Personalization and preferences
+5. **TODO Management** - Advanced task tracking with categories
 
 **Structure:**
 ```
@@ -70,6 +93,11 @@ skills/daily-planning/
 - Clear sections with pauses
 - Actionable recommendations
 - Time-bound estimates
+
+**Skill Management:**
+- Web-based enable/disable interface
+- Usage analytics tracking
+- Persistent preferences in database
 
 ### 4. **History Tracking (UOCS)** ✅
 
@@ -104,18 +132,37 @@ skills/daily-planning/
 **Modern browser-based interface with Tokyo Night theme:**
 - **Login:** Token-based authentication with session management
 - **Chat:** Real-time messaging with voice input/TTS output
-- **Dashboard:** System status, AI provider info, notes/TODO counts
+- **Dashboard:** Comprehensive system monitoring with:
+  - Real-time resource monitoring (CPU, memory, GPU, disk)
+  - AI provider status and configuration
+  - Active sessions viewer
+  - Analytics tracking (skills usage, API costs)
+  - Notes and TODO counts with quick links
 - **Notes:** Full-featured Markdown editor with:
   - Live preview & YAML front matter
   - Wiki-style links & tag filtering
   - Image uploads & export (MD, Hugo, Jekyll, HTML)
   - Auto-save & navigation history
-  - Dark mode toggle
+  - Rich text editor with syntax highlighting
+  - Dark/light theme toggle (Tokyo Night)
+- **TODOs:** Advanced task management with:
+  - Category-based organization (work, personal, side-projects)
+  - Priority levels (high, medium, low)
+  - Due dates and status tracking
+  - Bulk operations and filtering
+  - Real-time WebSocket updates
+- **Skills:** Interactive skills management with:
+  - Enable/disable individual skills
+  - View skill descriptions and capabilities
+  - Usage analytics and statistics
+  - Persistent skill preferences
+- **Settings:** AI provider configuration interface
 
 **Design:**
-- Tokyo Night color scheme (cyberpunk neon aesthetic)
+- Tokyo Night color scheme with light/dark variants
 - Responsive card layouts
 - Unified navigation with logo
+- Real-time WebSocket updates
 - No build step required (Vanilla JS + Tailwind)
 
 **Access:** http://localhost:3001
@@ -143,7 +190,11 @@ skills/daily-planning/
 - **`docs/setup.md`** - Complete installation guide
 - **`docs/voice.md`** - Voice configuration & optimization
 - **`docs/WEB-INTERFACE-README.md`** - Web interface documentation
+- **`docs/EDITOR_FEATURES.md`** - Rich text editor documentation
 - **`TOKYO_NIGHT_THEME.md`** - Design system documentation
+- **`TODO_LIST.md`** - Project TODO tracking
+- **`SESSION_STATE.md`** - Session management details
+- **`USER_CONTEXT_INTEGRATION.md`** - Context system guide
 - **`PROJECT_SUMMARY.md`** - This file
 
 ## Key Features
@@ -159,21 +210,30 @@ skills/daily-planning/
 - ⏳ Push notifications (planned)
 
 ### Web Interface
-- ✅ Modern browser-based UI with Tokyo Night theme
+- ✅ Modern browser-based UI with Tokyo Night theme (dark/light)
 - ✅ Real-time chat with ARDEN
 - ✅ Full-featured notes manager (Markdown, wiki links, tags)
-- ✅ System dashboard with status monitoring
+- ✅ Advanced TODO management with categories and priorities
+- ✅ System dashboard with real-time resource monitoring
+- ✅ Skills management interface with analytics
+- ✅ AI provider configuration UI
 - ✅ Voice input/output in browser
 - ✅ Responsive design for mobile/tablet
 - ✅ Image uploads to notes
 - ✅ Export notes to multiple formats
+- ✅ WebSocket real-time updates
+- ✅ Active sessions monitoring
+- ✅ API cost tracking and analytics
 
 ### Skills System
 - ✅ Auto-loading skills at session start
 - ✅ Voice-first workflow design
 - ✅ Routing logic for automatic invocation
 - ✅ Modular, composable architecture
-- ✅ Example: Daily Planning skill
+- ✅ 5 pre-built skills (planning, notes, weather, context, TODOs)
+- ✅ Web-based enable/disable interface
+- ✅ Usage analytics and tracking
+- ✅ Persistent skill preferences
 
 ### History & Learning
 - ✅ Universal Output Capture System (UOCS)
@@ -194,7 +254,17 @@ skills/daily-planning/
 - ✅ Configurable routines (morning/evening)
 - ✅ Session hooks (start/stop)
 - ✅ Automatic skill loading
+- ✅ Real-time WebSocket notifications
+- ✅ Database-backed session tracking
 - ⏳ Scheduled briefings (requires cron)
+
+### System Monitoring
+- ✅ Real-time CPU/memory monitoring
+- ✅ GPU usage tracking (NVIDIA)
+- ✅ Disk space monitoring
+- ✅ Active sessions tracking
+- ✅ API cost analytics
+- ✅ Skills usage statistics
 
 ## Technology Stack
 
@@ -202,16 +272,30 @@ skills/daily-planning/
 - Claude Code CLI (AI engine)
 - Node.js 18+ (API server)
 - Bash (automation scripts)
+- SQLite (persistent data storage)
+
+**AI Providers:**
+- Anthropic Claude (primary)
+- Google Gemini (alternative)
+- Groq (fast inference)
+- Ollama (local models) - Currently: llama3.3:70b-instruct-q4_K_M
 
 **Voice Processing:**
 - OpenAI Whisper API (speech-to-text)
 - ElevenLabs API (text-to-speech)
 - Telegram Bot API (device integration)
 
+**Web Stack:**
+- Vanilla JavaScript (no build step)
+- Tailwind CSS (styling)
+- WebSocket (real-time updates)
+- Tokyo Night theme (design system)
+
 **Optional:**
 - PM2 (process management)
 - iOS Shortcuts (Siri integration)
 - Android Tasker (automation)
+- Docker + NVIDIA GPU support
 
 ## Voice Providers Configured
 
@@ -303,10 +387,23 @@ arden "Help me plan my day"
 ### API Files
 - `api/telegram-bot.js` - Full Telegram bot implementation
 - `api/package.json` - Node.js dependencies
+- `api/services/ai-providers.js` - Multi-provider AI support
+- `api/services/database.js` - SQLite database management
+- `api/services/stt.js` - Speech-to-text service
+- `api/services/tts.js` - Text-to-speech with formatting
+- `api/services/websocket.js` - Real-time updates
+- `api/routes/todos.js` - TODO management API
+- `api/routes/status.js` - System monitoring API
+- `api/routes/skills.js` - Skills management API
 
 ### Skill Files
-- `skills/daily-planning/SKILL.md` - Skill definition
-- `skills/daily-planning/workflows/morning-briefing.md` - Voice workflow
+- `skills/daily-planning/SKILL.md` - Day planning and briefings
+- `skills/note-taking/SKILL.md` - Note capture and organization
+- `skills/weather/SKILL.md` - Weather forecasts and alerts
+- `skills/user-context/SKILL.md` - User preferences and personalization
+- `skills/todo-management/SKILL.md` - Advanced task management
+- `skills/todo-management/tools/add-todo.sh` - TODO CLI tool
+- `skills/todo-management/workflows/add-todo.md` - TODO workflows
 
 ### Scripts
 - `scripts/install.sh` - Automated installation
@@ -327,6 +424,10 @@ arden "Help me plan my day"
 - ✅ Skills system for domain expertise
 - ✅ Automated history tracking
 - ✅ Multi-device accessibility
+- ✅ Web-based dashboard and management
+- ✅ Database-backed persistent storage
+- ✅ Real-time system monitoring
+- ✅ Multi-provider AI support
 
 ### vs Daniel Miessler's PAI
 - ✅ Voice-first design
@@ -377,6 +478,9 @@ arden "Help me plan my day"
 - [ ] Smart speaker integration
 - [ ] MCP server implementations
 - [ ] Fabric pattern integration
+- [ ] Calendar integration
+- [ ] Email integration
+- [ ] Slack/Discord bots
 
 ### Advanced Ideas
 - [ ] Agent swarms for parallel research
