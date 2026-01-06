@@ -315,6 +315,10 @@ sudo ufw status
 
 If you see errors about `distutils` or `node-gyp` during `npm install`:
 
+**Root Cause:** Python 3.13+ removed the `distutils` module, and node-gyp may be using your venv Python instead of system Python.
+
+**Solution:**
+
 ```bash
 # Install Python build dependencies
 sudo apt install -y \
@@ -322,9 +326,14 @@ sudo apt install -y \
     python3-dev \
     python3-pip \
     python3-setuptools \
-    python3-distutils \
     sqlite3 \
     libsqlite3-dev
+
+# Deactivate any active venv
+deactivate 2>/dev/null || true
+
+# Force node-gyp to use system Python
+export npm_config_python=/usr/bin/python3
 
 # Clean npm cache and retry
 cd ~/ARDEN/api
@@ -333,10 +342,22 @@ npm cache clean --force
 npm install --production
 ```
 
-**Root Cause:** The `better-sqlite3` package requires native compilation. It needs:
-- C++ build tools (`build-essential`)
-- Python 3 with `distutils` module
-- SQLite development headers
+**Alternative (if above doesn't work):**
+
+```bash
+# Install setuptools in venv (provides distutils for Python 3.13+)
+source ~/ARDEN/venv/bin/activate
+pip install setuptools
+
+# Retry installation
+cd ~/ARDEN/api
+npm install --production
+```
+
+**Permanent Fix:** Add to `~/.bashrc`:
+```bash
+export npm_config_python=/usr/bin/python3
+```
 
 ### Service Won't Start
 

@@ -76,6 +76,12 @@ else
     log_info "PM2 already installed: $(pm2 -v)"
 fi
 
+# Configure npm to use system Python (fix for Python 3.13+ distutils issue)
+echo "Configuring npm to use system Python..."
+npm config set python /usr/bin/python3
+echo 'export npm_config_python=/usr/bin/python3' >> ~/.bashrc
+log_info "npm configured to use system Python"
+
 # Create necessary directories
 echo "Creating directories..."
 mkdir -p ~/ARDEN
@@ -98,11 +104,15 @@ fi
 echo ""
 echo "✅ VPS setup complete!"
 echo ""
+echo "IMPORTANT: npm is now configured to use system Python (/usr/bin/python3)"
+echo "This fixes the 'distutils' error with Python 3.13+"
+echo ""
 echo "Next steps:"
 echo "  1. Clone/pull ARDEN repository"
 echo "  2. Copy .env.rocket to .env and configure API keys"
-echo "  3. Run: cd ~/ARDEN/api && npm install --production"
-echo "  4. Configure nginx: sudo cp ~/ARDEN/config/nginx-rocket.conf /etc/nginx/sites-available/arden"
-echo "  5. Get SSL certificate: sudo certbot --nginx -d rocket.id10t.social"
-echo "  6. Start services: pm2 start ~/ARDEN/ecosystem.config.js"
+echo "  3. Deactivate any venv: deactivate 2>/dev/null || true"
+echo "  4. Run: cd ~/ARDEN/api && npm install --production"
+echo "  5. Configure nginx: sudo cp ~/ARDEN/config/nginx-rocket.conf /etc/nginx/sites-available/arden"
+echo "  6. Get SSL certificate: sudo certbot --nginx -d rocket.id10t.social"
+echo "  7. Start services: pm2 start ~/ARDEN/ecosystem.config.js"
 echo ""
