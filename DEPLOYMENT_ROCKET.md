@@ -20,11 +20,43 @@ This guide covers deploying ARDEN to your Hetzner VPS with a CPU-optimized confi
 
 ### 1. Prerequisites on VPS
 
+**Option A: Automated Setup (Recommended)**
+
+```bash
+# Create ARDEN user (if not exists)
+sudo useradd -m -s /bin/bash arden
+sudo usermod -aG sudo arden
+
+# Switch to arden user
+sudo su - arden
+
+# Download and run setup script
+curl -fsSL https://raw.githubusercontent.com/infurno/ARDEN/arden-prod/scripts/setup-vps.sh | bash
+```
+
+**Option B: Manual Setup**
+
 SSH into your server and set up the environment:
 
 ```bash
 # Update system
 sudo apt update && sudo apt upgrade -y
+
+# Install build tools and dependencies (IMPORTANT for better-sqlite3)
+sudo apt install -y \
+    build-essential \
+    python3-dev \
+    python3-pip \
+    python3-setuptools \
+    python3-distutils \
+    git \
+    curl \
+    wget \
+    nginx \
+    certbot \
+    python3-certbot-nginx \
+    sqlite3 \
+    libsqlite3-dev
 
 # Install Node.js (via NVM)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -34,12 +66,6 @@ nvm use 18
 
 # Install PM2 globally
 npm install -g pm2
-
-# Install nginx
-sudo apt install nginx -y
-
-# Install certbot for SSL
-sudo apt install certbot python3-certbot-nginx -y
 
 # Create ARDEN user (if not exists)
 sudo useradd -m -s /bin/bash arden
@@ -284,6 +310,33 @@ sudo ufw status
 ---
 
 ## 🐛 Troubleshooting
+
+### NPM Install Fails (better-sqlite3 build error)
+
+If you see errors about `distutils` or `node-gyp` during `npm install`:
+
+```bash
+# Install Python build dependencies
+sudo apt install -y \
+    build-essential \
+    python3-dev \
+    python3-pip \
+    python3-setuptools \
+    python3-distutils \
+    sqlite3 \
+    libsqlite3-dev
+
+# Clean npm cache and retry
+cd ~/ARDEN/api
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install --production
+```
+
+**Root Cause:** The `better-sqlite3` package requires native compilation. It needs:
+- C++ build tools (`build-essential`)
+- Python 3 with `distutils` module
+- SQLite development headers
 
 ### Service Won't Start
 
