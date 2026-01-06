@@ -8,6 +8,12 @@ Voice-enabled personal AI infrastructure built on Claude Code
 ## Recent Updates (January 2026)
 
 ### Latest Features
+- ✅ **Production Deployment Setup** - Complete Hetzner VPS deployment configuration
+- ✅ **CPU-Optimized Configuration** - OpenAI API-based setup (no GPU required)
+- ✅ **PM2 Process Management** - Automated process monitoring and restart
+- ✅ **Nginx Configuration** - SSL/TLS, WebSocket support, reverse proxy
+- ✅ **Systemd Integration** - Auto-start on boot, service management
+- ✅ **Deployment Automation** - One-command deployment script
 - ✅ **Multi-Provider AI Support** - Anthropic Claude, Google Gemini, Groq, and Ollama
 - ✅ **Advanced TODO Management** - Categories (work, personal, side-projects), priorities, due dates
 - ✅ **System Resource Monitoring** - Real-time CPU, memory, GPU, and disk usage tracking

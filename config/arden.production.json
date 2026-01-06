@@ -1,0 +1,85 @@
+{
+  "version": "1.0.0",
+  "name": "ARDEN",
+  "description": "AI Routine Daily Engagement Nexus - Production",
+  "voice": {
+    "enabled": true,
+    "stt_provider": "openai-whisper",
+    "stt_config": {
+      "model": "whisper-1",
+      "language": "en"
+    },
+    "tts_provider": "edge-tts",
+    "tts_config": {
+      "voice": "en-US-AndrewNeural"
+    },
+    "wake_word": "Hey ARDEN",
+    "notifications": true,
+    "debug_mode": false
+  },
+  "api": {
+    "enabled": true,
+    "port": 3000,
+    "host": "127.0.0.1",
+    "auth_token_env": "ARDEN_API_TOKEN",
+    "cors_enabled": true,
+    "rate_limit": {
+      "window_ms": 900000,
+      "max_requests": 100
+    }
+  },
+  "telegram": {
+    "enabled": true,
+    "bot_token_env": "TELEGRAM_BOT_TOKEN",
+    "allowed_users": []
+  },
+  "context": {
+    "directories": [
+      "/home/arden/ARDEN/context",
+      "/home/arden/Notes",
+      "/home/arden/Documents"
+    ],
+    "auto_load_skills": true,
+    "history_enabled": true
+  },
+  "agents": {
+    "default": "assistant",
+    "available": [
+      "strategist",
+      "researcher",
+      "engineer",
+      "analyst",
+      "assistant"
+    ]
+  },
+  "hooks": {
+    "session_start": true,
+    "post_tool_use": true,
+    "stop": true,
+    "pre_tool_use": true
+  },
+  "security": {
+    "audit_logging": true,
+    "command_validation": true,
+    "allowed_tools": [
+      "*"
+    ],
+    "blocked_commands": [
+      "rm -rf /",
+      "dd if=",
+      ":(){ :|:& };:"
+    ]
+  },
+  "routines": {
+    "morning_briefing": {
+      "enabled": true,
+      "time": "08:00",
+      "agent": "assistant"
+    },
+    "evening_review": {
+      "enabled": true,
+      "time": "18:00",
+      "agent": "analyst"
+    }
+  }
+}

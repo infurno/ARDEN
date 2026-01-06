@@ -1,0 +1,26 @@
+[Unit]
+Description=ARDEN Bot Service (PM2)
+Documentation=https://github.com/yourusername/ARDEN
+After=network.target
+
+[Service]
+Type=forking
+User=arden
+WorkingDirectory=/home/arden/ARDEN
+Environment=PATH=/home/arden/.nvm/versions/node/v18.0.0/bin:/usr/local/bin:/usr/bin:/bin
+Environment=NODE_ENV=production
+
+# Start PM2 with ecosystem config
+ExecStart=/home/arden/.nvm/versions/node/v18.0.0/bin/pm2 start /home/arden/ARDEN/ecosystem.config.js
+ExecReload=/home/arden/.nvm/versions/node/v18.0.0/bin/pm2 reload /home/arden/ARDEN/ecosystem.config.js
+ExecStop=/home/arden/.nvm/versions/node/v18.0.0/bin/pm2 delete all
+
+Restart=on-failure
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=arden
+
+[Install]
+WantedBy=multi-user.target

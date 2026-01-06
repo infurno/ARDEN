@@ -210,9 +210,31 @@ All security events logged to `history/security/`
 3. Create your first skill in `skills/`
 4. Start using ARDEN with voice commands!
 
+## Deployment
+
+### Production Deployment (Hetzner VPS)
+
+For deploying to a remote server with limited resources:
+
+```bash
+# Deploy to rocket.id10t.social
+./scripts/deploy-rocket.sh
+```
+
+See [DEPLOYMENT_ROCKET.md](DEPLOYMENT_ROCKET.md) for complete production deployment guide.
+
+**Production Features:**
+- CPU-optimized (no GPU required)
+- OpenAI API-based (GPT-4o-mini + Whisper)
+- PM2 process management
+- Nginx reverse proxy with SSL
+- Systemd service integration
+- Estimated cost: ~$3-5/month
+
 ## Resources
 
 - [Setup Guide](docs/setup.md)
 - [Creating Skills](docs/skills.md)
 - [Voice Configuration](docs/voice.md)
 - [API Reference](docs/api.md)
+- [Production Deployment](DEPLOYMENT_ROCKET.md)
