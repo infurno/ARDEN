@@ -85,3 +85,11 @@ temp/
 # Personal context (uncomment if you want to keep private)
 # context/personal/
 *.bak
+
+# Backups
+backups/
+*.tar.gz
+
+# PM2 logs
+logs/
+*.log
