@@ -5,7 +5,9 @@
   "main": "telegram-bot.js",
   "scripts": {
     "start": "node telegram-bot.js",
+    "start:web": "node web-server.js",
     "dev": "nodemon telegram-bot.js",
+    "dev:web": "nodemon web-server.js",
     "test": "echo \"No tests yet\" && exit 0"
   },
   "keywords": [
@@ -15,7 +17,9 @@
     "telegram",
     "bot",
     "claude",
-    "assistant"
+    "assistant",
+    "web",
+    "dashboard"
   ],
   "author": "",
   "license": "MIT",
@@ -23,7 +27,8 @@
     "node-telegram-bot-api": "^0.66.0",
     "axios": "^1.6.5",
     "form-data": "^4.0.0",
-    "dotenv": "^16.4.1"
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"
