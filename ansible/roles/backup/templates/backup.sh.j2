@@ -14,15 +14,36 @@ mkdir -p "$BACKUP_DIR"
 # Create backup
 echo "Starting backup at $(date)"
 
+# Build list of files/directories to backup (only if they exist)
+BACKUP_TARGETS=""
+
+if [ -f "$APP_DIR/.env" ]; then
+    BACKUP_TARGETS="$BACKUP_TARGETS $(basename $APP_DIR)/.env"
+fi
+
+if [ -d "$APP_DIR/api/data" ]; then
+    BACKUP_TARGETS="$BACKUP_TARGETS $(basename $APP_DIR)/api/data"
+fi
+
+if [ -d "$APP_DIR/.pm2" ]; then
+    BACKUP_TARGETS="$BACKUP_TARGETS $(basename $APP_DIR)/.pm2"
+fi
+
+if [ -f "$APP_DIR/ecosystem.config.js" ]; then
+    BACKUP_TARGETS="$BACKUP_TARGETS $(basename $APP_DIR)/ecosystem.config.js"
+fi
+
+if [ -z "$BACKUP_TARGETS" ]; then
+    echo "No files to backup - skipping"
+    exit 0
+fi
+
 tar -czf "$BACKUP_FILE" \
     -C "$(dirname $APP_DIR)" \
     --exclude='node_modules' \
     --exclude='.git' \
     --exclude='logs/*.log' \
-    "$(basename $APP_DIR)/.env" \
-    "$(basename $APP_DIR)/api/data" \
-    "$(basename $APP_DIR)/.pm2" \
-    "$(basename $APP_DIR)/ecosystem.config.js" 2>/dev/null
+    $BACKUP_TARGETS 2>/dev/null
 
 if [ $? -eq 0 ]; then
     echo "Backup created: $BACKUP_FILE"

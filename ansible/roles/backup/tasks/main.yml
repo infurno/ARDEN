@@ -34,6 +34,7 @@
   become_user: "{{ app_user }}"
   register: initial_backup
   changed_when: true
+  failed_when: false
 
 - name: Display backup status
   debug:
