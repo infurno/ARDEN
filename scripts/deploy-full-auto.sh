@@ -119,10 +119,10 @@ ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'bash -s' << 'ENDSSH'
 set -e
 
 echo "▶ Updating package lists..."
-sudo apt update > /dev/null 2>&1
+sudo DEBIAN_FRONTEND=noninteractive apt update -qq
 
 echo "▶ Installing build tools and dependencies..."
-sudo apt install -y \
+sudo DEBIAN_FRONTEND=noninteractive apt install -y -qq \
     build-essential \
     python3-dev \
     python3-pip \
@@ -136,7 +136,7 @@ sudo apt install -y \
     python3-certbot-nginx \
     sqlite3 \
     libsqlite3-dev \
-    ffmpeg > /dev/null 2>&1
+    ffmpeg
 
 echo "✓ System dependencies installed"
 ENDSSH
