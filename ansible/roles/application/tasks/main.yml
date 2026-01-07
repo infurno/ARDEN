@@ -8,6 +8,21 @@
   become: yes
   become_user: "{{ app_user }}"
 
+- name: Check if directory exists
+  stat:
+    path: "{{ app_dir }}"
+  register: dir_exists
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Remove non-git directory if exists
+  file:
+    path: "{{ app_dir }}"
+    state: absent
+  become: yes
+  become_user: "{{ app_user }}"
+  when: dir_exists.stat.exists and not repo_exists.stat.exists
+
 - name: Clone repository
   git:
     repo: "{{ git_repo }}"
