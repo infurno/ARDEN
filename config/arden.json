@@ -34,6 +34,11 @@
     "bot_token_env": "TELEGRAM_BOT_TOKEN",
     "allowed_users": []
   },
+  "discord": {
+    "enabled": false,
+    "bot_token_env": "DISCORD_BOT_TOKEN",
+    "allowed_users": []
+  },
   "context": {
     "directories": [
       "~/ARDEN/context",

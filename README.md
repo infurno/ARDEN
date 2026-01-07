@@ -10,7 +10,7 @@ Voice-enabled personal AI infrastructure built on Claude Code.
 ├─────────────────────────────────────────────────────────────┤
 │  Phone/iPad/Smart Device                                    │
 │         ↓                                                    │
-│  Voice API Server (Telegram Bot)                            │
+│  Voice API Server (Discord/Telegram Bot)                    │
 │         ↓                                                    │
 │  Speech-to-Text (Whisper) → AI Provider → TTS              │
 │         ↓                                                    │
@@ -20,7 +20,7 @@ Voice-enabled personal AI infrastructure built on Claude Code.
 Production Stack:
 ┌────────────────────────────────────────────────────────────┐
 │ Native Node.js + Python Environment                        │
-│  ├─ Node.js 18+ + Telegram Bot                            │
+│  ├─ Node.js 18+ + Discord/Telegram Bot                   │
 │  ├─ Python 3.10+ + Whisper (GPU accelerated)              │
 │  ├─ FFmpeg for audio processing                           │
 │  ├─ Winston structured logging                            │
@@ -107,11 +107,19 @@ tail -f api/logs/arden.log
 
 ## Usage
 
-#### 1. Telegram Bot
+#### 1. Discord Bot
+
+Send messages to your bot in Discord servers or DMs.
+- Zero spam (private server, invite-only)
+- Rich formatting and embeds
+- Excellent mobile apps
+- See: [Discord Setup Guide](docs/DISCORD_SETUP.md)
+
+#### 2. Telegram Bot
 
 Send voice or text messages to your bot.
 
-#### 2. Web Interface
+#### 3. Web Interface
 
 Access the dashboard at http://localhost:3001 for:
 - Chat interface
@@ -137,13 +145,21 @@ arden --voice
 
 ## Voice Integration Options
 
-### Option 1: Telegram Bot (Easiest)
-- Send voice messages from any device
+### Option 1: Discord Bot (Recommended for spam-free experience)
+- Send messages from any device
+- Works on iOS, Android, desktop
+- Private servers with full control
+- Zero spam, invite-only
+- **Setup:** See [Discord Setup Guide](docs/DISCORD_SETUP.md)
+- Code: `api/discord-bot.js`
+
+### Option 2: Telegram Bot (Easy setup)
+- Send voice messages from any device  
 - Works on iOS, Android, desktop
 - Built-in voice message support
-- See: `api/telegram-bot.js`
+- Code: `api/telegram-bot.js`
 
-### Option 2: REST API + PWA
+### Option 3: REST API + PWA
 - Progressive Web App for voice input
 - Works on all modern browsers
 - See: `api/voice-server.js` and `api/public/`

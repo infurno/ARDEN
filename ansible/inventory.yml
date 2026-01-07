@@ -28,5 +28,7 @@ all:
     pm2_apps:
       - name: arden-bot
         script: api/telegram-bot.js
+      - name: arden-discord
+        script: api/discord-bot.js
       - name: arden-web
         script: api/web-server.js
