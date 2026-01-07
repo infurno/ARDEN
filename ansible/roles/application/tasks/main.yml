@@ -1,75 +1,28 @@
 ---
 # Application role - Clone repository and install dependencies
 
-- name: Check if repository exists
+- name: Check if application directory exists
   stat:
-    path: "{{ app_dir }}/.git"
-  register: repo_exists
+    path: "{{ app_dir }}"
+  register: app_dir_exists
   become: yes
-  become_user: "{{ app_user }}"
 
-- name: Check current git remote URL if repo exists
-  shell: |
-    cd {{ app_dir }}
-    git config --get remote.origin.url
-  args:
-    executable: /bin/bash
-  become: yes
-  become_user: "{{ app_user }}"
-  register: current_remote
-  when: repo_exists.stat.exists
-  changed_when: false
-  failed_when: false
-
-- name: Remove repository if remote URL doesn't match
+- name: Remove existing application directory for clean deployment
   file:
     path: "{{ app_dir }}"
     state: absent
   become: yes
-  when: repo_exists.stat.exists and current_remote.stdout != git_repo
+  when: app_dir_exists.stat.exists
 
-- name: Re-check if repository exists after potential removal
-  stat:
-    path: "{{ app_dir }}/.git"
-  register: repo_exists
-  become: yes
-  become_user: "{{ app_user }}"
-
-- name: Check if directory exists
-  stat:
-    path: "{{ app_dir }}"
-  register: dir_exists
-  become: yes
-  become_user: "{{ app_user }}"
-
-- name: Remove non-git directory if exists
-  file:
-    path: "{{ app_dir }}"
-    state: absent
-  become: yes
-  become_user: "{{ app_user }}"
-  when: dir_exists.stat.exists and not repo_exists.stat.exists
-
-- name: Clone repository
+- name: Clone repository (fresh)
   git:
     repo: "{{ git_repo }}"
     dest: "{{ app_dir }}"
     version: "{{ deploy_branch }}"
     accept_hostkey: yes
+    force: yes
   become: yes
   become_user: "{{ app_user }}"
-  when: not repo_exists.stat.exists
-
-- name: Update repository
-  git:
-    repo: "{{ git_repo }}"
-    dest: "{{ app_dir }}"
-    version: "{{ deploy_branch }}"
-    update: yes
-  become: yes
-  become_user: "{{ app_user }}"
-  when: repo_exists.stat.exists
-  register: git_update
 
 - name: Verify repository was cloned
   stat:
