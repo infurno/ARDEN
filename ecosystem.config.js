@@ -3,12 +3,17 @@
  * Production deployment on rocket.id10t.social
  */
 
+const path = require('path');
+
+// Use current directory or default to /home/arden/ARDEN
+const appRoot = process.env.ARDEN_ROOT || path.resolve(__dirname);
+
 module.exports = {
   apps: [
     {
       name: 'arden-bot',
       script: 'api/telegram-bot.js',
-      cwd: '/home/arden/ARDEN',
+      cwd: appRoot,
       instances: 1,
       autorestart: true,
       watch: false,
@@ -27,7 +32,7 @@ module.exports = {
     {
       name: 'arden-web',
       script: 'api/web-server.js',
-      cwd: '/home/arden/ARDEN',
+      cwd: appRoot,
       instances: 1,
       autorestart: true,
       watch: false,

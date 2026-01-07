@@ -95,7 +95,7 @@ tail -f api/logs/arden.log
 ```
 
 **Prerequisites:**
-- Node.js 18+ (tested with v25.2.1)
+- Node.js 20+ (tested with v20 LTS)
 - Python 3.10+ with virtual environment
 - FFmpeg for audio processing
 - NVIDIA GPU with drivers (optional, for GPU-accelerated Whisper)
@@ -212,16 +212,30 @@ All security events logged to `history/security/`
 
 ## Deployment
 
-### Production Deployment (Hetzner VPS)
+### Production Deployment (Ubuntu 24.04 VPS)
 
-For deploying to a remote server with limited resources:
+**Automated One-Command Deployment:**
 
 ```bash
-# Deploy to rocket.id10t.social
-./scripts/deploy-rocket.sh
+# Deploy to your VPS (e.g., rocket.id10t.social)
+./scripts/deploy-full-auto.sh
 ```
 
+This will:
+- Install Node.js 20 LTS and all dependencies
+- Configure Ubuntu 24.04 for Python 3.13 compatibility
+- Set up Nginx with SSL (Let's Encrypt)
+- Configure PM2 process management
+- Set up automated daily backups
+- Start ARDEN services
+
+**Manual Deployment:**
+
 See [DEPLOYMENT_ROCKET.md](DEPLOYMENT_ROCKET.md) for complete production deployment guide.
+
+**Ubuntu 24.04 Specific Notes:**
+
+See [docs/UBUNTU_24_04_NOTES.md](docs/UBUNTU_24_04_NOTES.md) for Ubuntu 24.04 LTS specific information.
 
 **Production Features:**
 - CPU-optimized (no GPU required)

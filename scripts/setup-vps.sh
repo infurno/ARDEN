@@ -42,7 +42,7 @@ sudo apt install -y \
     python3-dev \
     python3-pip \
     python3-setuptools \
-    python3-distutils \
+    python3-venv \
     git \
     curl \
     wget \
@@ -50,7 +50,8 @@ sudo apt install -y \
     certbot \
     python3-certbot-nginx \
     sqlite3 \
-    libsqlite3-dev
+    libsqlite3-dev \
+    ffmpeg
 
 log_info "System dependencies installed"
 
@@ -60,8 +61,8 @@ if ! command -v node &> /dev/null; then
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    nvm install 18
-    nvm use 18
+    nvm install 20
+    nvm use 20
     log_info "Node.js installed"
 else
     log_info "Node.js already installed: $(node -v)"

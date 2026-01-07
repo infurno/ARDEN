@@ -48,7 +48,7 @@ sudo apt install -y \
     python3-dev \
     python3-pip \
     python3-setuptools \
-    python3-distutils \
+    python3-venv \
     git \
     curl \
     wget \
@@ -56,7 +56,8 @@ sudo apt install -y \
     certbot \
     python3-certbot-nginx \
     sqlite3 \
-    libsqlite3-dev
+    libsqlite3-dev \
+    ffmpeg
 
 # Install Node.js (via NVM)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -315,7 +316,7 @@ sudo ufw status
 
 If you see errors about `distutils` or `node-gyp` during `npm install`:
 
-**Root Cause:** Python 3.13+ removed the `distutils` module, and node-gyp may be using your venv Python instead of system Python.
+**Root Cause:** Python 3.13+ removed the `distutils` module (which is now only in setuptools), and node-gyp may be using your venv Python instead of system Python. Modern Ubuntu versions (22.04+) don't have a separate `python3-distutils` package.
 
 **Solution:**
 
@@ -326,8 +327,10 @@ sudo apt install -y \
     python3-dev \
     python3-pip \
     python3-setuptools \
+    python3-venv \
     sqlite3 \
-    libsqlite3-dev
+    libsqlite3-dev \
+    ffmpeg
 
 # Deactivate any active venv
 deactivate 2>/dev/null || true
