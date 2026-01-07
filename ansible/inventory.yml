@@ -27,6 +27,6 @@ all:
     # PM2 configuration
     pm2_apps:
       - name: arden-bot
-        script: api/telegram.js
+        script: api/telegram-bot.js
       - name: arden-web
-        script: api/server.js
+        script: api/web-server.js
