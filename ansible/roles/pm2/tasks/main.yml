@@ -80,8 +80,8 @@
   debug:
     msg: "{{ pm2_logs.stdout_lines }}"
 
-- name: Check if port 3000 is listening
-  shell: ss -tlnp | grep :3000 || echo "Port 3000 not listening"
+- name: Check if port 3001 is listening
+  shell: ss -tlnp | grep :3001 || echo "Port 3001 not listening"
   become: yes
   register: port_check
   changed_when: false
@@ -92,7 +92,7 @@
 
 - name: Wait for applications to start
   wait_for:
-    port: 3000
+    port: 3001
     timeout: 30
   become: yes
   failed_when: false
@@ -100,7 +100,7 @@
 
 - name: Verify web interface is responding
   uri:
-    url: "http://localhost:3000"
+    url: "http://localhost:3001"
     status_code: 200
     timeout: 10
   become: yes
