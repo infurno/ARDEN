@@ -44,6 +44,21 @@
   when: repo_exists.stat.exists
   register: git_update
 
+- name: Verify repository was cloned
+  stat:
+    path: "{{ app_dir }}/api/package.json"
+  register: package_json
+  become: yes
+
+- name: Fail if package.json not found
+  fail:
+    msg: "Repository clone failed - package.json not found at {{ app_dir }}/api/package.json"
+  when: not package_json.stat.exists
+
+- name: Display repository status
+  debug:
+    msg: "Repository successfully cloned/updated at {{ app_dir }}"
+
 - name: Check if local .env file exists
   stat:
     path: "{{ playbook_dir }}/../.env"
@@ -69,8 +84,8 @@
 - name: Install npm dependencies
   shell: |
     source /home/{{ app_user }}/.nvm/nvm.sh
-    cd {{ app_dir }}
-    npm install --production
+    cd {{ app_dir }}/api
+    npm install --omit=dev
   args:
     executable: /bin/bash
   become: yes
