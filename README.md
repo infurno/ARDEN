@@ -214,20 +214,36 @@ All security events logged to `history/security/`
 
 ### Production Deployment (Ubuntu 24.04 VPS)
 
-**Automated One-Command Deployment:**
+**Recommended: Ansible Deployment (Most Reliable)**
+
+```bash
+# Install Ansible
+brew install ansible  # macOS
+# OR
+sudo apt install ansible  # Ubuntu/Debian
+
+# Deploy to VPS
+cd ansible
+ansible-galaxy install -r requirements.yml
+ansible-playbook deploy.yml
+```
+
+See [ansible/README.md](ansible/README.md) for complete Ansible deployment guide.
+
+**Alternative: Bash Script Deployment**
 
 ```bash
 # Deploy to your VPS (e.g., rocket.id10t.social)
 ./scripts/deploy-full-auto.sh
 ```
 
-This will:
-- Install Node.js 20 LTS and all dependencies
-- Configure Ubuntu 24.04 for Python 3.13 compatibility
-- Set up Nginx with SSL (Let's Encrypt)
-- Configure PM2 process management
-- Set up automated daily backups
-- Start ARDEN services
+**What Gets Deployed:**
+- Node.js 20 LTS and all dependencies
+- Ubuntu 24.04 compatibility (Python 3.13 support)
+- Nginx reverse proxy with SSL (Let's Encrypt)
+- PM2 process management
+- Automated daily backups (2 AM, 7-day retention)
+- UFW firewall configuration
 
 **Manual Deployment:**
 

@@ -1,0 +1,66 @@
+---
+# System role - Install base system dependencies for ARDEN
+
+- name: Install system packages for Ubuntu 24.04
+  apt:
+    name:
+      - build-essential
+      - python3-dev
+      - python3-pip
+      - python3-setuptools
+      - python3-venv
+      - git
+      - curl
+      - wget
+      - nginx
+      - certbot
+      - python3-certbot-nginx
+      - sqlite3
+      - libsqlite3-dev
+      - ffmpeg
+      - ufw
+    state: present
+    update_cache: yes
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Configure UFW firewall
+  block:
+    - name: Allow SSH
+      ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+    
+    - name: Allow HTTP
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+    
+    - name: Allow HTTPS
+      ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+    
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        policy: deny
+
+- name: Ensure application directory exists
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Create logs directory
+  file:
+    path: "{{ app_dir }}/logs"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'

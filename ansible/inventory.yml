@@ -1,0 +1,32 @@
+---
+# Ansible Inventory for ARDEN VPS Deployment
+all:
+  hosts:
+    rocket:
+      ansible_host: rocket.id10t.social
+      ansible_user: arden
+      ansible_python_interpreter: /usr/bin/python3
+      
+  vars:
+    # Application configuration
+    app_name: arden
+    app_user: arden
+    app_dir: /home/arden/ARDEN
+    deploy_branch: arden-prod
+    
+    # GitHub repository
+    git_repo: git@github.com:infurno/ARDEN.git
+    
+    # Domain configuration
+    domain_name: rocket.id10t.social
+    ssl_email: hal@borlandtech.com
+    
+    # Node.js version
+    nodejs_version: "20"
+    
+    # PM2 configuration
+    pm2_apps:
+      - name: arden-bot
+        script: api/telegram.js
+      - name: arden-web
+        script: api/server.js

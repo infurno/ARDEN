@@ -1,0 +1,65 @@
+---
+# ARDEN VPS Deployment Playbook
+# Deploy ARDEN application to Ubuntu 24.04 VPS
+
+- name: Deploy ARDEN Application
+  hosts: rocket
+  become: yes
+  
+  pre_tasks:
+    - name: Display deployment information
+      debug:
+        msg: |
+          Deploying ARDEN to {{ domain_name }}
+          User: {{ app_user }}
+          Directory: {{ app_dir }}
+          Branch: {{ deploy_branch }}
+    
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      tags: [system]
+
+  roles:
+    - role: system
+      tags: [system]
+    
+    - role: nodejs
+      tags: [nodejs]
+    
+    - role: application
+      tags: [application]
+    
+    - role: nginx
+      tags: [nginx, ssl]
+    
+    - role: pm2
+      tags: [pm2, service]
+    
+    - role: backup
+      tags: [backup]
+
+  post_tasks:
+    - name: Display deployment summary
+      debug:
+        msg: |
+          ========================================
+          ARDEN Deployment Complete!
+          ========================================
+          
+          Web Interface: https://{{ domain_name }}
+          Application Directory: {{ app_dir }}
+          
+          Services running:
+          {% for app in pm2_apps %}
+            - {{ app.name }}
+          {% endfor %}
+          
+          Check status: pm2 status
+          View logs: pm2 logs
+          
+          Next steps:
+          1. Test Telegram bot
+          2. Test web interface
+          3. Configure user restrictions (optional)

@@ -1,0 +1,70 @@
+---
+# Nginx role - Configure Nginx and SSL
+
+- name: Stop Nginx if running (for certbot standalone)
+  service:
+    name: nginx
+    state: stopped
+  become: yes
+  failed_when: false
+
+- name: Check if SSL certificate exists
+  stat:
+    path: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
+  register: ssl_cert
+
+- name: Obtain SSL certificate with certbot
+  command: >
+    certbot certonly --standalone
+    --non-interactive
+    --agree-tos
+    --email {{ ssl_email }}
+    -d {{ domain_name }}
+  become: yes
+  when: not ssl_cert.stat.exists
+
+- name: Configure Nginx site
+  template:
+    src: nginx.conf.j2
+    dest: "/etc/nginx/sites-available/{{ domain_name }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  notify: reload nginx
+
+- name: Enable Nginx site
+  file:
+    src: "/etc/nginx/sites-available/{{ domain_name }}"
+    dest: "/etc/nginx/sites-enabled/{{ domain_name }}"
+    state: link
+  become: yes
+  notify: reload nginx
+
+- name: Remove default Nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  become: yes
+  notify: reload nginx
+
+- name: Test Nginx configuration
+  command: nginx -t
+  become: yes
+  changed_when: false
+
+- name: Ensure Nginx is started and enabled
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+  become: yes
+
+- name: Setup automatic SSL renewal
+  cron:
+    name: "Renew SSL certificates"
+    minute: "0"
+    hour: "3"
+    job: "certbot renew --quiet --post-hook 'systemctl reload nginx'"
+    user: root
+  become: yes

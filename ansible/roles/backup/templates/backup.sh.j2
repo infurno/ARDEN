@@ -1,0 +1,38 @@
+#!/bin/bash
+# ARDEN Backup Script
+# Created by Ansible
+
+BACKUP_DIR="/home/{{ app_user }}/backups"
+APP_DIR="{{ app_dir }}"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="${BACKUP_DIR}/arden_backup_${TIMESTAMP}.tar.gz"
+RETENTION_DAYS=7
+
+# Create backup directory if it doesn't exist
+mkdir -p "$BACKUP_DIR"
+
+# Create backup
+echo "Starting backup at $(date)"
+
+tar -czf "$BACKUP_FILE" \
+    -C "$(dirname $APP_DIR)" \
+    --exclude='node_modules' \
+    --exclude='.git' \
+    --exclude='logs/*.log' \
+    "$(basename $APP_DIR)/.env" \
+    "$(basename $APP_DIR)/api/data" \
+    "$(basename $APP_DIR)/.pm2" \
+    "$(basename $APP_DIR)/ecosystem.config.js" 2>/dev/null
+
+if [ $? -eq 0 ]; then
+    echo "Backup created: $BACKUP_FILE"
+    
+    # Remove old backups
+    find "$BACKUP_DIR" -name "arden_backup_*.tar.gz" -mtime +$RETENTION_DAYS -delete
+    echo "Old backups removed (retention: ${RETENTION_DAYS} days)"
+else
+    echo "Backup failed!"
+    exit 1
+fi
+
+echo "Backup completed at $(date)"

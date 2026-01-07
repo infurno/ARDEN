@@ -1,0 +1,87 @@
+---
+# Node.js role - Install Node.js 20 LTS using NVM
+
+- name: Check if NVM is installed
+  stat:
+    path: "/home/{{ app_user }}/.nvm/nvm.sh"
+  register: nvm_installed
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Install NVM
+  shell: |
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+  args:
+    creates: "/home/{{ app_user }}/.nvm/nvm.sh"
+  become: yes
+  become_user: "{{ app_user }}"
+  when: not nvm_installed.stat.exists
+
+- name: Install Node.js {{ nodejs_version }} via NVM
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    nvm install {{ nodejs_version }}
+    nvm use {{ nodejs_version }}
+    nvm alias default {{ nodejs_version }}
+  args:
+    executable: /bin/bash
+    creates: "/home/{{ app_user }}/.nvm/versions/node/v{{ nodejs_version }}"
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Verify Node.js installation
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    node --version
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  register: node_version
+  changed_when: false
+
+- name: Display Node.js version
+  debug:
+    msg: "Node.js version: {{ node_version.stdout }}"
+
+- name: Verify npm installation
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    npm --version
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  register: npm_version
+  changed_when: false
+
+- name: Display npm version
+  debug:
+    msg: "npm version: {{ npm_version.stdout }}"
+
+- name: Install PM2 globally
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    npm install -g pm2
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  register: pm2_install
+  changed_when: "'added' in pm2_install.stdout"
+
+- name: Setup PM2 startup script
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    pm2 startup systemd -u {{ app_user }} --hp /home/{{ app_user }}
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  register: pm2_startup
+  changed_when: false
+
+- name: Execute PM2 startup command
+  shell: "{{ pm2_startup.stdout_lines | select('match', '^sudo .*') | first }}"
+  when: pm2_startup.stdout_lines | select('match', '^sudo .*') | list | length > 0
+  become: yes

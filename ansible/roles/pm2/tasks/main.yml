@@ -1,0 +1,79 @@
+---
+# PM2 role - Deploy and manage PM2 services
+
+- name: Stop existing PM2 processes
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    pm2 stop all || true
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  changed_when: false
+  failed_when: false
+
+- name: Delete old PM2 processes
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    pm2 delete all || true
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  changed_when: false
+  failed_when: false
+
+- name: Start PM2 applications
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    cd {{ app_dir }}
+    pm2 start {{ item.script }} --name {{ item.name }}
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  loop: "{{ pm2_apps }}"
+  register: pm2_start
+  changed_when: true
+
+- name: Save PM2 process list
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    pm2 save
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  changed_when: false
+
+- name: Get PM2 status
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    pm2 list
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  register: pm2_status
+  changed_when: false
+
+- name: Display PM2 status
+  debug:
+    msg: "{{ pm2_status.stdout_lines }}"
+
+- name: Wait for applications to start
+  wait_for:
+    port: 3000
+    timeout: 30
+  become: yes
+
+- name: Verify web interface is responding
+  uri:
+    url: "http://localhost:3000"
+    status_code: 200
+    timeout: 10
+  become: yes
+  register: health_check
+  retries: 3
+  delay: 5
+  until: health_check is success

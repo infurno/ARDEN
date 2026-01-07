@@ -1,0 +1,99 @@
+---
+# Application role - Clone repository and install dependencies
+
+- name: Check if repository exists
+  stat:
+    path: "{{ app_dir }}/.git"
+  register: repo_exists
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Clone repository
+  git:
+    repo: "{{ git_repo }}"
+    dest: "{{ app_dir }}"
+    version: "{{ deploy_branch }}"
+    accept_hostkey: yes
+  become: yes
+  become_user: "{{ app_user }}"
+  when: not repo_exists.stat.exists
+
+- name: Update repository
+  git:
+    repo: "{{ git_repo }}"
+    dest: "{{ app_dir }}"
+    version: "{{ deploy_branch }}"
+    update: yes
+  become: yes
+  become_user: "{{ app_user }}"
+  when: repo_exists.stat.exists
+  register: git_update
+
+- name: Check if local .env file exists
+  stat:
+    path: "{{ playbook_dir }}/../.env"
+  delegate_to: localhost
+  register: local_env
+  become: no
+
+- name: Copy .env file to VPS
+  copy:
+    src: "{{ playbook_dir }}/../.env"
+    dest: "{{ app_dir }}/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+  when: local_env.stat.exists
+  become: yes
+
+- name: Fail if .env file not found
+  fail:
+    msg: ".env file not found! Please create .env file in project root"
+  when: not local_env.stat.exists
+
+- name: Install npm dependencies
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    cd {{ app_dir }}
+    npm install --production
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  register: npm_install
+  changed_when: "'added' in npm_install.stdout"
+
+- name: Create api/data directory
+  file:
+    path: "{{ app_dir }}/api/data"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+  become: yes
+
+- name: Create uploads directory
+  file:
+    path: "{{ app_dir }}/uploads"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+  become: yes
+
+- name: Verify better-sqlite3 installation
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    cd {{ app_dir }}
+    npm list better-sqlite3
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  register: sqlite_check
+  changed_when: false
+  failed_when: false
+
+- name: Display better-sqlite3 status
+  debug:
+    msg: "better-sqlite3 status: {{ 'installed' if sqlite_check.rc == 0 else 'missing' }}"
