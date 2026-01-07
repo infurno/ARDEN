@@ -13,6 +13,11 @@
     path: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
   register: ssl_cert
 
+- name: Check if SSL options file exists
+  stat:
+    path: "/etc/letsencrypt/options-ssl-nginx.conf"
+  register: ssl_options
+
 - name: Obtain SSL certificate with certbot
   command: >
     certbot certonly --standalone
@@ -22,6 +27,26 @@
     -d {{ domain_name }}
   become: yes
   when: not ssl_cert.stat.exists
+
+- name: Verify SSL options file exists after certbot
+  stat:
+    path: "/etc/letsencrypt/options-ssl-nginx.conf"
+  register: ssl_options_after
+
+- name: Create SSL options file if missing
+  shell: |
+    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/letsencrypt/options-ssl-nginx.conf
+  become: yes
+  when: not ssl_options_after.stat.exists
+
+- name: Create dhparam file if missing
+  shell: |
+    if [ ! -f /etc/letsencrypt/ssl-dhparams.pem ]; then
+      curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/letsencrypt/ssl-dhparams.pem
+    fi
+  become: yes
+  args:
+    creates: /etc/letsencrypt/ssl-dhparams.pem
 
 - name: Configure Nginx site
   template:
