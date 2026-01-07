@@ -44,7 +44,28 @@ Edit `inventory.yml` if you need to change:
 - VPS user (default: arden)
 - Other configuration variables
 
-### 3. Run Deployment
+### 3. Setup GitHub SSH Access (For Private Repositories)
+
+If your repository is private, you need to set up SSH keys on the VPS:
+
+```bash
+cd ansible
+ansible-playbook setup-github-ssh.yml
+```
+
+This will:
+1. Generate an SSH key on the VPS
+2. Display the public key
+3. Show instructions to add it to GitHub
+
+**Follow the instructions to add the SSH key to GitHub**, then continue to step 4.
+
+**Note**: If your repository is public, you can skip this step and change `git_repo` in `inventory.yml` to use HTTPS:
+```yaml
+git_repo: https://github.com/infurno/ARDEN.git
+```
+
+### 4. Run Deployment
 
 ```bash
 cd ansible
@@ -55,7 +76,7 @@ You will be prompted for:
 - **SSH password** (if not using SSH keys)
 - **Sudo password** (for privilege escalation on VPS)
 
-### 4. Wait for Completion
+### 5. Wait for Completion
 
 The deployment takes approximately **12-16 minutes** and will:
 1. ✅ Install system dependencies (build tools, Python, FFmpeg, etc.)

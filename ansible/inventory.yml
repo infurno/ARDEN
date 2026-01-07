@@ -14,8 +14,8 @@ all:
     app_dir: /home/arden/ARDEN
     deploy_branch: arden-prod
     
-    # GitHub repository (using HTTPS for public access)
-    git_repo: https://github.com/infurno/ARDEN.git
+    # GitHub repository (SSH for private repos - run setup-github-ssh.yml first)
+    git_repo: git@github.com:infurno/ARDEN.git
     
     # Domain configuration
     domain_name: rocket.id10t.social

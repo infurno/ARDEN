@@ -1,0 +1,75 @@
+---
+# Setup GitHub SSH Access
+# Run this once before the main deployment if using private repositories
+
+- name: Setup GitHub SSH Access
+  hosts: rocket
+  become: yes
+  
+  tasks:
+    - name: Check if SSH key exists
+      stat:
+        path: "/home/{{ app_user }}/.ssh/id_ed25519"
+      register: ssh_key
+      become_user: "{{ app_user }}"
+    
+    - name: Generate SSH key for GitHub
+      shell: |
+        ssh-keygen -t ed25519 -C "{{ app_user }}@{{ domain_name }}" -f /home/{{ app_user }}/.ssh/id_ed25519 -N ""
+      become_user: "{{ app_user }}"
+      when: not ssh_key.stat.exists
+    
+    - name: Set correct permissions on SSH directory
+      file:
+        path: "/home/{{ app_user }}/.ssh"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0700'
+    
+    - name: Set correct permissions on private key
+      file:
+        path: "/home/{{ app_user }}/.ssh/id_ed25519"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0600'
+    
+    - name: Set correct permissions on public key
+      file:
+        path: "/home/{{ app_user }}/.ssh/id_ed25519.pub"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+    
+    - name: Add GitHub to known hosts
+      shell: |
+        ssh-keyscan -t rsa github.com >> /home/{{ app_user }}/.ssh/known_hosts
+      become_user: "{{ app_user }}"
+      args:
+        creates: "/home/{{ app_user }}/.ssh/known_hosts"
+    
+    - name: Read public key
+      slurp:
+        src: "/home/{{ app_user }}/.ssh/id_ed25519.pub"
+      register: public_key
+      become_user: "{{ app_user }}"
+    
+    - name: Display public key
+      debug:
+        msg: |
+          
+          ========================================
+          SSH PUBLIC KEY - Add to GitHub
+          ========================================
+          
+          {{ public_key.content | b64decode }}
+          
+          Steps to add this key to GitHub:
+          1. Go to https://github.com/settings/keys
+          2. Click "New SSH key"
+          3. Title: "ARDEN VPS (rocket.id10t.social)"
+          4. Key: Copy the key above
+          5. Click "Add SSH key"
+          
+          After adding the key, run: ansible-playbook deploy.yml
+          ========================================
