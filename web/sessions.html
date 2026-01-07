@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARDEN - Session Management</title>
+    <link rel="stylesheet" href="/assets/css/tokyo-night.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7aa2f7',
+                        secondary: '#bb9af7',
+                        accent: '#9ece6a',
+                        danger: '#f7768e',
+                        warning: '#e0af68',
+                        background: '#1a1b26',
+                        surface: '#24283b',
+                        border: '#414868',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: var(--bg-main); color: var(--text-main);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-background">
+    <!-- Header -->
+    <header class="bg-surface border-b border-border">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
+                <h1 class="text-2xl font-bold" class="tn-text-main">ARDEN</h1>
+                <nav class="hidden md:flex space-x-4">
+                    <a href="/chat.html" class="hover:text-primary" class="tn-text-secondary no-underline">Chat</a>
+                    <a href="/notes.html" class="hover:text-primary" class="tn-text-secondary no-underline">Notes</a>
+                    <a href="/todos.html" class="hover:text-primary" class="tn-text-secondary no-underline">TODOs</a>
+                    <a href="/skills.html" class="hover:text-primary" class="tn-text-secondary">Skills</a>
+                    <a href="/dashboard.html" class="hover:text-primary" class="tn-text-secondary no-underline">Dashboard</a>
+                    <a href="/sessions.html" class="text-primary font-medium" style="text-decoration: none;">Sessions</a>
+                    <a href="/settings.html" class="hover:text-primary" class="tn-text-secondary no-underline">Settings</a>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="text-xl hover:opacity-80 transition-opacity" title="Toggle Dark Mode">🌙</button>
+                <button id="logout-button" class="hover:text-danger text-sm" class="tn-text-secondary">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-bold" class="tn-text-main">🔐 Session Management</h2>
+            <div class="flex space-x-3">
+                <button id="refresh-button" class="px-4 py-2 bg-primary hover:bg-opacity-80 rounded-lg transition-all">
+                    🔄 Refresh
+                </button>
+                <button id="cleanup-button" class="px-4 py-2 bg-warning hover:bg-opacity-80 rounded-lg transition-all">
+                    🧹 Cleanup Expired
+                </button>
+                <button id="kill-all-button" class="px-4 py-2 bg-danger hover:bg-opacity-80 rounded-lg transition-all">
+                    ⚠️ Kill All Sessions
+                </button>
+            </div>
+        </div>
+
+        <!-- Session Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium" class="tn-text-secondary">Total Sessions</h3>
+                    <span class="text-2xl">📊</span>
+                </div>
+                <p id="stat-total" class="text-3xl font-bold" class="tn-text-main">--</p>
+            </div>
+
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium" class="tn-text-secondary">Active</h3>
+                    <span class="text-2xl">✅</span>
+                </div>
+                <p id="stat-active" class="text-3xl font-bold text-accent">--</p>
+            </div>
+
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium" class="tn-text-secondary">Idle</h3>
+                    <span class="text-2xl">💤</span>
+                </div>
+                <p id="stat-idle" class="text-3xl font-bold text-warning">--</p>
+            </div>
+
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium" class="tn-text-secondary">Web</h3>
+                    <span class="text-2xl">🌐</span>
+                </div>
+                <p id="stat-web" class="text-3xl font-bold text-primary">--</p>
+            </div>
+
+            <div class="bg-surface rounded-lg shadow-lg p-6 border border-border">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium" class="tn-text-secondary">Telegram</h3>
+                    <span class="text-2xl">✈️</span>
+                </div>
+                <p id="stat-telegram" class="text-3xl font-bold text-secondary">--</p>
+            </div>
+        </div>
+
+        <!-- Sessions Table -->
+        <div class="bg-surface rounded-lg shadow-lg border border-border overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-background border-b border-border">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" class="tn-text-secondary">Session ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" class="tn-text-secondary">User</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" class="tn-text-secondary">Source</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" class="tn-text-secondary">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" class="tn-text-secondary">Created</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" class="tn-text-secondary">Last Activity</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" class="tn-text-secondary">Duration</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" class="tn-text-secondary">Messages</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" class="tn-text-secondary">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessions-table-body" class="divide-y divide-border">
+                        <tr>
+                            <td colspan="9" class="px-6 py-8 text-center" class="tn-text-secondary">
+                                Loading sessions...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <div class="text-6xl mb-4">📭</div>
+            <h3 class="text-xl font-bold mb-2" class="tn-text-main">No Active Sessions</h3>
+            <p class="tn-text-secondary">All sessions have been cleared or expired.</p>
+        </div>
+    </main>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-surface rounded-lg shadow-xl p-6 max-w-md border border-border">
+            <h3 class="text-xl font-bold mb-4" class="tn-text-main">Confirm Action</h3>
+            <p id="confirmation-message" class="mb-6" class="tn-text-secondary"></p>
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-button" class="px-4 py-2 bg-surface border border-border rounded-lg hover:bg-opacity-80 transition-all">
+                    Cancel
+                </button>
+                <button id="confirm-button" class="px-4 py-2 bg-danger hover:bg-opacity-80 rounded-lg transition-all">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication check
+        async function checkAuth() {
+            const response = await fetch('/api/status');
+            if (!response.ok) {
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Load sessions
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions');
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load sessions');
+                }
+
+                // Update statistics
+                document.getElementById('stat-total').textContent = data.stats.total;
+                document.getElementById('stat-active').textContent = data.stats.active;
+                document.getElementById('stat-idle').textContent = data.stats.idle;
+                document.getElementById('stat-web').textContent = data.stats.web;
+                document.getElementById('stat-telegram').textContent = data.stats.telegram;
+
+                // Update table
+                const tbody = document.getElementById('sessions-table-body');
+                
+                if (data.sessions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-8 text-center tn-text-secondary">No active sessions</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.sessions.map(session => {
+                    const sourceIcon = session.source === 'telegram' ? '✈️' : '🌐';
+                    const statusBadge = session.isIdle 
+                        ? '<span class="px-2 py-1 text-xs rounded-full bg-warning bg-opacity-20 text-warning">💤 Idle</span>'
+                        : '<span class="px-2 py-1 text-xs rounded-full bg-accent bg-opacity-20 text-accent">✅ Active</span>';
+                    const currentBadge = session.isCurrent 
+                        ? '<span class="px-2 py-1 text-xs rounded-full bg-primary bg-opacity-20 text-primary ml-2">Current</span>'
+                        : '';
+                    const killButton = session.isCurrent
+                        ? '<button disabled class="px-3 py-1 bg-surface border border-border rounded text-xs opacity-50 cursor-not-allowed">Cannot Kill</button>'
+                        : `<button onclick="killSession('${session.sessionId}')" class="px-3 py-1 bg-danger hover:bg-opacity-80 rounded text-xs transition-all">🗑️ Kill</button>`;
+
+                    const createdDate = new Date(session.createdAt);
+                    const lastActivityDate = new Date(session.lastActivity);
+                    const now = new Date();
+
+                    const formatRelativeTime = (date) => {
+                        const diffMs = now - date;
+                        const diffMins = Math.floor(diffMs / 60000);
+                        const diffHours = Math.floor(diffMins / 60);
+                        const diffDays = Math.floor(diffHours / 24);
+
+                        if (diffMins < 1) return 'Just now';
+                        if (diffMins < 60) return `${diffMins}m ago`;
+                        if (diffHours < 24) return `${diffHours}h ago`;
+                        return `${diffDays}d ago`;
+                    };
+
+                    return `
+                        <tr class="${session.isCurrent ? 'bg-primary bg-opacity-5' : ''}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-mono text-xs tn-text-secondary" title="${session.sessionId}">${session.sessionId.substring(0, 8)}...</span>
+                                ${currentBadge}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm tn-text-main">${session.userId || 'Anonymous'}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm">${sourceIcon} ${session.source}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                ${statusBadge}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm tn-text-secondary" title="${createdDate.toLocaleString()}">${formatRelativeTime(createdDate)}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm tn-text-secondary" title="${lastActivityDate.toLocaleString()}">${formatRelativeTime(lastActivityDate)}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm tn-text-main">${session.durationMinutes}m</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm tn-text-main">${session.messageCount || 0}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                ${killButton}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                showNotification('Failed to load sessions: ' + error.message, 'error');
+            }
+        }
+
+        // Kill single session
+        async function killSession(sessionId) {
+            const confirmed = await showConfirmation(`Are you sure you want to kill session ${sessionId.substring(0, 8)}...?`);
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`/api/sessions/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to kill session');
+                }
+
+                showNotification('Session killed successfully', 'success');
+                await loadSessions();
+            } catch (error) {
+                console.error('Error killing session:', error);
+                showNotification('Failed to kill session: ' + error.message, 'error');
+            }
+        }
+
+        // Kill all sessions
+        async function killAllSessions() {
+            const confirmed = await showConfirmation('Are you sure you want to kill ALL sessions except your current one? This action cannot be undone.');
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch('/api/sessions', {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to kill sessions');
+                }
+
+                showNotification(data.message, 'success');
+                await loadSessions();
+            } catch (error) {
+                console.error('Error killing sessions:', error);
+                showNotification('Failed to kill sessions: ' + error.message, 'error');
+            }
+        }
+
+        // Cleanup expired sessions
+        async function cleanupExpiredSessions() {
+            try {
+                const response = await fetch('/api/sessions/cleanup', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to cleanup sessions');
+                }
+
+                showNotification(data.message, 'success');
+                await loadSessions();
+            } catch (error) {
+                console.error('Error cleaning up sessions:', error);
+                showNotification('Failed to cleanup sessions: ' + error.message, 'error');
+            }
+        }
+
+        // Show confirmation modal
+        function showConfirmation(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmation-modal');
+                const messageEl = document.getElementById('confirmation-message');
+                const confirmBtn = document.getElementById('confirm-button');
+                const cancelBtn = document.getElementById('cancel-button');
+
+                messageEl.textContent = message;
+                modal.classList.remove('hidden');
+
+                const cleanup = () => {
+                    modal.classList.add('hidden');
+                    confirmBtn.removeEventListener('click', onConfirm);
+                    cancelBtn.removeEventListener('click', onCancel);
+                };
+
+                const onConfirm = () => {
+                    cleanup();
+                    resolve(true);
+                };
+
+                const onCancel = () => {
+                    cleanup();
+                    resolve(false);
+                };
+
+                confirmBtn.addEventListener('click', onConfirm);
+                cancelBtn.addEventListener('click', onCancel);
+            });
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            // Simple alert for now - can be enhanced with a toast component
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            alert(`${icon} ${message}`);
+        }
+
+        // Logout
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login.html';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Event listeners
+        document.getElementById('refresh-button').addEventListener('click', loadSessions);
+        document.getElementById('cleanup-button').addEventListener('click', cleanupExpiredSessions);
+        document.getElementById('kill-all-button').addEventListener('click', killAllSessions);
+        document.getElementById('logout-button').addEventListener('click', logout);
+
+        // Auto-refresh every 10 seconds
+        setInterval(loadSessions, 10000);
+
+        // Initial load
+        checkAuth().then(loadSessions);
+    </script>
+</body>
+</html>
