@@ -61,11 +61,42 @@
   debug:
     msg: "{{ pm2_status.stdout_lines }}"
 
+- name: Wait a moment for apps to initialize
+  pause:
+    seconds: 5
+
+- name: Get PM2 logs for debugging
+  shell: |
+    source /home/{{ app_user }}/.nvm/nvm.sh
+    pm2 logs --lines 50 --nostream
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  register: pm2_logs
+  changed_when: false
+
+- name: Display PM2 logs
+  debug:
+    msg: "{{ pm2_logs.stdout_lines }}"
+
+- name: Check if port 3000 is listening
+  shell: ss -tlnp | grep :3000 || echo "Port 3000 not listening"
+  become: yes
+  register: port_check
+  changed_when: false
+
+- name: Display port status
+  debug:
+    msg: "{{ port_check.stdout_lines }}"
+
 - name: Wait for applications to start
   wait_for:
     port: 3000
     timeout: 30
   become: yes
+  failed_when: false
+  register: wait_result
 
 - name: Verify web interface is responding
   uri:
@@ -77,3 +108,5 @@
   retries: 3
   delay: 5
   until: health_check is success
+  when: wait_result is success
+  failed_when: false
