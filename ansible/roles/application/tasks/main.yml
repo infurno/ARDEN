@@ -8,6 +8,33 @@
   become: yes
   become_user: "{{ app_user }}"
 
+- name: Check current git remote URL if repo exists
+  shell: |
+    cd {{ app_dir }}
+    git config --get remote.origin.url
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: "{{ app_user }}"
+  register: current_remote
+  when: repo_exists.stat.exists
+  changed_when: false
+  failed_when: false
+
+- name: Remove repository if remote URL doesn't match
+  file:
+    path: "{{ app_dir }}"
+    state: absent
+  become: yes
+  when: repo_exists.stat.exists and current_remote.stdout != git_repo
+
+- name: Re-check if repository exists after potential removal
+  stat:
+    path: "{{ app_dir }}/.git"
+  register: repo_exists
+  become: yes
+  become_user: "{{ app_user }}"
+
 - name: Check if directory exists
   stat:
     path: "{{ app_dir }}"
