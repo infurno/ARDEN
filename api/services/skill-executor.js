@@ -243,11 +243,24 @@ function executeTodoSkill(content, category) {
  */
 function executeDailyPlanningSkill() {
   return new Promise((resolve, reject) => {
-    // For now, return a placeholder message
-    // TODO: Implement actual daily planning workflow
-    const message = "Daily planning skill detected but not yet fully implemented. This would provide your morning briefing, schedule overview, and task priorities.";
-    logger.system.info('Daily planning skill requested (placeholder)');
-    resolve(message);
+    const scriptPath = path.join(ARDEN_ROOT, 'skills/daily-planning/tools/generate-briefing.sh');
+    const command = `bash "${scriptPath}"`;
+
+    logger.system.info('Executing daily planning skill', { command });
+
+    exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
+      if (error) {
+        logger.system.error('Daily planning skill execution failed', { 
+          error: error.message, 
+          stderr 
+        });
+        reject(new Error(`Failed to generate daily briefing: ${error.message}`));
+        return;
+      }
+
+      logger.system.info('Daily planning skill executed successfully');
+      resolve(stdout.trim());
+    });
   });
 }
 
