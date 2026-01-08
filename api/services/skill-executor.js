@@ -20,6 +20,9 @@ function detectWeatherRequest(message) {
     /what'?s\s+the\s+weather\s+for\s+(.+)/i,
     /how'?s\s+the\s+weather\s+in\s+(.+)/i,
     /temperature\s+in\s+(.+)/i,
+    /current\s+conditions?\s+(?:for|in)\s+(.+)/i,
+    /conditions?\s+(?:for|in)\s+(.+)/i,
+    /forecast\s+(?:for|in)\s+(.+)/i,
   ];
 
   for (const pattern of weatherPatterns) {
