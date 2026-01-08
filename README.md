@@ -189,16 +189,96 @@ Edit `config/arden.json`:
 
 ## Skills System
 
+ARDEN includes an integrated skills system that automatically detects and executes specialized tasks through natural language.
+
+### Available Skills
+
+#### 📝 Note-Taking
+Capture notes via voice or text and save as markdown files.
+
+**Trigger Phrases:**
+- "Take a note: [content]"
+- "Save this: [content]"
+- "Create a note: [content]"
+- "Remember this: [content]"
+
+**Auto-detects note types:** meeting, idea, todo, quick
+
+**Example:**  
+`"Take a note: Follow up with Sarah about the Q1 report"`
+
+---
+
+#### ✅ TODO Management
+Add tasks to categorized TODO lists with smart category detection.
+
+**Trigger Phrases:**
+- "Add a todo: [task]"
+- "Remind me to [task]"
+- "I need to [task]"
+- "Don't forget to [task]"
+
+**Categories:**
+- **Work** - deploy, review, PR, meeting, client, presentation
+- **Personal** - groceries, bills, doctor, errands (default)
+- **Side Projects** - ARDEN, learn, tutorial, experiment
+
+**Example:**  
+`"Remind me to review pull request #42"` → Auto-categorized as **Work**
+
+---
+
+#### 📅 Daily Planning
+Get comprehensive briefings of your TODOs and recent notes.
+
+**Trigger Phrases:**
+- "Morning briefing"
+- "Plan my day"
+- "What's on my agenda"
+- "What should I do today"
+
+**Provides:**
+- TODO summary by category
+- Top pending tasks
+- Recent notes (last 7 days)
+- New notes created today
+- Quick stats and recommendations
+
+---
+
+#### 👤 User Context
+Retrieve your user profile and context information.
+
+**Trigger Phrases:**
+- "Who am I"
+- "My profile"
+- "Show my context"
+
+**Returns:** Full user profile from `~/Notes/profile.md`
+
+---
+
+#### 🌤️ Weather
+Get current weather and forecasts for any location.
+
+**Trigger Phrases:**
+- "Weather in [location]"
+- "What's the weather in Chicago?"
+- "Forecast for [location]"
+
+---
+
+### Skill Architecture
+
 Skills are loaded automatically at session start. Each skill contains:
-- `SKILL.md` - When to invoke this skill
+- `SKILL.md` - Documentation and trigger patterns
 - `workflows/` - Step-by-step procedures
 - `tools/` - Executable scripts
+- `context/` - Domain knowledge
 
-Example skills:
-- Daily Planning - Morning briefing and task prioritization
-- Research - Multi-source research aggregation
-- Content Creation - Writing and publishing workflows
-- Communication - Email and message processing
+**Location:** `~/ARDEN/skills/`
+
+**See also:** Individual skill documentation in `skills/*/SKILL.md`
 
 ## Agents
 
