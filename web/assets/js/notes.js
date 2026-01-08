@@ -1361,7 +1361,7 @@ function initTheme() {
     updateThemeIcon(true);
   }
   
-  const themeToggle = document.getElementById('themeToggle');
+  const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
     themeToggle.addEventListener('click', toggleTheme);
   }
@@ -1374,7 +1374,7 @@ function toggleTheme() {
 }
 
 function updateThemeIcon(isDark) {
-  const themeToggle = document.getElementById('themeToggle');
+  const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
     themeToggle.textContent = isDark ? '☀️' : '🌙';
     themeToggle.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';

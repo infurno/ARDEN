@@ -1,9 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notes - ARDEN</title>
+  <link rel="stylesheet" href="/assets/css/tokyo-night.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#7aa2f7',
+            secondary: '#bb9af7',
+            accent: '#9ece6a',
+            danger: '#f7768e',
+            warning: '#e0af68',
+            background: '#1a1b26',
+            surface: '#24283b',
+            border: '#414868',
+          }
+        }
+      }
+    }
+  </script>
   <style>
     * {
       margin: 0;
@@ -15,38 +36,6 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: #1a1b26;
       color: #c0caf5;
-    }
-
-    /* Header */
-    .header {
-      background: #24283b;
-      color: #c0caf5;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      border-bottom: 1px solid #414868;
-    }
-
-    .header h1 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .logo-img {
-      height: 40px;
-      width: 40px;
-      object-fit: contain;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
     }
 
     .btn {
@@ -1164,28 +1153,47 @@
     }
   </style>
 </head>
-<body>
-  <div class="header">
-    <div style="display: flex; align-items: center; gap: 1.5rem;">
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" class="logo-img" onerror="this.style.display='none'">
-        <h1>ARDEN</h1>
+<body class="min-h-screen bg-background">
+  <!-- Header -->
+  <header class="bg-surface border-b border-border">
+    <div class="max-w-6xl mx-auto px-4 py-4">
+      <!-- Top bar with logo and mobile menu button -->
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
+          <h1 class="text-2xl font-bold tn-text-main">ARDEN</h1>
+        </div>
+        
+        <!-- Desktop navigation -->
+        <nav class="hidden md:flex space-x-4">
+          <a href="/chat.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="chat">Chat</a>
+          <a href="/notes.html" class="hover:text-primary tn-text-main no-underline nav-link font-semibold" data-page="notes">Notes</a>
+          <a href="/todos.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="todos">TODOs</a>
+          <a href="/skills.html" class="hover:text-primary tn-text-secondary nav-link" data-page="skills">Skills</a>
+          <a href="/dashboard.html" class="hover:text-primary tn-text-secondary nav-link" data-page="dashboard">Dashboard</a>
+          <a href="/sessions.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="sessions">Sessions</a>
+          <a href="/settings.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="settings">Settings</a>
+        </nav>
+        
+        <!-- Right side buttons -->
+        <div class="flex items-center space-x-2 md:space-x-4">
+          <div id="status-indicator" class="hidden md:flex items-center space-x-2">
+            <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+            <span class="text-sm tn-text-secondary">Loading...</span>
+          </div>
+          <button class="btn btn-primary hidden md:inline-block" id="newNoteBtn">+ New Note</button>
+          <button id="theme-toggle" class="text-xl hover:opacity-80 transition-opacity" title="Toggle Dark Mode">🌙</button>
+          <button id="logout-button" class="hover:text-danger text-sm tn-text-secondary hidden md:block">
+            Logout
+          </button>
+          <!-- Mobile menu button -->
+          <button id="mobile-menu-button" class="md:hidden text-2xl hover:text-primary tn-text-secondary" title="Menu">
+            ☰
+          </button>
+        </div>
       </div>
-      <nav style="display: flex; gap: 1rem; align-items: center;">
-        <a href="/chat.html" style="color: #9aa5ce; text-decoration: none; font-size: 0.95rem; transition: color 0.2s;" onmouseover="this.style.color='#7aa2f7'" onmouseout="this.style.color='#9aa5ce'">Chat</a>
-        <a href="/notes.html" style="color: #7aa2f7; text-decoration: none; font-size: 0.95rem; font-weight: 500;">Notes</a>
-        <a href="/todos.html" style="color: #9aa5ce; text-decoration: none; font-size: 0.95rem; transition: color 0.2s;" onmouseover="this.style.color='#7aa2f7'" onmouseout="this.style.color='#9aa5ce'">TODOs</a>
-                    <a href="/skills.html" class="hover:text-primary" style="color: #9aa5ce;">Skills</a>
-        <a href="/dashboard.html" style="color: #9aa5ce; text-decoration: none; font-size: 0.95rem; transition: color 0.2s;" onmouseover="this.style.color='#7aa2f7'" onmouseout="this.style.color='#9aa5ce'">Dashboard</a>
-        <a href="/sessions.html" style="color: #9aa5ce; text-decoration: none; font-size: 0.95rem; transition: color 0.2s;" onmouseover="this.style.color='#7aa2f7'" onmouseout="this.style.color='#9aa5ce'">Sessions</a>
-        <a href="/settings.html" style="color: #9aa5ce; text-decoration: none; font-size: 0.95rem; transition: color 0.2s;" onmouseover="this.style.color='#7aa2f7'" onmouseout="this.style.color='#9aa5ce'">Settings</a>
-      </nav>
     </div>
-    <div class="header-actions">
-      <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">🌙</button>
-      <button class="btn btn-primary" id="newNoteBtn">+ New Note</button>
-    </div>
-  </div>
+  </header>
 
   <div class="container">
     <!-- Browser View -->
