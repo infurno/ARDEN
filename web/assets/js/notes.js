@@ -292,10 +292,10 @@ function renderNotes(append = false) {
         <span>💾 ${formatBytes(note.size)}</span>
       </div>
       <div class="note-actions flex flex-wrap gap-2">
-        <button class="px-3 py-1 rounded bg-primary hover:bg-opacity-80 text-background text-sm font-medium transition-colors" onclick="event.stopPropagation(); openNote('${escapeHtml(note.filename)}')">Open</button>
-        <button class="px-3 py-1 rounded bg-border hover:bg-opacity-80 tn-text-main text-sm transition-colors" onclick="event.stopPropagation(); editNote('${escapeHtml(note.filename)}')">Edit</button>
-        <button class="px-3 py-1 rounded bg-border hover:bg-opacity-80 tn-text-main text-sm transition-colors" onclick="event.stopPropagation(); renameNote('${escapeHtml(note.filename)}')">Rename</button>
-        <button class="px-3 py-1 rounded bg-danger hover:bg-opacity-80 text-background text-sm transition-colors" onclick="event.stopPropagation(); deleteNote('${escapeHtml(note.filename)}')">Delete</button>
+        <button class="px-3 py-1 rounded bg-primary hover:bg-opacity-80 text-background text-sm font-medium transition-colors" onclick="event.stopPropagation(); openNote('${escapeJs(note.filename)}')">Open</button>
+        <button class="px-3 py-1 rounded bg-border hover:bg-opacity-80 tn-text-main text-sm transition-colors" onclick="event.stopPropagation(); editNote('${escapeJs(note.filename)}')">Edit</button>
+        <button class="px-3 py-1 rounded bg-border hover:bg-opacity-80 tn-text-main text-sm transition-colors" onclick="event.stopPropagation(); renameNote('${escapeJs(note.filename)}')">Rename</button>
+        <button class="px-3 py-1 rounded bg-danger hover:bg-opacity-80 text-background text-sm transition-colors" onclick="event.stopPropagation(); deleteNote('${escapeJs(note.filename)}')">Delete</button>
       </div>
     </div>
   `).join('');
@@ -1181,6 +1181,15 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Escape string for use in JavaScript (for onclick attributes)
+function escapeJs(text) {
+  return text.replace(/\\/g, '\\\\')
+             .replace(/'/g, "\\'")
+             .replace(/"/g, '\\"')
+             .replace(/\n/g, '\\n')
+             .replace(/\r/g, '\\r');
 }
 
 function formatDate(timestamp) {
