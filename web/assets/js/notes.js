@@ -48,6 +48,7 @@ const loadMoreBtn = document.getElementById('loadMoreBtn');
 const loadMoreContainer = document.getElementById('loadMoreContainer');
 const statsContainer = document.getElementById('statsContainer');
 const newNoteBtn = document.getElementById('newNoteBtn');
+const backToListBtn = document.getElementById('backToListBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 const saveBtn = document.getElementById('saveBtn');
 const editorTitle = document.getElementById('editorTitle');
@@ -129,6 +130,11 @@ function setupEventListeners() {
   
   // New Note
   newNoteBtn.addEventListener('click', createNewNote);
+  
+  // Back to List
+  if (backToListBtn) {
+    backToListBtn.addEventListener('click', closeEditor);
+  }
   
   // Editor Actions
   cancelEditBtn.addEventListener('click', closeEditor);
