@@ -66,11 +66,15 @@ function executeWeatherSkill(location) {
  * Returns skill output if executed, null otherwise
  */
 async function executeSkillIfDetected(message) {
+  logger.system.info('Checking message for skill patterns', { message });
+  
   // Check for weather request
   const weatherLocation = detectWeatherRequest(message);
   if (weatherLocation) {
+    logger.system.info('Weather skill detected', { location: weatherLocation });
     try {
       const weatherOutput = await executeWeatherSkill(weatherLocation);
+      logger.system.info('Weather skill executed successfully', { location: weatherLocation, outputLength: weatherOutput.length });
       return weatherOutput;
     } catch (error) {
       logger.system.error('Skill execution error', { error: error.message });
@@ -78,6 +82,7 @@ async function executeSkillIfDetected(message) {
     }
   }
 
+  logger.system.info('No skill detected for message');
   return null;
 }
 
