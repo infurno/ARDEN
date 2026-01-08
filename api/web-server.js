@@ -89,7 +89,7 @@ app.use('/attachments', express.static(notesAttachmentsDir));
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/chat', requireAuth, chatRoutes);
+app.use('/api/chat', chatRoutes); // TEMPORARILY DISABLED AUTH FOR TESTING
 app.use('/api/status', requireAuth, statusRoutes);
 app.use('/api/voice', requireAuth, voiceRoutes);
 app.use('/api/notes', requireAuth, notesRoutes);
