@@ -1167,7 +1167,7 @@
         <!-- Desktop navigation -->
         <nav class="hidden md:flex space-x-4">
           <a href="/chat.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="chat">Chat</a>
-          <a href="/notes.html" class="hover:text-primary tn-text-main no-underline nav-link font-semibold" data-page="notes">Notes</a>
+          <a href="/notes.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="notes">Notes</a>
           <a href="/todos.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="todos">TODOs</a>
           <a href="/skills.html" class="hover:text-primary tn-text-secondary nav-link" data-page="skills">Skills</a>
           <a href="/dashboard.html" class="hover:text-primary tn-text-secondary nav-link" data-page="dashboard">Dashboard</a>
@@ -1192,6 +1192,25 @@
           </button>
         </div>
       </div>
+      
+      <!-- Mobile navigation (hidden by default) -->
+      <nav id="mobile-menu" class="hidden md:hidden mt-4 pb-2 space-y-2">
+        <a href="/chat.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="chat">💬 Chat</a>
+        <a href="/notes.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="notes">📝 Notes</a>
+        <a href="/todos.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="todos">✓ TODOs</a>
+        <a href="/skills.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary mobile-nav-link" data-page="skills">🛠️ Skills</a>
+        <a href="/dashboard.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary mobile-nav-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="/sessions.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="sessions">👥 Sessions</a>
+        <a href="/settings.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="settings">⚙️ Settings</a>
+        <div class="border-t border-border my-2"></div>
+        <div class="py-2 px-4 flex items-center space-x-2" id="mobile-status-indicator">
+          <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+          <span class="text-sm tn-text-secondary">Loading...</span>
+        </div>
+        <button id="mobile-logout-button" class="w-full text-left py-2 px-4 hover:bg-background rounded text-danger">
+          🚪 Logout
+        </button>
+      </nav>
     </div>
   </header>
 
