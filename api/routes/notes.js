@@ -16,14 +16,24 @@ const NOTES_DIR = path.join(process.env.HOME, 'Notes');
 
 // Security functions
 function sanitizeFilename(filename) {
-  const sanitized = path.basename(filename);
-  if (!sanitized.endsWith('.md')) {
+  // Allow forward slashes for subdirectories, but normalize path
+  const normalized = path.normalize(filename);
+  
+  // Check for path traversal attempts
+  if (normalized.includes('..')) {
+    throw new Error('Path traversal not allowed');
+  }
+  
+  if (!normalized.endsWith('.md')) {
     throw new Error('Only markdown files are allowed');
   }
-  if (/[<>:"|?*\x00-\x1f]/.test(sanitized)) {
+  
+  // Check for invalid characters (excluding forward slash)
+  if (/[<>:"|?*\x00-\x1f]/.test(normalized.replace(/\//g, ''))) {
     throw new Error('Invalid filename characters');
   }
-  return sanitized;
+  
+  return normalized;
 }
 
 function validatePath(filePath) {
@@ -69,28 +79,62 @@ function parseFrontMatter(content) {
   };
 }
 
-// GET /api/notes - List all notes
+// Recursively find all markdown files
+async function findMarkdownFiles(dir, baseDir = dir) {
+  const results = [];
+  
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      // Skip hidden files and directories
+      if (entry.name.startsWith('.')) continue;
+      
+      const fullPath = path.join(dir, entry.name);
+      
+      if (entry.isDirectory()) {
+        // Recursively search subdirectories
+        const subResults = await findMarkdownFiles(fullPath, baseDir);
+        results.push(...subResults);
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+        // Get relative path from base directory
+        const relativePath = path.relative(baseDir, fullPath);
+        results.push({
+          fullPath,
+          relativePath,
+          filename: entry.name,
+          directory: path.dirname(relativePath)
+        });
+      }
+    }
+  } catch (error) {
+    logger.system.error('Error reading directory', { dir, error: error.message });
+  }
+  
+  return results;
+}
+
+// GET /api/notes - List all notes (including subdirectories)
 router.get('/', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
     const sort = req.query.sort || 'modified';
     
-    const files = await fs.readdir(NOTES_DIR);
-    const mdFiles = files.filter(f => f.endsWith('.md') && !f.startsWith('.'));
+    // Find all markdown files recursively
+    const mdFiles = await findMarkdownFiles(NOTES_DIR);
     
     const fileStats = await Promise.all(
-      mdFiles.map(async (filename) => {
-        const filePath = path.join(NOTES_DIR, filename);
+      mdFiles.map(async (fileInfo) => {
         try {
-          const stats = await fs.stat(filePath);
-          const content = await fs.readFile(filePath, 'utf-8');
+          const stats = await fs.stat(fileInfo.fullPath);
+          const content = await fs.readFile(fileInfo.fullPath, 'utf-8');
           
           // Parse front matter and tags
           const parsed = parseFrontMatter(content);
           
           const titleMatch = parsed.content.match(/^#\s+(.+)$/m);
-          const title = titleMatch ? titleMatch[1] : filename.replace('.md', '');
+          const title = titleMatch ? titleMatch[1] : fileInfo.filename.replace('.md', '');
           const contentWithoutTitle = titleMatch 
             ? parsed.content.substring(parsed.content.indexOf(titleMatch[0]) + titleMatch[0].length).trim()
             : parsed.content;
@@ -98,7 +142,8 @@ router.get('/', async (req, res) => {
           const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
           
           return {
-            filename,
+            filename: fileInfo.relativePath, // Use relative path as filename
+            displayName: fileInfo.filename, // Just the filename for display
             title,
             preview,
             size: stats.size,
@@ -106,7 +151,8 @@ router.get('/', async (req, res) => {
             created: stats.birthtime.getTime(),
             wordCount,
             tags: parsed.tags,
-            path: '~/Notes/'
+            path: fileInfo.directory === '.' ? '~/Notes/' : `~/Notes/${fileInfo.directory}/`,
+            isSubfolder: fileInfo.directory !== '.'
           };
         } catch (error) {
           return null;
