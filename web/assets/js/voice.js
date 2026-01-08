@@ -98,7 +98,10 @@ class VoiceRecorder {
                     if (recordingDuration < this.minRecordingDuration) {
                         this.cleanup();
                         this.isRecording = false;
-                        reject(new Error(`Recording too short (${recordingDuration}ms). Hold the button for at least ${this.minRecordingDuration}ms to record.`));
+                        const error = new Error('TOO_SHORT');
+                        error.duration = recordingDuration;
+                        error.required = this.minRecordingDuration;
+                        reject(error);
                         return;
                     }
                     
@@ -110,7 +113,9 @@ class VoiceRecorder {
                     if (audioBlob.size < 1000) {
                         this.cleanup();
                         this.isRecording = false;
-                        reject(new Error('Recording too short or no audio detected. Please speak clearly while holding the button.'));
+                        const error = new Error('NO_AUDIO');
+                        error.size = audioBlob.size;
+                        reject(error);
                         return;
                     }
                     
@@ -121,6 +126,8 @@ class VoiceRecorder {
                     
                     resolve(audioBlob);
                 } catch (error) {
+                    this.cleanup();
+                    this.isRecording = false;
                     reject(error);
                 }
             };

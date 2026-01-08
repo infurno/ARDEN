@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Validate transcription is not empty
             if (!transcription || transcription.trim().length === 0) {
-                throw new Error('No speech detected. Please try again.');
+                throw new Error('No speech detected. Please speak clearly and try again.');
             }
             
             // Send transcription as message
@@ -419,12 +419,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             console.error('Voice message error:', error);
             
-            // Only show message if it's not a "too short" error (those are expected)
-            if (!error.message.includes('too short') && !error.message.includes('Hold the button')) {
-                addMessage('arden', `Voice error: ${error.message}`, new Date().toISOString());
+            // Handle specific error types
+            if (error.message === 'TOO_SHORT') {
+                // Silent cancel for too-short recordings (expected user behavior)
+                console.log(`Recording canceled: too short (${error.duration}ms, need ${error.required}ms)`);
+            } else if (error.message === 'NO_AUDIO') {
+                // Show helpful message for no audio detected
+                messageInput.placeholder = 'No audio detected - hold button and speak clearly';
+                setTimeout(() => {
+                    messageInput.placeholder = 'Type your message or use voice...';
+                }, 3000);
             } else {
-                // For "too short" errors, just show a subtle notification
-                console.log('Recording canceled:', error.message);
+                // Show all other errors as chat messages
+                addMessage('arden', `Voice error: ${error.message}`, new Date().toISOString());
             }
         } finally {
             setLoading(false);
