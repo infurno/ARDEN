@@ -49,7 +49,7 @@ function initializeSchema() {
     )
   `);
   
-  // Chat messages table
+  // Chat messages table (without foreign key to allow messages without sessions)
   db.exec(`
     CREATE TABLE IF NOT EXISTS chat_messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,8 +57,7 @@ function initializeSchema() {
       user_id TEXT NOT NULL,
       timestamp INTEGER NOT NULL,
       role TEXT NOT NULL,
-      message TEXT NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(session_id) ON DELETE CASCADE
+      message TEXT NOT NULL
     )
   `);
   
@@ -134,6 +133,84 @@ function initializeSchema() {
 
 // Initialize schema on startup
 initializeSchema();
+
+/**
+ * Migration: Remove foreign key constraint from chat_messages table
+ * SQLite doesn't support dropping foreign keys, so we need to recreate the table
+ */
+function migrateChatMessagesTable() {
+  try {
+    // Check if migration is needed by checking table schema
+    const tableInfo = db.pragma('table_info(chat_messages)');
+    const foreignKeys = db.pragma('foreign_key_list(chat_messages)');
+    
+    if (foreignKeys.length > 0) {
+      logger.system.info('Migrating chat_messages table to remove foreign key constraint');
+      
+      // Disable foreign key constraints temporarily
+      db.pragma('foreign_keys = OFF');
+      
+      // Begin transaction
+      db.exec('BEGIN TRANSACTION');
+      
+      try {
+        // Rename old table
+        db.exec('ALTER TABLE chat_messages RENAME TO chat_messages_old');
+        
+        // Create new table without foreign key
+        db.exec(`
+          CREATE TABLE chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            timestamp INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            message TEXT NOT NULL
+          )
+        `);
+        
+        // Copy data from old table
+        db.exec(`
+          INSERT INTO chat_messages (id, session_id, user_id, timestamp, role, message)
+          SELECT id, session_id, user_id, timestamp, role, message
+          FROM chat_messages_old
+        `);
+        
+        // Drop old table
+        db.exec('DROP TABLE chat_messages_old');
+        
+        // Recreate indexes
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_chat_session 
+          ON chat_messages(session_id, timestamp);
+          
+          CREATE INDEX IF NOT EXISTS idx_chat_user 
+          ON chat_messages(user_id, timestamp);
+        `);
+        
+        // Commit transaction
+        db.exec('COMMIT');
+        
+        logger.system.info('Chat messages table migration completed successfully');
+      } catch (error) {
+        // Rollback on error
+        db.exec('ROLLBACK');
+        logger.system.error('Migration failed, rolled back', { error: error.message });
+        throw error;
+      } finally {
+        // Re-enable foreign key constraints
+        db.pragma('foreign_keys = ON');
+      }
+    } else {
+      logger.system.info('Chat messages table already migrated (no foreign key found)');
+    }
+  } catch (error) {
+    logger.system.error('Error checking/migrating chat_messages table', { error: error.message });
+  }
+}
+
+// Run migration
+migrateChatMessagesTable();
 
 /**
  * Session Management

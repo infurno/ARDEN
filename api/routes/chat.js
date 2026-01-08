@@ -27,7 +27,9 @@ router.post('/', async (req, res) => {
   logger.system.info('=== CHAT POST REQUEST RECEIVED ===', {
     hasBody: !!req.body,
     bodyKeys: Object.keys(req.body || {}),
-    message: req.body?.message?.substring(0, 50)
+    message: req.body?.message?.substring(0, 50),
+    isAuthenticated: req.session?.authenticated,
+    sessionID: req.sessionID
   });
   
   const { message, sessionId } = req.body;
@@ -41,21 +43,18 @@ router.post('/', async (req, res) => {
   }
   
   const currentSessionId = sessionId || req.sessionID;
-  const userId = req.session?.userId || 'web-user';
+  const userId = req.session?.userId || req.sessionID; // Use session ID as user ID if not set
   
   logger.user.info('Chat message received', {
     sessionId: currentSessionId,
+    userId,
     messageLength: message.length,
     messagePreview: message.substring(0, 100)
   });
   
   try {
     // Save user message to database
-    try {
-      const userMsg = saveChatMessage(currentSessionId, userId, 'user', message);
-    } catch (dbError) {
-      logger.system.warn('Failed to save user message to DB (continuing anyway)', { error: dbError.message });
-    }
+    const userMsg = saveChatMessage(currentSessionId, userId, 'user', message);
     
     // First, check if this is a skill request (weather, notes, etc.)
     const skillResponse = await executeSkillIfDetected(message);
@@ -71,11 +70,7 @@ router.post('/', async (req, res) => {
     }
     
     // Save AI response to database
-    try {
-      const aiMsg = saveChatMessage(currentSessionId, userId, 'assistant', response);
-    } catch (dbError) {
-      logger.system.warn('Failed to save AI message to DB (continuing anyway)', { error: dbError.message });
-    }
+    const aiMsg = saveChatMessage(currentSessionId, userId, 'assistant', response);
     
     // Log interaction to file (for backup/analysis)
     await logInteraction(userId, 'web', message, response);
