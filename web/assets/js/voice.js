@@ -10,6 +10,8 @@ class VoiceRecorder {
         this.audioChunks = [];
         this.isRecording = false;
         this.stream = null;
+        this.recordingStartTime = null;
+        this.minRecordingDuration = 500; // Minimum 500ms recording
     }
 
     /**
@@ -68,6 +70,7 @@ class VoiceRecorder {
             // Start recording
             this.mediaRecorder.start();
             this.isRecording = true;
+            this.recordingStartTime = Date.now();
 
             console.log('Recording started');
 
@@ -89,11 +92,29 @@ class VoiceRecorder {
         return new Promise((resolve, reject) => {
             this.mediaRecorder.onstop = () => {
                 try {
+                    // Check minimum recording duration
+                    const recordingDuration = Date.now() - this.recordingStartTime;
+                    
+                    if (recordingDuration < this.minRecordingDuration) {
+                        this.cleanup();
+                        this.isRecording = false;
+                        reject(new Error(`Recording too short (${recordingDuration}ms). Hold the button for at least ${this.minRecordingDuration}ms to record.`));
+                        return;
+                    }
+                    
                     // Create blob from recorded chunks
                     const mimeType = this.mediaRecorder.mimeType || 'audio/webm';
                     const audioBlob = new Blob(this.audioChunks, { type: mimeType });
                     
-                    console.log('Recording stopped, blob size:', audioBlob.size, 'type:', mimeType);
+                    // Validate blob size (minimum ~1KB for meaningful audio)
+                    if (audioBlob.size < 1000) {
+                        this.cleanup();
+                        this.isRecording = false;
+                        reject(new Error('Recording too short or no audio detected. Please speak clearly while holding the button.'));
+                        return;
+                    }
+                    
+                    console.log('Recording stopped, blob size:', audioBlob.size, 'type:', mimeType, 'duration:', recordingDuration + 'ms');
                     
                     this.cleanup();
                     this.isRecording = false;

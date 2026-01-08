@@ -359,16 +359,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const stopRecording = async () => {
         if (!isRecording) return;
         
+        // Reset UI immediately
+        isRecording = false;
+        voiceButton.style.backgroundColor = '#414868'; // Tokyo Night border
+        voiceButton.style.borderColor = '#414868';
+        micIcon.classList.remove('hidden');
+        recordingIcon.classList.add('hidden');
+        messageInput.placeholder = 'Type your message or use voice...';
+        
         try {
             const audioBlob = await voiceRecorder.stopRecording();
-            isRecording = false;
-            
-            // Reset UI
-            voiceButton.style.backgroundColor = '#414868'; // Tokyo Night border
-            voiceButton.style.borderColor = '#414868';
-            micIcon.classList.remove('hidden');
-            recordingIcon.classList.add('hidden');
-            messageInput.placeholder = 'Type your message or use voice...';
             
             // Show processing message
             setLoading(true);
@@ -378,6 +378,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const transcription = await sendAudioForTranscription(audioBlob);
             
             console.log('Transcription:', transcription);
+            
+            // Validate transcription is not empty
+            if (!transcription || transcription.trim().length === 0) {
+                throw new Error('No speech detected. Please try again.');
+            }
             
             // Send transcription as message
             messageInput.value = transcription;
@@ -413,7 +418,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             hideTypingIndicator();
             
             console.error('Voice message error:', error);
-            addMessage('arden', `Voice error: ${error.message}`, new Date().toISOString());
+            
+            // Only show message if it's not a "too short" error (those are expected)
+            if (!error.message.includes('too short') && !error.message.includes('Hold the button')) {
+                addMessage('arden', `Voice error: ${error.message}`, new Date().toISOString());
+            } else {
+                // For "too short" errors, just show a subtle notification
+                console.log('Recording canceled:', error.message);
+            }
         } finally {
             setLoading(false);
         }
