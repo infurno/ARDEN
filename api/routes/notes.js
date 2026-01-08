@@ -217,10 +217,12 @@ router.get('/search', async (req, res) => {
         const match = line.match(/^(.+):(\d+):(.+)$/);
         if (match) {
           const [, filePath, lineNum, matchedText] = match;
+          const relativePath = path.relative(NOTES_DIR, filePath);
           const filename = path.basename(filePath);
+          const directory = path.dirname(relativePath);
           
-          if (!processedFiles.has(filename)) {
-            processedFiles.add(filename);
+          if (!processedFiles.has(relativePath)) {
+            processedFiles.add(relativePath);
             
             try {
               const stats = await fs.stat(filePath);
@@ -232,7 +234,8 @@ router.get('/search', async (req, res) => {
               const filenameMatches = (filename.match(regex) || []).length;
               
               results.push({
-                filename,
+                filename: relativePath, // Use relative path for subdirectories
+                displayName: filename, // Just the filename for display
                 title,
                 preview: matchedText.trim(),
                 size: stats.size,
@@ -242,7 +245,8 @@ router.get('/search', async (req, res) => {
                   filename: filenameMatches,
                   total: contentMatches + filenameMatches
                 },
-                path: '~/Notes/'
+                path: directory === '.' ? '~/Notes/' : `~/Notes/${directory}/`,
+                isSubfolder: directory !== '.'
               });
             } catch (error) {
               // Skip
