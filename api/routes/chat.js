@@ -24,9 +24,16 @@ const {
  * Send a message to ARDEN
  */
 router.post('/', async (req, res) => {
+  logger.system.info('=== CHAT POST REQUEST RECEIVED ===', {
+    hasBody: !!req.body,
+    bodyKeys: Object.keys(req.body || {}),
+    message: req.body?.message?.substring(0, 50)
+  });
+  
   const { message, sessionId } = req.body;
   
   if (!message || message.trim() === '') {
+    logger.system.warn('Empty message received');
     return res.status(400).json({ 
       success: false, 
       error: 'Message is required' 
@@ -38,7 +45,8 @@ router.post('/', async (req, res) => {
   
   logger.user.info('Chat message received', {
     sessionId: currentSessionId,
-    messageLength: message.length
+    messageLength: message.length,
+    messagePreview: message.substring(0, 100)
   });
   
   try {
