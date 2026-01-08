@@ -34,30 +34,60 @@
 <body class="min-h-screen bg-background">
     <!-- Header -->
     <header class="bg-surface border-b border-border">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
-                <h1 class="text-2xl font-bold" class="tn-text-main">ARDEN</h1>
-                <nav class="hidden md:flex space-x-4">
-                    <a href="/chat.html" class="hover:text-primary" class="tn-text-secondary no-underline">Chat</a>
-                    <a href="/notes.html" class="hover:text-primary" class="tn-text-secondary no-underline">Notes</a>
-                    <a href="/todos.html" class="hover:text-primary" class="tn-text-secondary no-underline">TODOs</a>
-                    <a href="/skills.html" class="hover:text-primary" class="tn-text-secondary">Skills</a>
-                    <a href="/dashboard.html" class="text-primary font-medium" style="text-decoration: none;">Dashboard</a>
-                    <a href="/sessions.html" class="hover:text-primary" class="tn-text-secondary no-underline">Sessions</a>
-                    <a href="/settings.html" class="hover:text-primary" class="tn-text-secondary no-underline">Settings</a>
-                </nav>
-            </div>
-            <div class="flex items-center space-x-4">
-                <div id="status-indicator" class="flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
-                    <span class="text-sm" class="tn-text-secondary">Loading...</span>
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <!-- Top bar with logo and mobile menu button -->
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
+                    <h1 class="text-2xl font-bold tn-text-main">ARDEN</h1>
                 </div>
-                <button id="theme-toggle" class="text-xl hover:opacity-80 transition-opacity" title="Toggle Dark Mode">🌙</button>
-                <button id="logout-button" class="hover:text-danger text-sm" class="tn-text-secondary">
-                    Logout
-                </button>
+                
+                <!-- Desktop navigation -->
+                <nav class="hidden md:flex space-x-4">
+                    <a href="/chat.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="chat">Chat</a>
+                    <a href="/notes.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="notes">Notes</a>
+                    <a href="/todos.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="todos">TODOs</a>
+                    <a href="/skills.html" class="hover:text-primary tn-text-secondary nav-link" data-page="skills">Skills</a>
+                    <a href="/dashboard.html" class="hover:text-primary tn-text-secondary nav-link" data-page="dashboard">Dashboard</a>
+                    <a href="/sessions.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="sessions">Sessions</a>
+                    <a href="/settings.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="settings">Settings</a>
+                </nav>
+                
+                <!-- Right side buttons -->
+                <div class="flex items-center space-x-2 md:space-x-4">
+                    <div id="status-indicator" class="hidden md:flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                        <span class="text-sm tn-text-secondary">Loading...</span>
+                    </div>
+                    <button id="theme-toggle" class="text-xl hover:opacity-80 transition-opacity" title="Toggle Dark Mode">🌙</button>
+                    <button id="logout-button" class="hover:text-danger text-sm tn-text-secondary hidden md:block">
+                        Logout
+                    </button>
+                    <!-- Mobile menu button -->
+                    <button id="mobile-menu-button" class="md:hidden text-2xl hover:text-primary tn-text-secondary" title="Menu">
+                        ☰
+                    </button>
+                </div>
             </div>
+            
+            <!-- Mobile navigation (hidden by default) -->
+            <nav id="mobile-menu" class="hidden md:hidden mt-4 pb-2 space-y-2">
+                <a href="/chat.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="chat">💬 Chat</a>
+                <a href="/notes.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="notes">📝 Notes</a>
+                <a href="/todos.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="todos">✓ TODOs</a>
+                <a href="/skills.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary mobile-nav-link" data-page="skills">🛠️ Skills</a>
+                <a href="/dashboard.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary mobile-nav-link" data-page="dashboard">📊 Dashboard</a>
+                <a href="/sessions.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="sessions">👥 Sessions</a>
+                <a href="/settings.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="settings">⚙️ Settings</a>
+                <div class="border-t border-border my-2"></div>
+                <div class="py-2 px-4 flex items-center space-x-2" id="mobile-status-indicator">
+                    <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                    <span class="text-sm tn-text-secondary">Loading...</span>
+                </div>
+                <button id="mobile-logout-button" class="w-full text-left py-2 px-4 hover:bg-background rounded text-danger">
+                    🚪 Logout
+                </button>
+            </nav>
         </div>
     </header>
 
@@ -318,5 +348,63 @@
     <script src="/assets/js/api.js?v=2"></script>
     <script src="/assets/js/websocket.js?v=1"></script>
     <script src="/assets/js/dashboard.js?v=2"></script>
+    
+    <!-- Mobile menu script -->
+    <script>
+    (function() {
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileLogoutButton = document.getElementById('mobile-logout-button');
+        const logoutButton = document.getElementById('logout-button');
+        const mobileStatusIndicator = document.getElementById('mobile-status-indicator');
+        const statusIndicator = document.getElementById('status-indicator');
+        
+        // Toggle mobile menu
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+                // Toggle icon
+                if (mobileMenu.classList.contains('hidden')) {
+                    mobileMenuButton.textContent = '☰';
+                } else {
+                    mobileMenuButton.textContent = '✕';
+                }
+            });
+            
+            // Close menu when clicking a link
+            const mobileLinks = mobileMenu.querySelectorAll('a');
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenuButton.textContent = '☰';
+                });
+            });
+        }
+        
+        // Sync mobile logout with desktop logout
+        if (mobileLogoutButton && logoutButton) {
+            mobileLogoutButton.addEventListener('click', function() {
+                logoutButton.click();
+            });
+        }
+        
+        // Sync status indicators
+        if (mobileStatusIndicator && statusIndicator) {
+            const observer = new MutationObserver(function() {
+                mobileStatusIndicator.innerHTML = statusIndicator.innerHTML;
+            });
+            observer.observe(statusIndicator, { childList: true, subtree: true });
+        }
+        
+        // Highlight active page
+        const currentPage = 'dashboard';
+        document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(link => {
+            if (link.dataset.page === currentPage) {
+                link.classList.add('text-primary', 'font-medium');
+                link.style.textDecoration = 'none';
+            }
+        });
+    })();
+    </script>
 </body>
 </html>
