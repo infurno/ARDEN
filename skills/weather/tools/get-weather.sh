@@ -21,7 +21,8 @@ LOCATION="${1:-$DEFAULT_LOCATION}"  # Use provided location or default
 LOCATION_ENCODED="${LOCATION// /+}"
 
 # Fetch weather data in a single call (faster and more reliable)
-WEATHER_RAW=$(curl -s --connect-timeout 5 --max-time 8 "https://wttr.in/${LOCATION_ENCODED}?format=%l|%C|%t|%f|%h|%w|%p" 2>/dev/null)
+# Use ?u for imperial units (Fahrenheit, mph, inches)
+WEATHER_RAW=$(curl -s --connect-timeout 5 --max-time 8 "https://wttr.in/${LOCATION_ENCODED}?u&format=%l|%C|%t|%f|%h|%w|%p" 2>/dev/null)
 
 # Check if request succeeded
 if [ -z "$WEATHER_RAW" ]; then
