@@ -51,7 +51,11 @@ router.post('/', async (req, res) => {
   
   try {
     // Save user message to database
-    const userMsg = saveChatMessage(currentSessionId, userId, 'user', message);
+    try {
+      const userMsg = saveChatMessage(currentSessionId, userId, 'user', message);
+    } catch (dbError) {
+      logger.system.warn('Failed to save user message to DB (continuing anyway)', { error: dbError.message });
+    }
     
     // First, check if this is a skill request (weather, notes, etc.)
     const skillResponse = await executeSkillIfDetected(message);
@@ -67,7 +71,11 @@ router.post('/', async (req, res) => {
     }
     
     // Save AI response to database
-    const aiMsg = saveChatMessage(currentSessionId, userId, 'assistant', response);
+    try {
+      const aiMsg = saveChatMessage(currentSessionId, userId, 'assistant', response);
+    } catch (dbError) {
+      logger.system.warn('Failed to save AI message to DB (continuing anyway)', { error: dbError.message });
+    }
     
     // Log interaction to file (for backup/analysis)
     await logInteraction(userId, 'web', message, response);
@@ -76,8 +84,8 @@ router.post('/', async (req, res) => {
     wsService.notifyChatMessage(currentSessionId, {
       role: 'assistant',
       content: response,
-      timestamp: aiMsg.timestamp,
-      messageId: aiMsg.id
+      timestamp: new Date().toISOString(),
+      messageId: null
     });
     
     logger.user.info('Chat response sent', {
@@ -89,8 +97,8 @@ router.post('/', async (req, res) => {
       success: true,
       response: response,
       sessionId: currentSessionId,
-      timestamp: aiMsg.timestamp,
-      messageId: aiMsg.id
+      timestamp: new Date().toISOString(),
+      messageId: null
     });
     
   } catch (error) {
