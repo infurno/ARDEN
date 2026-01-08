@@ -26,959 +26,11 @@
     }
   </script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #1a1b26;
-      color: #c0caf5;
+      background-color: var(--bg-main);
+      color: var(--text-main);
     }
-
-    .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: background 0.2s;
-    }
-
-    .btn-primary {
-      background: #7aa2f7;
-      color: #1a1b26;
-      font-weight: 500;
-    }
-
-    .btn-primary:hover {
-      background: #89b4fa;
-    }
-
-    .btn-secondary {
-      background: #414868;
-      color: #c0caf5;
-    }
-
-    .btn-secondary:hover {
-      background: #565f89;
-    }
-
-    .btn-success {
-      background: #9ece6a;
-      color: #1a1b26;
-      font-weight: 500;
-    }
-
-    .btn-success:hover {
-      background: #b9f27c;
-    }
-
-    .btn-danger {
-      background: #f7768e;
-      color: #1a1b26;
-      font-weight: 500;
-    }
-
-    .btn-danger:hover {
-      background: #ff9cb6;
-    }
-
-    .btn-icon {
-      padding: 0.4rem 0.7rem;
-      font-size: 1rem;
-      min-width: 2.2rem;
-      background: #414868;
-      color: #c0caf5;
-    }
-
-    .btn-icon:hover:not(:disabled) {
-      background: #565f89;
-    }
-
-    .btn-icon:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    body.dark-mode .btn-icon {
-      background: #414868;
-      color: #c0caf5;
-    }
-
-    body.dark-mode .btn-icon:hover:not(:disabled) {
-      background: #565f89;
-    }
-
-    .nav-buttons {
-      display: flex;
-      gap: 0.25rem;
-      margin: 0 1rem;
-    }
-
-    #backToListBtn {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.9rem;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    /* Main Layout */
-    .container {
-      max-width: 2000px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-
-    /* Search and Filters */
-    .controls {
-      background: #24283b;
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      margin-bottom: 1.5rem;
-      border: 1px solid #414868;
-    }
-
-    .search-box {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .search-input-wrapper {
-      flex: 1;
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .search-input {
-      flex: 1;
-      padding: 0.75rem;
-      padding-right: 2.5rem;
-      border: 1px solid #414868;
-      border-radius: 4px;
-      font-size: 1rem;
-      background: #1a1b26;
-      color: #c0caf5;
-    }
-
-    .search-input:focus {
-      outline: none;
-      border-color: #7aa2f7;
-    }
-
-    .clear-search-btn {
-      position: absolute;
-      right: 0.5rem;
-      background: none;
-      border: none;
-      color: #565f89;
-      cursor: pointer;
-      font-size: 1.2rem;
-      padding: 0.25rem 0.5rem;
-      display: none;
-      transition: color 0.2s;
-    }
-
-    .clear-search-btn:hover {
-      color: #f7768e;
-    }
-
-    .clear-search-btn.visible {
-      display: block;
-    }
-
-    body.dark-mode .clear-search-btn {
-      color: #565f89;
-    }
-
-    body.dark-mode .clear-search-btn:hover {
-      color: #f7768e;
-    }
-
-    .filters {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .filter-label {
-      font-weight: 500;
-      color: #9aa5ce;
-    }
-
-    select {
-      padding: 0.5rem;
-      border: 1px solid #414868;
-      border-radius: 4px;
-      background: #1a1b26;
-      color: #c0caf5;
-      cursor: pointer;
-    }
-
-    select:focus {
-      outline: none;
-      border-color: #7aa2f7;
-    }
-
-    /* Stats */
-    .stats {
-      display: flex;
-      gap: 2rem;
-      margin-bottom: 1.5rem;
-      padding: 1rem 1.5rem;
-      background: #24283b;
-      border-radius: 8px;
-      flex-wrap: wrap;
-      border: 1px solid #414868;
-    }
-
-    .stats span {
-      color: #9aa5ce;
-      font-size: 0.9rem;
-    }
-
-    /* Notes List */
-    .notes-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 1rem;
-    }
-
-    .note-card {
-      background: #24283b;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      transition: box-shadow 0.2s, transform 0.2s;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
-      word-wrap: break-word;
-      border: 1px solid #414868;
-    }
-
-    .note-card:hover {
-      box-shadow: 0 4px 8px rgba(122,162,247,0.2);
-      transform: translateY(-2px);
-      border-color: #7aa2f7;
-    }
-
-    .note-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      margin-bottom: 0.5rem;
-      gap: 0.5rem;
-      min-width: 0;
-    }
-
-    .note-header > div:first-child {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-    }
-
-    .note-title {
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: #c0caf5;
-      margin-bottom: 0.25rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      line-height: 1.3;
-      word-wrap: break-word;
-      word-break: break-word;
-    }
-
-    .note-filename {
-      font-size: 0.8rem;
-      color: #565f89;
-      font-family: monospace;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      word-break: break-all;
-      max-width: 100%;
-    }
-
-    .note-tags {
-      margin-top: 0.5rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-    }
-
-    .tag {
-      display: inline-block;
-      background: #364a82;
-      color: #7aa2f7;
-      padding: 0.15rem 0.5rem;
-      border-radius: 10px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      border: 1px solid #414868;
-    }
-
-    body.dark-mode .tag {
-      background: #364a82;
-      color: #7aa2f7;
-    }
-
-    .note-preview {
-      color: #9aa5ce;
-      line-height: 1.5;
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      word-wrap: break-word;
-      word-break: break-word;
-    }
-
-    .note-meta {
-      display: flex;
-      gap: 1rem;
-      font-size: 0.8rem;
-      color: #565f89;
-      margin-top: auto;
-      padding-top: 0.5rem;
-    }
-
-    .note-actions {
-      display: flex;
-      gap: 0.35rem;
-      flex-shrink: 0;
-    }
-
-    .note-actions button {
-      padding: 0.2rem 0.5rem;
-      font-size: 0.75rem;
-    }
-
-    /* Breadcrumb */
-    .breadcrumb {
-      padding: 1rem;
-      background: #ecf0f1;
-      border-radius: 6px;
-      margin-bottom: 1.5rem;
-      font-size: 0.9rem;
-    }
-
-    .breadcrumb a {
-      color: #2c3e50;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-
-    .breadcrumb a:hover {
-      color: #3498db;
-      text-decoration: underline;
-    }
-
-    /* Folders Section */
-    .folders-section {
-      margin-bottom: 2rem;
-    }
-
-    .folder-card {
-      background: white;
-      padding: 1rem;
-      border-radius: 6px;
-      margin-bottom: 0.75rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .folder-card:hover {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      transform: translateY(-1px);
-      background: #f8f9fa;
-    }
-
-    .folder-icon {
-      font-size: 2rem;
-    }
-
-    .folder-info {
-      flex: 1;
-    }
-
-    .folder-name {
-      font-weight: 600;
-      font-size: 1rem;
-      color: #2c3e50;
-    }
-
-    .folder-meta {
-      font-size: 0.85rem;
-      color: #7f8c8d;
-      margin-top: 0.25rem;
-    }
-
-    .files-section {
-      /* Inherits note-card styles */
-    }
-
-    /* Editor View */
-    .editor-container {
-      background: #24283b;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      height: calc(100vh - 200px);
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #414868;
-    }
-
-    .editor-header {
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid #414868;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .editor-info {
-      flex: 1;
-    }
-
-    .editor-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-      color: #c0caf5;
-    }
-
-    .editor-path {
-      font-size: 0.85rem;
-      color: #565f89;
-    }
-
-    .editor-tabs {
-      display: flex;
-      gap: 0.5rem;
-      padding: 0 1.5rem;
-      border-bottom: 1px solid #414868;
-    }
-
-    .tab {
-      padding: 0.75rem 1.5rem;
-      border: none;
-      background: none;
-      cursor: pointer;
-      color: #9aa5ce;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-    }
-
-    .tab.active {
-      color: #7aa2f7;
-      border-bottom-color: #7aa2f7;
-    }
-
-    .tab:hover {
-      color: #c0caf5;
-    }
-
-    .editor-content {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-    }
-
-    .editor-pane {
-      flex: 1;
-      padding: 1.5rem;
-      overflow-y: auto;
-    }
-
-    .editor-textarea {
-      width: 100%;
-      height: 100%;
-      border: none;
-      outline: none;
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      resize: none;
-      background: #1a1b26;
-      color: #c0caf5;
-    }
-
-    .preview-pane {
-      border-left: 1px solid #414868;
-      background: #1a1b26;
-    }
-
-    .preview-content {
-      line-height: 1.7;
-      color: #c0caf5;
-    }
-
-    .preview-content h1 {
-      font-size: 2rem;
-      margin: 1rem 0;
-      border-bottom: 2px solid #414868;
-      padding-bottom: 0.5rem;
-      color: #7aa2f7;
-    }
-
-    .preview-content h2 {
-      font-size: 1.5rem;
-      margin: 1.5rem 0 0.75rem;
-      color: #bb9af7;
-    }
-
-    .preview-content h3 {
-      font-size: 1.2rem;
-      margin: 1rem 0 0.5rem;
-      color: #9ece6a;
-    }
-
-    .preview-content p {
-      margin: 0.75rem 0;
-    }
-
-    .preview-content code {
-      background: #24283b;
-      color: #e0af68;
-      padding: 0.2rem 0.4rem;
-      border-radius: 3px;
-      font-family: monospace;
-      border: 1px solid #414868;
-    }
-
-    .preview-content pre {
-      background: #16161e;
-      color: #c0caf5;
-      padding: 1rem;
-      border-radius: 4px;
-      overflow-x: auto;
-      margin: 1rem 0;
-      border: 1px solid #414868;
-    }
-
-    .preview-content pre code {
-      background: none;
-      border: none;
-      color: inherit;
-    }
-      padding: 0;
-      color: inherit;
-    }
-
-    .preview-content ul, .preview-content ol {
-      margin: 0.75rem 0;
-      padding-left: 2rem;
-    }
-
-    .preview-content li {
-      margin: 0.25rem 0;
-    }
-
-    .preview-content blockquote {
-      border-left: 4px solid #3498db;
-      padding-left: 1rem;
-      margin: 1rem 0;
-      color: #666;
-    }
-
-    .preview-content a {
-      color: #7aa2f7;
-      text-decoration: none;
-      border-bottom: 1px solid #7aa2f740;
-      transition: all 0.2s;
-    }
-
-    .preview-content a:hover {
-      border-bottom-color: #7aa2f7;
-      background: #7aa2f710;
-    }
-
-    body.dark-mode .preview-content a {
-      color: #7aa2f7;
-      border-bottom-color: #7aa2f740;
-    }
-
-    body.dark-mode .preview-content a:hover {
-      border-bottom-color: #7aa2f7;
-      background: #7aa2f710;
-    }
-
-    .preview-content a.wiki-link {
-      color: #bb9af7;
-      border-bottom-style: dashed;
-    }
-
-    .preview-content a.wiki-link:hover {
-      color: #c0a7f8;
-      background: #bb9af710;
-    }
-
-    body.dark-mode .preview-content a.wiki-link {
-      color: #bb9af7;
-    }
-
-    body.dark-mode .preview-content a.wiki-link:hover {
-      color: #c0a7f8;
-      background: #bb9af710;
-    }
-
-    .preview-content table {
-      border-collapse: collapse;
-      width: 100%;
-      margin: 1rem 0;
-    }
-
-    .preview-content th,
-    .preview-content td {
-      border: 1px solid #ddd;
-      padding: 0.5rem;
-      text-align: left;
-    }
-
-    .preview-content th {
-      background: #f5f5f5;
-      font-weight: 600;
-    }
-
-    .editor-footer {
-      padding: 0.75rem 1.5rem;
-      border-top: 1px solid #414868;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #1a1b26;
-    }
-
-    .editor-stats {
-      font-size: 0.85rem;
-      color: #9aa5ce;
-      display: flex;
-      gap: 1.5rem;
-    }
-
-    .save-status {
-      font-size: 0.85rem;
-      color: #9ece6a;
-    }
-
-    .save-status.unsaved {
-      color: #f7768e;
-    }
-
-    /* Loading */
-    .loading {
-      text-align: center;
-      padding: 3rem;
-      color: #9aa5ce;
-    }
-
-    .spinner {
-      border: 3px solid #414868;
-      border-top: 3px solid #7aa2f7;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1rem;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: #9aa5ce;
-    }
-
-    .empty-state-icon {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-    }
-
-    .empty-state h2 {
-      color: #c0caf5;
-      margin-bottom: 0.5rem;
-    }
-
-    .error {
-      background: #3a1a1a;
-      color: #f7768e;
-      padding: 1rem;
-      border-radius: 4px;
-      border-left: 4px solid #f7768e;
-    }
-
-    .spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #3498db;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1rem;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Error */
-    .error {
-      background: #fee;
-      border: 1px solid #fcc;
-      color: #c33;
-      padding: 1rem;
-      border-radius: 4px;
-      margin-bottom: 1rem;
-    }
-
-    /* Hidden */
-    .hidden {
-      display: none !important;
-    }
-
-    /* Load More */
-    .load-more {
-      text-align: center;
-      margin-top: 2rem;
-    }
-
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: #999;
-    }
-
-    .empty-state-icon {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-    }
-
-    /* Dark Mode Styles (Extra Dark Variant) */
-    body.dark-mode {
-      background: #16161e;
-      color: #c0caf5;
-    }
-
-    body.dark-mode .header {
-      background: #0f0f14;
-      border-bottom: 1px solid #292e42;
-    }
-
-    body.dark-mode .controls,
-    body.dark-mode .note-card,
-    body.dark-mode .editor-container,
-    body.dark-mode .breadcrumb,
-    body.dark-mode .folder-card {
-      background: #1a1b26;
-      color: #c0caf5;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-
-    body.dark-mode .search-input,
-    body.dark-mode .sort-select,
-    body.dark-mode .editor-textarea {
-      background: #16161e;
-      color: #c0caf5;
-      border-color: #292e42;
-    }
-
-    body.dark-mode .note-preview,
-    body.dark-mode .note-meta,
-    body.dark-mode .folder-meta,
-    body.dark-mode .editor-path,
-    body.dark-mode .editor-stats {
-      color: #9aa5ce;
-    }
-
-    body.dark-mode .note-title {
-      color: #c0caf5;
-    }
-
-    body.dark-mode .note-filename {
-      color: #565f89;
-    }
-
-    body.dark-mode .preview-pane {
-      background: #16161e;
-      border-left-color: #292e42;
-    }
-
-    body.dark-mode .preview-content h1 {
-      border-bottom-color: #292e42;
-    }
-
-    body.dark-mode .preview-content code {
-      background: #16161e;
-      color: #e0af68;
-    }
-
-    body.dark-mode .preview-content pre {
-      background: #0f0f14;
-      border: 1px solid #292e42;
-    }
-
-    body.dark-mode .preview-content blockquote {
-      border-left-color: #7aa2f7;
-      background: #16161e;
-    }
-
-    body.dark-mode .editor-header,
-    body.dark-mode .editor-tabs,
-    body.dark-mode .editor-footer {
-      border-color: #292e42;
-    }
-
-    body.dark-mode .stats {
-      background: #1a1b26;
-      border-color: #292e42;
-    }
-
-    body.dark-mode .note-card:hover {
-      box-shadow: 0 4px 12px rgba(122,162,247,0.3);
-    }
-
-    body.dark-mode .error {
-      background: #2a1a1a;
-      border-color: #4a2a2a;
-      color: #f7768e;
-    }
-
-    body.dark-mode .breadcrumb {
-      background: #1a1b26;
-    }
-
-    body.dark-mode .header {
-      background: #1e1e1e;
-      border-bottom: 1px solid #333;
-    }
-
-    body.dark-mode .controls,
-    body.dark-mode .note-card,
-    body.dark-mode .editor-container,
-    body.dark-mode .breadcrumb,
-    body.dark-mode .folder-card {
-      background: #2a2a2a;
-      color: #e0e0e0;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    }
-
-    body.dark-mode .search-input,
-    body.dark-mode .sort-select,
-    body.dark-mode .editor-textarea {
-      background: #1e1e1e;
-      color: #e0e0e0;
-      border-color: #444;
-    }
-
-    body.dark-mode .note-preview,
-    body.dark-mode .note-meta,
-    body.dark-mode .folder-meta,
-    body.dark-mode .editor-path,
-    body.dark-mode .editor-stats {
-      color: #999;
-    }
-
-    body.dark-mode .note-title {
-      color: #e8e8e8;
-    }
-
-    body.dark-mode .note-filename {
-      color: #888;
-    }
-
-    body.dark-mode .preview-pane {
-      background: #1e1e1e;
-      border-left-color: #444;
-    }
-
-    body.dark-mode .preview-content h1 {
-      border-bottom-color: #444;
-    }
-
-    body.dark-mode .preview-content code {
-      background: #1e1e1e;
-      color: #e0e0e0;
-    }
-
-    body.dark-mode .preview-content pre {
-      background: #1e1e1e;
-      border: 1px solid #444;
-    }
-
-    body.dark-mode .preview-content blockquote {
-      border-left-color: #3498db;
-      background: #1e1e1e;
-    }
-
-    body.dark-mode .editor-header,
-    body.dark-mode .editor-tabs {
-      border-bottom-color: #444;
-    }
-
-    body.dark-mode .folder-card:hover {
-      background: #333;
-    }
-
-    body.dark-mode .note-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    }
-
-    body.dark-mode .error {
-      background: #3a1a1a;
-      border-color: #5a2a2a;
-      color: #ff6b6b;
-    }
-
-    body.dark-mode .breadcrumb {
-      background: #333;
-    }
-
-    body.dark-mode .breadcrumb a {
-      color: #61afef;
-    }
-
-    /* Theme Toggle Button */
-    .theme-toggle {
-      background: none;
-      border: 1px solid #414868;
-      color: inherit;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1.2rem;
-      transition: all 0.2s;
-    }
-
-    .theme-toggle:hover {
-      background: #414868;
-      border-color: #7aa2f7;
-    }
-
+    
     /* CodeMirror Custom Styles */
     .CodeMirror {
       height: 100% !important;
@@ -987,6 +39,7 @@
       line-height: 1.6;
       background: #1a1b26 !important;
       color: #c0caf5 !important;
+      border-radius: 0.5rem;
     }
 
     .CodeMirror-gutters {
@@ -1010,127 +63,18 @@
       background: #1f2335 !important;
     }
 
-    body.dark-mode .CodeMirror {
-      background: #fff !important;
-      color: #24283b !important;
-    }
-
-    body.dark-mode .CodeMirror-gutters {
-      background: #f5f5f5 !important;
-      border-right: 1px solid #ddd !important;
-    }
-
-    body.dark-mode .CodeMirror-linenumber {
-      color: #999 !important;
-    }
-
-    body.dark-mode .CodeMirror-cursor {
-      border-left-color: #24283b !important;
-    }
-
-    body.dark-mode .CodeMirror-selected {
-      background: #e0e7ff !important;
-    }
-
-    body.dark-mode .CodeMirror-activeline-background {
-      background: #f7f9fc !important;
-    }
-
-    /* Editor Settings Modal */
-    .editor-settings-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 10000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .editor-settings-modal.visible {
-      display: flex;
-    }
-
-    .editor-settings-content {
-      background: #24283b;
-      border-radius: 8px;
-      padding: 2rem;
-      max-width: 500px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-
-    .editor-settings-content h3 {
-      margin: 0 0 1.5rem 0;
-      color: #c0caf5;
-      font-size: 1.3rem;
-    }
-
-    .setting-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .setting-group label {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      cursor: pointer;
-      padding: 0.75rem;
-      border-radius: 4px;
-      transition: background 0.2s;
-    }
-
-    .setting-group label:hover {
-      background: #2f3549;
-    }
-
-    .setting-group input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-    }
-
-    .setting-group .setting-label {
-      flex: 1;
-    }
-
-    .setting-group .setting-name {
-      font-weight: 500;
-      color: #c0caf5;
-      display: block;
-      margin-bottom: 0.25rem;
-    }
-
-    .setting-group .setting-description {
-      font-size: 0.85rem;
-      color: #565f89;
-    }
-
-    .editor-settings-footer {
-      margin-top: 2rem;
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.5rem;
-    }
-
     /* Vim mode indicator */
     .vim-mode-indicator {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      background: #414868;
-      color: #c0caf5;
       padding: 0.5rem 1rem;
-      border-radius: 4px;
+      border-radius: 0.375rem;
       font-family: monospace;
       font-size: 0.9rem;
       z-index: 9999;
       display: none;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     .vim-mode-indicator.visible {
@@ -1151,6 +95,30 @@
       background: #bb9af7;
       color: #1a1b26;
     }
+
+    /* Note card hover effect */
+    .note-card {
+      transition: all 0.2s;
+    }
+
+    .note-card:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Loading spinner */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .spinner {
+      border: 3px solid #414868;
+      border-top: 3px solid #7aa2f7;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-background">
@@ -1161,17 +129,17 @@
         <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
         <h1 class="text-2xl font-bold tn-text-main">ARDEN</h1>
         <nav class="hidden md:flex space-x-4">
-          <a href="/chat.html" class="hover:text-primary tn-text-secondary no-underline" data-page="chat">Chat</a>
-          <a href="/notes.html" class="hover:text-primary tn-text-secondary no-underline" data-page="notes">Notes</a>
-          <a href="/todos.html" class="hover:text-primary tn-text-secondary no-underline" data-page="todos">TODOs</a>
-          <a href="/skills.html" class="hover:text-primary tn-text-secondary" data-page="skills">Skills</a>
-          <a href="/dashboard.html" class="hover:text-primary tn-text-secondary no-underline" data-page="dashboard">Dashboard</a>
-          <a href="/sessions.html" class="hover:text-primary tn-text-secondary no-underline" data-page="sessions">Sessions</a>
-          <a href="/settings.html" class="hover:text-primary tn-text-secondary no-underline" data-page="settings">Settings</a>
+          <a href="/chat.html" class="hover:text-primary tn-text-secondary no-underline">Chat</a>
+          <a href="/notes.html" class="hover:text-primary tn-text-secondary no-underline">Notes</a>
+          <a href="/todos.html" class="hover:text-primary tn-text-secondary no-underline">TODOs</a>
+          <a href="/skills.html" class="hover:text-primary tn-text-secondary">Skills</a>
+          <a href="/dashboard.html" class="hover:text-primary tn-text-secondary no-underline">Dashboard</a>
+          <a href="/sessions.html" class="hover:text-primary tn-text-secondary no-underline">Sessions</a>
+          <a href="/settings.html" class="hover:text-primary tn-text-secondary no-underline">Settings</a>
         </nav>
       </div>
       <div class="flex items-center space-x-4">
-        <button class="btn btn-primary hidden md:inline-block" id="newNoteBtn">+ New Note</button>
+        <button class="bg-primary hover:bg-opacity-80 font-medium px-4 py-2 rounded-lg transition-colors hidden md:inline-block tn-text-inverse" id="newNoteBtn">+ New Note</button>
         <button id="theme-toggle" class="text-xl hover:opacity-80 transition-opacity" title="Toggle Dark Mode">🌙</button>
         <button id="logout-button" class="hover:text-danger text-sm tn-text-secondary hidden md:block">
           Logout
@@ -1180,21 +148,28 @@
     </div>
   </header>
 
-  <div class="container">
+  <!-- Main Content -->
+  <main class="max-w-6xl mx-auto px-4 py-6">
     <!-- Browser View -->
     <div id="browserView">
-      <div class="controls">
-        <div class="search-box">
-          <div class="search-input-wrapper">
-            <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search your notes...">
-            <button class="clear-search-btn" id="clearSearchBtn" title="Clear search">✕</button>
+      <!-- Search and Filters -->
+      <div class="bg-surface border border-border rounded-lg p-4 mb-6">
+        <div class="flex flex-wrap items-center gap-4 mb-4">
+          <div class="flex-1 min-w-64 relative">
+            <input type="text" id="searchInput" placeholder="🔍 Search your notes..." 
+                   class="w-full px-4 py-2 pr-10 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary bg-background text-main border border-border tn-text-main">
+            <button id="clearSearchBtn" 
+                    class="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center hover:bg-opacity-80 transition-all opacity-0 pointer-events-none bg-border tn-text-secondary text-xs"
+                    title="Clear search">
+              ✕
+            </button>
           </div>
-          <button class="btn btn-primary" id="searchBtn">Search</button>
+          <button class="bg-primary hover:bg-opacity-80 font-medium px-4 py-2 rounded-lg transition-colors tn-text-inverse" id="searchBtn">Search</button>
         </div>
         
-        <div class="filters">
-          <span class="filter-label">Sort by:</span>
-          <select id="sortSelect">
+        <div class="flex items-center space-x-4">
+          <label class="tn-text-secondary text-sm">Sort by:</label>
+          <select id="sortSelect" class="px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary bg-background tn-text-main border border-border">
             <option value="modified">Recently Modified</option>
             <option value="name">Name (A-Z)</option>
             <option value="size">Size</option>
@@ -1202,142 +177,137 @@
         </div>
       </div>
 
-      <div class="stats" id="statsContainer">
-        <span>Loading...</span>
-      </div>
-
-      <div id="notesContainer" class="notes-list">
-        <div class="loading">
-          <div class="spinner"></div>
-          <p>Loading your notes...</p>
+      <!-- Stats -->
+      <div class="bg-surface border border-border rounded-lg p-4 mb-6" id="statsContainer">
+        <div class="flex flex-wrap gap-6 tn-text-secondary text-sm">
+          <span>Loading...</span>
         </div>
       </div>
 
-      <div class="load-more hidden" id="loadMoreContainer">
-        <button class="btn btn-primary" id="loadMoreBtn">Load More</button>
+      <!-- Notes Grid -->
+      <div id="notesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-full flex flex-col items-center justify-center py-12">
+          <div class="spinner mx-auto mb-4"></div>
+          <p class="tn-text-secondary">Loading your notes...</p>
+        </div>
+      </div>
+
+      <!-- Load More -->
+      <div class="text-center mt-6 hidden" id="loadMoreContainer">
+        <button class="bg-primary hover:bg-opacity-80 font-medium px-6 py-2 rounded-lg transition-colors tn-text-inverse" id="loadMoreBtn">Load More</button>
       </div>
     </div>
 
     <!-- Editor View -->
     <div id="editorView" class="hidden">
-      <div class="editor-container">
-        <div class="editor-header">
-          <button class="btn btn-icon" id="backToListBtn" onclick="closeEditor()" title="Back to notes list (Esc)" style="margin-right: 1rem;">
-            ← Back
-          </button>
-          <div class="editor-info">
-            <div class="editor-title" id="editorTitle">Untitled</div>
-            <div class="editor-path" id="editorPath">~/Notes/</div>
+      <div class="bg-surface border border-border rounded-lg overflow-hidden" style="height: calc(100vh - 200px); display: flex; flex-direction: column;">
+        <!-- Editor Header -->
+        <div class="px-6 py-4 border-b border-border flex justify-between items-center">
+          <div class="flex items-center space-x-4">
+            <button class="px-3 py-1 rounded bg-border hover:bg-opacity-80 transition-colors tn-text-main text-sm" id="backToListBtn">
+              ← Back
+            </button>
+            <div>
+              <div class="font-semibold tn-text-main" id="editorTitle">Untitled</div>
+              <div class="text-xs tn-text-tertiary" id="editorPath">~/Notes/</div>
+            </div>
           </div>
-          <div class="nav-buttons">
-            <button class="btn btn-icon" id="backBtn" onclick="navigateBack()" title="Go back (Alt+Left)" disabled>
+          <div class="flex items-center space-x-2">
+            <button class="px-3 py-1 rounded bg-border hover:bg-opacity-80 transition-colors tn-text-main text-sm disabled:opacity-40 disabled:cursor-not-allowed" id="backBtn" title="Go back (Alt+Left)" disabled>
               ◀
             </button>
-            <button class="btn btn-icon" id="forwardBtn" onclick="navigateForward()" title="Go forward (Alt+Right)" disabled>
+            <button class="px-3 py-1 rounded bg-border hover:bg-opacity-80 transition-colors tn-text-main text-sm disabled:opacity-40 disabled:cursor-not-allowed" id="forwardBtn" title="Go forward (Alt+Right)" disabled>
               ▶
             </button>
-          </div>
-          <div class="header-actions">
-            <button class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
-            <button class="btn btn-success" id="saveBtn">Save</button>
+            <button class="bg-border hover:bg-opacity-80 font-medium px-4 py-2 rounded-lg transition-colors tn-text-main ml-4" id="cancelEditBtn">Cancel</button>
+            <button class="bg-accent hover:bg-opacity-80 font-medium px-4 py-2 rounded-lg transition-colors text-background" id="saveBtn">Save</button>
           </div>
         </div>
 
-        <div class="editor-tabs">
-          <button class="tab active" data-tab="edit">Edit</button>
-          <button class="tab" data-tab="preview">Preview</button>
-          <button class="tab" data-tab="split">Split View</button>
-          <div style="flex: 1"></div>
-          <button class="btn btn-icon" id="insertImageBtn" title="Insert image" style="margin-right: 0.5rem;">
-            🖼️
-          </button>
-          <button class="btn btn-icon" id="exportBtn" title="Export note" style="margin-right: 0.5rem;">
-            📤
-          </button>
-          <button class="btn btn-icon" id="editorSettingsBtn" title="Editor settings" style="margin-right: 0.5rem;">
-            ⚙️
-          </button>
+        <!-- Editor Tabs -->
+        <div class="flex items-center px-6 border-b border-border">
+          <button class="tab px-4 py-3 border-b-2 border-transparent hover:text-primary tn-text-secondary transition-colors active" data-tab="edit">Edit</button>
+          <button class="tab px-4 py-3 border-b-2 border-transparent hover:text-primary tn-text-secondary transition-colors" data-tab="preview">Preview</button>
+          <button class="tab px-4 py-3 border-b-2 border-transparent hover:text-primary tn-text-secondary transition-colors" data-tab="split">Split View</button>
+          <div class="flex-1"></div>
+          <button class="px-2 py-1 hover:bg-border rounded transition-colors" id="insertImageBtn" title="Insert image">🖼️</button>
+          <button class="px-2 py-1 hover:bg-border rounded transition-colors" id="exportBtn" title="Export note">📤</button>
+          <button class="px-2 py-1 hover:bg-border rounded transition-colors" id="editorSettingsBtn" title="Editor settings">⚙️</button>
         </div>
-        <input type="file" id="imageUploadInput" accept="image/*" style="display: none;" />
+        <input type="file" id="imageUploadInput" accept="image/*" class="hidden" />
 
-        <div class="editor-content" id="editorContent">
+        <!-- Editor Content -->
+        <div class="flex-1 overflow-hidden" id="editorContent">
           <!-- Content populated by JS -->
         </div>
 
-        <div class="editor-footer">
-          <div class="editor-stats" id="editorStats">
+        <!-- Editor Footer -->
+        <div class="px-6 py-3 border-t border-border flex justify-between items-center bg-background">
+          <div class="flex gap-6 text-xs tn-text-secondary" id="editorStats">
             <span>Words: 0</span>
             <span>Characters: 0</span>
             <span>Lines: 0</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 1rem;">
-            <label style="font-size: 0.85rem; color: #666; cursor: pointer;">
-              <input type="checkbox" id="autoSaveToggle" checked> Auto-save
+          <div class="flex items-center gap-4">
+            <label class="text-xs tn-text-secondary cursor-pointer flex items-center gap-2">
+              <input type="checkbox" id="autoSaveToggle" checked class="rounded"> Auto-save
             </label>
-            <div class="save-status" id="saveStatus">Saved</div>
+            <div class="text-xs text-accent" id="saveStatus">Saved</div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </main>
   
   <!-- Editor Settings Modal -->
-  <div class="editor-settings-modal" id="editorSettingsModal">
-    <div class="editor-settings-content">
-      <h3>⚙️ Editor Settings</h3>
+  <div class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50" id="editorSettingsModal">
+    <div class="bg-surface rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+      <h3 class="text-xl font-semibold mb-6 tn-text-main">⚙️ Editor Settings</h3>
       
-      <div class="setting-group">
-        <label>
-          <input type="checkbox" id="vimModeToggle">
-          <div class="setting-label">
-            <span class="setting-name">Vim Mode</span>
-            <span class="setting-description">Enable Vim keybindings (hjkl navigation, modes, etc.)</span>
+      <div class="space-y-4">
+        <label class="flex items-start gap-3 p-3 rounded hover:bg-background cursor-pointer transition-colors">
+          <input type="checkbox" id="vimModeToggle" class="mt-1">
+          <div>
+            <div class="font-medium tn-text-main">Vim Mode</div>
+            <div class="text-sm tn-text-tertiary">Enable Vim keybindings (hjkl navigation, modes, etc.)</div>
+          </div>
+        </label>
+
+        <label class="flex items-start gap-3 p-3 rounded hover:bg-background cursor-pointer transition-colors">
+          <input type="checkbox" id="lineNumbersToggle" checked class="mt-1">
+          <div>
+            <div class="font-medium tn-text-main">Line Numbers</div>
+            <div class="text-sm tn-text-tertiary">Show line numbers in the editor</div>
+          </div>
+        </label>
+
+        <label class="flex items-start gap-3 p-3 rounded hover:bg-background cursor-pointer transition-colors">
+          <input type="checkbox" id="lineWrappingToggle" checked class="mt-1">
+          <div>
+            <div class="font-medium tn-text-main">Line Wrapping</div>
+            <div class="text-sm tn-text-tertiary">Wrap long lines instead of horizontal scrolling</div>
+          </div>
+        </label>
+
+        <label class="flex items-start gap-3 p-3 rounded hover:bg-background cursor-pointer transition-colors">
+          <input type="checkbox" id="highlightActiveLineToggle" checked class="mt-1">
+          <div>
+            <div class="font-medium tn-text-main">Highlight Active Line</div>
+            <div class="text-sm tn-text-tertiary">Highlight the line where the cursor is</div>
+          </div>
+        </label>
+
+        <label class="flex items-start gap-3 p-3 rounded hover:bg-background cursor-pointer transition-colors">
+          <input type="checkbox" id="autoCloseBracketsToggle" class="mt-1">
+          <div>
+            <div class="font-medium tn-text-main">Auto-close Brackets</div>
+            <div class="text-sm tn-text-tertiary">Automatically close brackets and quotes</div>
           </div>
         </label>
       </div>
 
-      <div class="setting-group">
-        <label>
-          <input type="checkbox" id="lineNumbersToggle" checked>
-          <div class="setting-label">
-            <span class="setting-name">Line Numbers</span>
-            <span class="setting-description">Show line numbers in the editor</span>
-          </div>
-        </label>
-      </div>
-
-      <div class="setting-group">
-        <label>
-          <input type="checkbox" id="lineWrappingToggle" checked>
-          <div class="setting-label">
-            <span class="setting-name">Line Wrapping</span>
-            <span class="setting-description">Wrap long lines instead of horizontal scrolling</span>
-          </div>
-        </label>
-      </div>
-
-      <div class="setting-group">
-        <label>
-          <input type="checkbox" id="highlightActiveLineToggle" checked>
-          <div class="setting-label">
-            <span class="setting-name">Highlight Active Line</span>
-            <span class="setting-description">Highlight the line where the cursor is</span>
-          </div>
-        </label>
-      </div>
-
-      <div class="setting-group">
-        <label>
-          <input type="checkbox" id="autoCloseBracketsToggle">
-          <div class="setting-label">
-            <span class="setting-name">Auto-close Brackets</span>
-            <span class="setting-description">Automatically close brackets and quotes</span>
-          </div>
-        </label>
-      </div>
-
-      <div class="editor-settings-footer">
-        <button class="btn btn-secondary" id="closeEditorSettingsBtn">Close</button>
+      <div class="mt-6 flex justify-end">
+        <button class="bg-border hover:bg-opacity-80 font-medium px-4 py-2 rounded-lg transition-colors tn-text-main" id="closeEditorSettingsBtn">Close</button>
       </div>
     </div>
   </div>
@@ -1367,6 +337,30 @@
   
   <script src="/assets/js/websocket.js?v=1"></script>
   <script src="/assets/js/notes.js"></script>
-    <script src="/assets/js/mobile-nav.js?v=1"></script>
+  <script src="/assets/js/mobile-nav.js?v=1"></script>
+
+  <style>
+    /* Tab active state */
+    .tab.active {
+      color: var(--tn-primary);
+      border-bottom-color: var(--tn-primary);
+    }
+    
+    /* Clear search button visibility */
+    #clearSearchBtn.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    /* Save status unsaved */
+    #saveStatus.unsaved {
+      color: var(--tn-danger);
+    }
+    
+    /* Modal visible state */
+    #editorSettingsModal.visible {
+      display: flex;
+    }
+  </style>
 </body>
 </html>

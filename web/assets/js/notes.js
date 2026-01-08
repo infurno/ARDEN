@@ -269,29 +269,27 @@ function renderNotes(append = false) {
   }
   
   const html = currentNotes.map(note => `
-    <div class="note-card" data-filename="${note.filename}" style="cursor: pointer;">
-      <div class="note-header">
-        <div>
-          <div class="note-title">${escapeHtml(note.title)}</div>
-          <div class="note-filename">📄 ${escapeHtml(note.filename)}</div>
-          ${note.tags && note.tags.length > 0 ? `
-            <div class="note-tags">
-              ${note.tags.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join(' ')}
-            </div>
-          ` : ''}
-        </div>
+    <div class="note-card bg-surface border border-border rounded-lg p-4 cursor-pointer hover:border-primary hover:shadow-lg transition-all" data-filename="${note.filename}">
+      <div class="mb-3">
+        <div class="font-semibold text-lg tn-text-main mb-1 line-clamp-2">${escapeHtml(note.title)}</div>
+        <div class="text-xs tn-text-tertiary font-mono">📄 ${escapeHtml(note.filename)}</div>
+        ${note.tags && note.tags.length > 0 ? `
+          <div class="flex flex-wrap gap-1 mt-2">
+            ${note.tags.map(tag => `<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-primary bg-opacity-20 text-primary border border-primary border-opacity-30">#${escapeHtml(tag)}</span>`).join(' ')}
+          </div>
+        ` : ''}
       </div>
-      <div class="note-preview">${escapeHtml(note.preview)}${note.preview.length >= 200 ? '...' : ''}</div>
-      <div class="note-meta">
+      <div class="tn-text-secondary text-sm mb-3 line-clamp-2">${escapeHtml(note.preview)}${note.preview.length >= 200 ? '...' : ''}</div>
+      <div class="flex flex-wrap gap-3 text-xs tn-text-tertiary mb-3">
         <span>📅 ${formatDate(note.modified)}</span>
         <span>📊 ${note.wordCount} words</span>
         <span>💾 ${formatBytes(note.size)}</span>
       </div>
-      <div class="note-actions">
-        <button class="btn btn-primary" onclick="event.stopPropagation(); openNote('${escapeHtml(note.filename)}')">Open</button>
-        <button class="btn btn-secondary" onclick="event.stopPropagation(); editNote('${escapeHtml(note.filename)}')">Edit</button>
-        <button class="btn btn-secondary" onclick="event.stopPropagation(); renameNote('${escapeHtml(note.filename)}')">Rename</button>
-        <button class="btn btn-danger" onclick="event.stopPropagation(); deleteNote('${escapeHtml(note.filename)}')">Delete</button>
+      <div class="note-actions flex flex-wrap gap-2">
+        <button class="px-3 py-1 rounded bg-primary hover:bg-opacity-80 text-background text-sm font-medium transition-colors" onclick="event.stopPropagation(); openNote('${escapeHtml(note.filename)}')">Open</button>
+        <button class="px-3 py-1 rounded bg-border hover:bg-opacity-80 tn-text-main text-sm transition-colors" onclick="event.stopPropagation(); editNote('${escapeHtml(note.filename)}')">Edit</button>
+        <button class="px-3 py-1 rounded bg-border hover:bg-opacity-80 tn-text-main text-sm transition-colors" onclick="event.stopPropagation(); renameNote('${escapeHtml(note.filename)}')">Rename</button>
+        <button class="px-3 py-1 rounded bg-danger hover:bg-opacity-80 text-background text-sm transition-colors" onclick="event.stopPropagation(); deleteNote('${escapeHtml(note.filename)}')">Delete</button>
       </div>
     </div>
   `).join('');
