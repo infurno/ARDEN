@@ -11,6 +11,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 const logger = require('../utils/logger');
+const memoryManager = require('./memory-manager');
 
 // Load configuration
 const ARDEN_ROOT = path.resolve(__dirname, '../..');
@@ -150,17 +151,32 @@ async function loadUserContext() {
     userInfo: {},
     recentActivity: [],
     profileNotes: [],
-    structuredContext: null
+    structuredContext: null,
+    memoryContext: null  // NEW: ARDEN's persistent memory
   };
   
-  // Load structured user context from skill
+  // PRIORITY 1: Load ARDEN's persistent memory from openai-context.md
+  try {
+    const memory = await memoryManager.loadMemory();
+    if (memory) {
+      context.memoryContext = memory;
+      logger.system.info('Loaded ARDEN persistent memory', { 
+        size: memory.length,
+        source: 'openai-context.md' 
+      });
+    }
+  } catch (error) {
+    logger.system.warn('Failed to load ARDEN memory', { error: error.message });
+  }
+  
+  // PRIORITY 2: Load structured user context from skill
   const skillContext = getUserContextFromSkill();
   if (skillContext) {
     context.structuredContext = skillContext;
     logger.system.info('Loaded structured user context from skill');
   }
   
-  // Load from each directory
+  // PRIORITY 3: Load from each directory
   for (const dir of contextDirs) {
     logger.system.info('Loading context from directory', { directory: dir });
     
@@ -176,6 +192,7 @@ async function loadUserContext() {
   }
   
   logger.system.info('User context loaded', { 
+    hasMemoryContext: !!context.memoryContext,
     hasStructuredContext: !!context.structuredContext,
     profileCount: context.profileNotes.length,
     recentNotesCount: context.recentActivity.length 
@@ -192,24 +209,35 @@ function buildContextSummary(context) {
   
   let summary = '\n\n=== USER CONTEXT ===\n';
   
-  // Add structured user context from skill (preferred)
+  // PRIORITY 1: Add ARDEN's persistent memory (MOST IMPORTANT)
+  if (context.memoryContext) {
+    summary += '\n📝 ARDEN PERSISTENT MEMORY (from openai-context.md):\n';
+    summary += '---\n';
+    summary += context.memoryContext;
+    summary += '\n---\n';
+    summary += '\nIMPORTANT: This is your persistent memory. Remember this information across all conversations.\n';
+    summary += 'When you learn important information, you can update this memory using the memory management functions.\n\n';
+  }
+  
+  // PRIORITY 2: Add structured user context from skill
   if (context.structuredContext) {
+    summary += '\nAdditional Context from Skills:\n';
     summary += context.structuredContext + '\n';
   }
   
-  // Add profile information (if not already covered by structured context)
-  if (context.profileNotes.length > 0 && !context.structuredContext) {
+  // PRIORITY 3: Add profile information (only if no memory context)
+  if (context.profileNotes.length > 0 && !context.memoryContext) {
     summary += '\nUser Profile:\n';
     context.profileNotes.forEach(({ file, content }) => {
       summary += `From ${file}:\n${content.slice(0, 1000)}\n\n`;
     });
   }
   
-  // Add recent activity
+  // PRIORITY 4: Add recent activity (brief)
   if (context.recentActivity.length > 0) {
-    summary += '\nRecent Notes (showing what user has been working on):\n';
+    summary += '\nRecent Activity (what user has been working on):\n';
     context.recentActivity.forEach(({ file, preview }) => {
-      summary += `- ${file}: ${preview.slice(0, 200)}...\n`;
+      summary += `- ${file}: ${preview.slice(0, 150)}...\n`;
     });
   }
   

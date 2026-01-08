@@ -19,6 +19,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const logger = require('../utils/logger');
 const { getContextForPrompt } = require('./context-loader');
+const memoryManager = require('./memory-manager');
 const db = require('./database');
 
 const execAsync = promisify(exec);
@@ -41,7 +42,7 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 // System prompt template for tool-enabled providers (base version - will be enhanced with context)
-const BASE_SYSTEM_PROMPT = `You are ARDEN (AI Routine Daily Engagement Nexus), a helpful AI assistant with access to tools.
+const BASE_SYSTEM_PROMPT = `You are ARDEN (AI Routine Daily Engagement Nexus), a helpful AI assistant with access to tools and persistent memory.
 
 CRITICAL INSTRUCTION: When a user requests an action that matches a tool below, you MUST output the bash command in a code block. The system will automatically execute it.
 
@@ -51,6 +52,18 @@ bash ~/ARDEN/skills/todo-management/tools/add-todo.sh "example task" "work"
 \`\`\`
 
 The command will be executed automatically and the output will be shown to the user.
+
+MEMORY MANAGEMENT:
+You have access to a persistent memory file (openai-context.md) that is automatically loaded into every conversation.
+This file contains important information about the user, their projects, preferences, and past learnings.
+
+When you learn something important about the user, you can update your memory using special commands:
+- REMEMBER[User Profile|Name]: John Doe - Updates user profile
+- REMEMBER[Learning|Project Update]: User is working on ARDEN Discord bot - Adds to learnings
+- REMEMBER[Fact]: User prefers OpenAI gpt-4o-mini - Adds an important fact
+
+When you output a REMEMBER command, the system will automatically update your memory file.
+Only use REMEMBER for truly important information worth persisting across all future conversations.
 
 Available tools:
 
@@ -673,10 +686,79 @@ async function executeLMStudio(prompt, userId = 'unknown', sessionId = null) {
 }
 
 /**
+ * Parse and execute REMEMBER commands from LLM response
+ * Format: REMEMBER[Section|Field]: Content
+ * Examples:
+ *   REMEMBER[User Profile|Name]: John Doe
+ *   REMEMBER[Learning|ARDEN Setup]: User deployed Discord bot on VPS
+ *   REMEMBER[Fact]: User prefers OpenAI gpt-4o-mini
+ */
+async function processMemoryUpdates(response) {
+  const rememberRegex = /REMEMBER\[([^\]]+)\]:\s*(.+)/g;
+  let match;
+  let updatedResponse = response;
+  
+  while ((match = rememberRegex.exec(response)) !== null) {
+    const [fullMatch, sectionInfo, content] = match;
+    const parts = sectionInfo.split('|').map(p => p.trim());
+    
+    try {
+      if (parts.length === 2) {
+        // Format: REMEMBER[Section|Field]: Content
+        const [section, field] = parts;
+        
+        if (section.toLowerCase() === 'user profile') {
+          // Update user profile
+          await memoryManager.updateUserProfile(field, content.trim());
+          logger.system.info('Memory updated: User Profile', { field, content });
+        } else if (section.toLowerCase() === 'learning') {
+          // Add learning
+          await memoryManager.addLearning(field, content.trim());
+          logger.system.info('Memory updated: Learning', { topic: field, content });
+        } else {
+          // Update generic section
+          await memoryManager.updateMemory(section, `- **${field}**: ${content.trim()}`, true);
+          logger.system.info('Memory updated: Custom section', { section, field, content });
+        }
+      } else if (parts.length === 1) {
+        // Format: REMEMBER[Section]: Content
+        const section = parts[0];
+        
+        if (section.toLowerCase() === 'fact') {
+          await memoryManager.addFact(content.trim());
+          logger.system.info('Memory updated: Fact', { content });
+        } else {
+          await memoryManager.updateMemory(section, content.trim(), true);
+          logger.system.info('Memory updated: Section', { section, content });
+        }
+      }
+      
+      // Remove the REMEMBER command from response
+      updatedResponse = updatedResponse.replace(fullMatch, '').trim();
+      
+    } catch (error) {
+      logger.system.error('Failed to process memory update', { 
+        sectionInfo, 
+        content, 
+        error: error.message 
+      });
+    }
+  }
+  
+  // Clean up extra whitespace
+  updatedResponse = updatedResponse.replace(/\n{3,}/g, '\n\n').trim();
+  
+  return updatedResponse;
+}
+
+/**
  * Parse and execute bash commands from LLM response
  * Looks for bash code blocks and executes them
  */
 async function executeCommandsFromResponse(response) {
+  // First, process memory updates
+  response = await processMemoryUpdates(response);
+  
   // Match bash code blocks: ```bash\ncommand\n``` or just bash command starting with bash ~/
   const bashBlockRegex = /```bash\n([\s\S]*?)\n```/g;
   const inlineCommandRegex = /(?:^|\n)(bash ~\/ARDEN\/[^\n]+)/gm;
