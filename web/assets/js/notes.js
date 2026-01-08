@@ -578,12 +578,14 @@ function switchTab(tabName) {
   
   // Render editor content
   if (tabName === 'edit') {
+    editorContent.style.display = '';
     editorContent.innerHTML = `
       <div class="editor-pane" style="flex: 1;" id="editorPane"></div>
     `;
     const pane = document.getElementById('editorPane');
     codeMirrorEditor = initCodeMirror(pane, currentNote.content);
   } else if (tabName === 'preview') {
+    editorContent.style.display = '';
     editorContent.innerHTML = `
       <div class="editor-pane preview-pane" style="flex: 1;">
         <div class="preview-content" id="previewContent"></div>
@@ -591,9 +593,11 @@ function switchTab(tabName) {
     `;
     renderPreview();
   } else if (tabName === 'split') {
+    editorContent.style.display = 'flex';
+    editorContent.style.flexDirection = 'row';
     editorContent.innerHTML = `
-      <div class="editor-pane" style="flex: 1;" id="editorPane"></div>
-      <div class="editor-pane preview-pane" style="flex: 1;">
+      <div class="editor-pane" style="flex: 1; overflow: auto;" id="editorPane"></div>
+      <div class="editor-pane preview-pane" style="flex: 1; overflow: auto;">
         <div class="preview-content" id="previewContent"></div>
       </div>
     `;
@@ -635,6 +639,15 @@ function triggerAutoSave() {
 function renderPreview() {
   const previewContent = document.getElementById('previewContent');
   if (!previewContent) return;
+  
+  // Configure marked with GitHub Flavored Markdown
+  marked.setOptions({
+    gfm: true, // GitHub Flavored Markdown
+    breaks: true, // Convert \n to <br>
+    headerIds: true,
+    mangle: false,
+    sanitize: false // We'll use DOMPurify instead
+  });
   
   // Configure marked to open links in new tabs
   const renderer = new marked.Renderer();
