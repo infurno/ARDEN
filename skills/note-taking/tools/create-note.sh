@@ -56,11 +56,17 @@ if [ -n "$USER_CONTEXT" ]; then
 fi
 FOOTER="${FOOTER}*"
 
+# Generate a title from the content (first 50 chars, capitalized)
+TITLE=$(echo "$CONTENT" | head -c 50 | sed 's/^./\U&/' | sed 's/[^a-zA-Z0-9 ]$//')
+if [ ${#TITLE} -gt 50 ]; then
+  TITLE="${TITLE}..."
+fi
+
 # Create note based on type
 case "$NOTE_TYPE" in
   quick)
     cat > "$FILEPATH" << NOTEEOF
-# Quick Note
+# $TITLE
 
 $CONTENT
 
@@ -71,7 +77,7 @@ NOTEEOF
     
   meeting)
     cat > "$FILEPATH" << NOTEEOF
-# Meeting Note
+# $TITLE
 
 **Date:** ${DATE}
 **Time:** $(date +%H:%M)
@@ -91,7 +97,7 @@ NOTEEOF
     
   idea)
     cat > "$FILEPATH" << NOTEEOF
-# Idea
+# $TITLE
 
 **Date:** ${DATE}
 **Time:** $(date +%H:%M)
@@ -114,7 +120,7 @@ NOTEEOF
     
   *)
     cat > "$FILEPATH" << NOTEEOF
-# Note
+# $TITLE
 
 **Date:** ${DATE}
 **Time:** $(date +%H:%M)
