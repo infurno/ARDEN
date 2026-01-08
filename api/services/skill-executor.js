@@ -36,6 +36,131 @@ function detectWeatherRequest(message) {
 }
 
 /**
+ * Detect if message is requesting note-taking
+ * Returns: { content: string, type: string } or null
+ */
+function detectNoteRequest(message) {
+  const notePatterns = [
+    /(?:take\s+a?\s*note|create\s+a?\s*note|make\s+a?\s*note|save\s+this|write\s+this\s+down|remember\s+this)[:\s]+(.+)/i,
+    /(?:save\s+this\s+as\s+a?\s*note)[:\s]+(.+)/i,
+    /(?:note\s+to\s+self)[:\s]+(.+)/i,
+    /(?:quick\s+note)[:\s]+(.+)/i,
+    /(?:meeting\s+note)[:\s]+(.+)/i,
+    /(?:idea)[:\s]+(.+)/i,
+  ];
+
+  for (const pattern of notePatterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      let type = 'quick';
+      
+      // Detect note type from message
+      if (/meeting\s+note/i.test(message)) {
+        type = 'meeting';
+      } else if (/idea/i.test(message)) {
+        type = 'idea';
+      } else if (/todo/i.test(message)) {
+        type = 'todo';
+      }
+      
+      return {
+        content: match[1].trim(),
+        type: type
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Detect if message is requesting TODO addition
+ * Returns: { content: string, category: string } or null
+ */
+function detectTodoRequest(message) {
+  const todoPatterns = [
+    /(?:add\s+a?\s*todo|add\s+to\s+(?:my\s+)?todo\s+list|remind\s+me\s+to|i\s+need\s+to|don'?t\s+forget\s+to|make\s+a\s+todo)[:\s]+(.+)/i,
+    /(?:add\s+a?\s*(?:work|personal|side\s*project)\s+todo)[:\s]+(.+)/i,
+    /(?:todo)[:\s]+(.+)/i,
+  ];
+
+  for (const pattern of todoPatterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      let category = 'personal'; // default
+      const content = match[1].trim();
+      
+      // Detect category from explicit mention
+      if (/work\s+todo/i.test(message)) {
+        category = 'work';
+      } else if (/personal\s+todo/i.test(message)) {
+        category = 'personal';
+      } else if (/side\s*project\s+todo/i.test(message)) {
+        category = 'side-projects';
+      } else {
+        // Auto-detect from content keywords
+        const workKeywords = /\b(deploy|review|pr|pull\s+request|meeting|client|presentation|report|team|code|bug|feature|production|staging)\b/i;
+        const sideProjectKeywords = /\b(arden|learn|tutorial|experiment|side\s*project|hobby)\b/i;
+        
+        if (workKeywords.test(content)) {
+          category = 'work';
+        } else if (sideProjectKeywords.test(content)) {
+          category = 'side-projects';
+        }
+      }
+      
+      return {
+        content: content,
+        category: category
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Detect if message is requesting daily planning
+ */
+function detectDailyPlanningRequest(message) {
+  const planningPatterns = [
+    /(?:morning\s+briefing|daily\s+briefing)/i,
+    /(?:plan\s+my\s+day|what'?s\s+my\s+day\s+look\s+like)/i,
+    /(?:what'?s\s+on\s+my\s+agenda|what\s+are\s+my\s+priorities)/i,
+    /(?:what\s+should\s+i\s+(?:do|focus\s+on)\s+today)/i,
+    /(?:give\s+me\s+my\s+(?:morning|daily)\s+(?:briefing|summary))/i,
+  ];
+
+  for (const pattern of planningPatterns) {
+    if (pattern.test(message)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Detect if message is requesting user context
+ */
+function detectUserContextRequest(message) {
+  const contextPatterns = [
+    /(?:who\s+am\s+i|tell\s+me\s+about\s+(?:me|myself))/i,
+    /(?:my\s+(?:profile|context|information))/i,
+    /(?:show\s+(?:me\s+)?my\s+(?:profile|context))/i,
+    /(?:user\s+context)/i,
+  ];
+
+  for (const pattern of contextPatterns) {
+    if (pattern.test(message)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Execute weather skill
  */
 function executeWeatherSkill(location) {
@@ -62,12 +187,131 @@ function executeWeatherSkill(location) {
 }
 
 /**
+ * Execute note-taking skill
+ */
+function executeNoteSkill(content, type) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(ARDEN_ROOT, 'skills/note-taking/tools/create-note.sh');
+    const command = `bash "${scriptPath}" "${content}" "${type}" -c`;
+
+    logger.system.info('Executing note-taking skill', { content, type, command });
+
+    exec(command, { timeout: 15000 }, (error, stdout, stderr) => {
+      if (error) {
+        logger.system.error('Note-taking skill execution failed', { 
+          error: error.message, 
+          stderr 
+        });
+        reject(new Error(`Failed to create note: ${error.message}`));
+        return;
+      }
+
+      logger.system.info('Note-taking skill executed successfully', { content });
+      resolve(stdout.trim());
+    });
+  });
+}
+
+/**
+ * Execute TODO management skill
+ */
+function executeTodoSkill(content, category) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(ARDEN_ROOT, 'skills/todo-management/tools/add-todo.sh');
+    const command = `bash "${scriptPath}" "${content}" "${category}"`;
+
+    logger.system.info('Executing TODO management skill', { content, category, command });
+
+    exec(command, { timeout: 15000 }, (error, stdout, stderr) => {
+      if (error) {
+        logger.system.error('TODO management skill execution failed', { 
+          error: error.message, 
+          stderr 
+        });
+        reject(new Error(`Failed to add TODO: ${error.message}`));
+        return;
+      }
+
+      logger.system.info('TODO management skill executed successfully', { content, category });
+      resolve(stdout.trim());
+    });
+  });
+}
+
+/**
+ * Execute daily planning skill
+ */
+function executeDailyPlanningSkill() {
+  return new Promise((resolve, reject) => {
+    // For now, return a placeholder message
+    // TODO: Implement actual daily planning workflow
+    const message = "Daily planning skill detected but not yet fully implemented. This would provide your morning briefing, schedule overview, and task priorities.";
+    logger.system.info('Daily planning skill requested (placeholder)');
+    resolve(message);
+  });
+}
+
+/**
+ * Execute user context skill
+ */
+function executeUserContextSkill() {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(ARDEN_ROOT, 'skills/user-context/tools/user_context.sh');
+    const command = `bash "${scriptPath}" text`;
+
+    logger.system.info('Executing user context skill', { command });
+
+    exec(command, { timeout: 5000 }, (error, stdout, stderr) => {
+      if (error) {
+        logger.system.error('User context skill execution failed', { 
+          error: error.message, 
+          stderr 
+        });
+        reject(new Error(`Failed to get user context: ${error.message}`));
+        return;
+      }
+
+      logger.system.info('User context skill executed successfully');
+      resolve(stdout.trim());
+    });
+  });
+}
+
+/**
  * Process message and execute skills if detected
  * Returns skill output if executed, null otherwise
  */
 async function executeSkillIfDetected(message) {
   logger.system.info('Checking message for skill patterns', { message });
   
+  // Check for note-taking request (check first as it's most specific)
+  const noteRequest = detectNoteRequest(message);
+  if (noteRequest) {
+    logger.system.info('Note-taking skill detected', { content: noteRequest.content, type: noteRequest.type });
+    try {
+      const noteOutput = await executeNoteSkill(noteRequest.content, noteRequest.type);
+      logger.system.info('Note-taking skill executed successfully', { outputLength: noteOutput.length });
+      return noteOutput;
+    } catch (error) {
+      logger.system.error('Skill execution error', { error: error.message });
+      return `Error creating note: ${error.message}`;
+    }
+  }
+
+  // Check for TODO request
+  const todoRequest = detectTodoRequest(message);
+  if (todoRequest) {
+    logger.system.info('TODO management skill detected', { content: todoRequest.content, category: todoRequest.category });
+    try {
+      const todoOutput = await executeTodoSkill(todoRequest.content, todoRequest.category);
+      logger.system.info('TODO management skill executed successfully', { outputLength: todoOutput.length });
+      return todoOutput;
+    } catch (error) {
+      logger.system.error('Skill execution error', { error: error.message });
+      return `Error adding TODO: ${error.message}`;
+    }
+  }
+
   // Check for weather request
   const weatherLocation = detectWeatherRequest(message);
   if (weatherLocation) {
@@ -82,6 +326,32 @@ async function executeSkillIfDetected(message) {
     }
   }
 
+  // Check for daily planning request
+  if (detectDailyPlanningRequest(message)) {
+    logger.system.info('Daily planning skill detected');
+    try {
+      const planningOutput = await executeDailyPlanningSkill();
+      logger.system.info('Daily planning skill executed successfully');
+      return planningOutput;
+    } catch (error) {
+      logger.system.error('Skill execution error', { error: error.message });
+      return `Error running daily planning: ${error.message}`;
+    }
+  }
+
+  // Check for user context request
+  if (detectUserContextRequest(message)) {
+    logger.system.info('User context skill detected');
+    try {
+      const contextOutput = await executeUserContextSkill();
+      logger.system.info('User context skill executed successfully');
+      return contextOutput;
+    } catch (error) {
+      logger.system.error('Skill execution error', { error: error.message });
+      return `Error getting user context: ${error.message}`;
+    }
+  }
+
   logger.system.info('No skill detected for message');
   return null;
 }
@@ -89,5 +359,13 @@ async function executeSkillIfDetected(message) {
 module.exports = {
   executeSkillIfDetected,
   detectWeatherRequest,
-  executeWeatherSkill
+  detectNoteRequest,
+  detectTodoRequest,
+  detectDailyPlanningRequest,
+  detectUserContextRequest,
+  executeWeatherSkill,
+  executeNoteSkill,
+  executeTodoSkill,
+  executeDailyPlanningSkill,
+  executeUserContextSkill
 };
