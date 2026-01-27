@@ -1268,7 +1268,7 @@ async function showTemplateSelector() {
       border: 1px solid #414868;
       border-radius: 8px;
       padding: 2rem;
-      max-width: 500px;
+      max-width: 800px;
       width: 90%;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     `;
@@ -1276,8 +1276,8 @@ async function showTemplateSelector() {
     modalContent.innerHTML = `
       <h2 style="color: #c0caf5; margin-bottom: 1rem; font-size: 1.5rem;">Choose Template</h2>
       <p style="color: #9aa5ce; margin-bottom: 1.5rem; font-size: 0.9rem;">Select a template to start with, or create a blank note.</p>
-      <div id="template-list" style="margin-bottom: 1.5rem;">
-        <div style="text-align: center; color: #9aa5ce;">Loading templates...</div>
+      <div id="template-list" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.75rem;">
+        <div style="text-align: center; color: #9aa5ce; grid-column: 1 / -1;">Loading templates...</div>
       </div>
       <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
         <button id="template-cancel" style="
@@ -1314,10 +1314,9 @@ async function showTemplateSelector() {
         const templateList = document.getElementById('template-list');
         templateList.innerHTML = data.templates.map(t => `
           <button class="template-option" data-template-id="${t.id}" style="
-            display: block;
-            width: 100%;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
             background: #1a1b26;
             border: 1px solid #414868;
             border-radius: 4px;
@@ -1325,6 +1324,7 @@ async function showTemplateSelector() {
             cursor: pointer;
             text-align: left;
             transition: all 0.2s;
+            min-height: 80px;
           " onmouseover="this.style.borderColor='#7aa2f7'; this.style.background='#24283b'" onmouseout="this.style.borderColor='#414868'; this.style.background='#1a1b26'">
             <div style="font-weight: 500; margin-bottom: 0.25rem;">${escapeHtml(t.name)}</div>
             <div style="font-size: 0.85rem; color: #9aa5ce;">${t.filename}</div>
