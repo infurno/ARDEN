@@ -25,6 +25,7 @@ const skillsRoutes = require('./routes/skills');
 const settingsRoutes = require('./routes/settings');
 const sessionsRoutes = require('./routes/sessions');
 const memoryRoutes = require('./routes/memory');
+const clawdbotPartnershipRoutes = require('./routes/clawdbot-partnership');
 
 // Import middleware
 const { requireAuth } = require('./middleware/auth');
@@ -99,6 +100,8 @@ app.use('/api/skills', requireAuth, skillsRoutes);
 app.use('/api/settings', requireAuth, settingsRoutes);
 app.use('/api/sessions', requireAuth, sessionsRoutes);
 app.use('/api/memory', requireAuth, memoryRoutes);
+app.use('/api/clawdbot-partnership', requireAuth, clawdbotPartnershipRoutes);
+app.use('/api/webhooks', clawdbotPartnershipRoutes); // Webhooks don't require auth
 
 // Root redirect
 app.get('/', (req, res) => {

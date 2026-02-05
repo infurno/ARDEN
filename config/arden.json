@@ -8,7 +8,7 @@
     "stt_config": {
       "model": "base",
       "language": "en",
-      "device": "cpu"
+      "device": "cuda"
     },
     "tts_provider": "edge-tts",
     "tts_config": {
@@ -76,6 +76,17 @@
       "dd if=",
       ":(){ :|:& };:"
     ]
+  },
+  "clawdbot_partnership": {
+    "enabled": true,
+    "api_url": "http://127.0.0.1:18789/api",
+    "api_key": "your-clawdbot-api-key",
+    "timeout": 30000,
+    "retry_attempts": 3,
+    "webhook_secret": "your-clawdbot-webhook-secret",
+    "supported_platforms": ["whatsapp", "telegram"],
+    "automation_enabled": true,
+    "collaboration_mode": "bidirectional"
   },
   "routines": {
     "morning_briefing": {

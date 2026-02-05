@@ -89,6 +89,7 @@
                     <a href="/dashboard.html" class="hover:text-primary tn-text-secondary">Dashboard</a>
                     <a href="/sessions.html" class="hover:text-primary tn-text-secondary">Sessions</a>
                     <a href="/settings.html" class="hover:text-primary tn-text-secondary">Settings</a>
+                    <a href="/voice-debug.html" class="hover:text-warning tn-text-secondary font-medium">🎤 Voice Debug</a>
                 </nav>
             </div>
             <div class="flex items-center space-x-4">
@@ -110,6 +111,13 @@
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold tn-text-main">Chat with ARDEN</h2>
             <div class="flex items-center space-x-4">
+                <!-- Voice Debug Link -->
+                <a href="/voice-debug.html" class="text-sm hover:text-warning transition-colors tn-text-secondary flex items-center space-x-1" title="Voice Debug Tools">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                    <span>Voice Debug</span>
+                </a>
                 <!-- TTS Toggle -->
                 <button id="tts-toggle" class="flex items-center space-x-2 text-sm hover:text-primary transition-colors tn-text-secondary">
                     <svg id="tts-icon-off" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

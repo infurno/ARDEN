@@ -15,6 +15,7 @@ module.exports = {
       script: 'api/telegram-bot.js',
       cwd: appRoot,
       instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
@@ -22,9 +23,9 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3000
       },
-      error_file: '/var/log/arden/bot-error.log',
-      out_file: '/var/log/arden/bot-out.log',
-      log_file: '/var/log/arden/bot-combined.log',
+      error_file: path.join(appRoot, 'logs', 'bot-error.log'),
+      out_file: path.join(appRoot, 'logs', 'bot-out.log'),
+      log_file: path.join(appRoot, 'logs', 'bot-combined.log'),
       time: true,
       merge_logs: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
@@ -34,15 +35,16 @@ module.exports = {
       script: 'api/discord-bot.js',
       cwd: appRoot,
       instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
       env: {
         NODE_ENV: 'production'
       },
-      error_file: '/var/log/arden/discord-error.log',
-      out_file: '/var/log/arden/discord-out.log',
-      log_file: '/var/log/arden/discord-combined.log',
+      error_file: path.join(appRoot, 'logs', 'discord-error.log'),
+      out_file: path.join(appRoot, 'logs', 'discord-out.log'),
+      log_file: path.join(appRoot, 'logs', 'discord-combined.log'),
       time: true,
       merge_logs: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
@@ -52,6 +54,7 @@ module.exports = {
       script: 'api/web-server.js',
       cwd: appRoot,
       instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
@@ -60,9 +63,9 @@ module.exports = {
         WEB_PORT: 3001,
         WEB_HOST: '127.0.0.1'
       },
-      error_file: '/var/log/arden/web-error.log',
-      out_file: '/var/log/arden/web-out.log',
-      log_file: '/var/log/arden/web-combined.log',
+      error_file: path.join(appRoot, 'logs', 'web-error.log'),
+      out_file: path.join(appRoot, 'logs', 'web-out.log'),
+      log_file: path.join(appRoot, 'logs', 'web-combined.log'),
       time: true,
       merge_logs: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z'

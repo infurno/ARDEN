@@ -161,6 +161,107 @@ function detectUserContextRequest(message) {
 }
 
 /**
+ * Detect if message is requesting Clawdbot partnership interaction
+ * Returns: { action: string, platform: string, content: string, metadata: object } or null
+ */
+function detectClawdbotRequest(message) {
+  const clawdbotPatterns = [
+    // Messaging platform requests
+    /(?:send|message|whatsapp|telegram|discord|slack)\s+(.+?)(?:\s+via\s+clawdbot)?$/i,
+    /(?:clawdbot)\s+(?:send|message)\s+(.+)$/i,
+    
+    // Automation requests
+    /(?:clawdbot)\s+(?:email|calendar|schedule|reminder|smart\s*home)\s+(.+)$/i,
+    /(?:ask|tell)\s+clawdbot\s+to\s+(.+)$/i,
+    
+    // Delegation requests
+    /(?:delegate|forward)\s+(.+?)\s+to\s+clawdbot$/i,
+    /(?:clawdbot)\s+(?:handle|manage|process)\s+(.+)$/i,
+    
+    // Platform-specific patterns
+    /whatsapp\s+(.+?)(?:\s+(?:to|for)\s+(.+?))?$/i,
+    /telegram\s+(.+?)(?:\s+(?:to|for)\s+(.+?))?$/i,
+    /discord\s+(.+?)(?:\s+(?:to|for)\s+(.+?))?$/i,
+    /slack\s+(.+?)(?:\s+(?:to|for)\s+(.+?))?$/i,
+    
+    // Collaboration patterns
+    /(?:work\s+with|collaborate\s+with)\s+clawdbot\s+on\s+(.+)$/i,
+    /clawdbot\s+(?:help|assist|collaborate)\s+(?:with|on)\s+(.+)$/i,
+  ];
+
+  for (const pattern of clawdbotPatterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      const content = match[1].trim();
+      const target = match[2] ? match[2].trim() : null;
+      
+      let action = 'message';
+      let platform = 'auto';
+      let metadata = {};
+      
+      // Determine action and platform
+      if (/send|message|whatsapp/i.test(message)) {
+        action = 'message';
+        platform = 'whatsapp';
+      } else if (/telegram/i.test(message)) {
+        action = 'message';
+        platform = 'telegram';
+      } else if (/discord/i.test(message)) {
+        action = 'message';
+        platform = 'discord';
+      } else if (/slack/i.test(message)) {
+        action = 'message';
+        platform = 'slack';
+      } else if (/email|calendar|schedule|reminder/i.test(message)) {
+        action = 'automation';
+        platform = 'automation';
+      } else if (/smart\s*home/i.test(message)) {
+        action = 'automation';
+        platform = 'smart_home';
+      } else if (/delegate|forward|handle|manage/i.test(message)) {
+        action = 'delegate';
+        platform = 'general';
+      } else if (/work\s+with|collaborate|help|assist/i.test(message)) {
+        action = 'collaborate';
+        platform = 'general';
+      }
+      
+      // Extract additional metadata
+      if (target) {
+        metadata.target = target;
+      }
+      
+      // Auto-detect urgency/priority
+      if (/urgent|asap|immediately/i.test(message)) {
+        metadata.priority = 'urgent';
+      } else if (/when\s+you\s+can|later|soon/i.test(message)) {
+        metadata.priority = 'normal';
+      }
+      
+      // Auto-detect message type
+      if (/meeting|schedule|appointment/i.test(content)) {
+        metadata.type = 'scheduling';
+      } else if (/(?:remind|don't\s+forget|remember)/i.test(content)) {
+        metadata.type = 'reminder';
+      } else if (/email|mail/i.test(content)) {
+        metadata.type = 'communication';
+      } else if (/check|status|verify/i.test(content)) {
+        metadata.type = 'monitoring';
+      }
+      
+      return {
+        action: action,
+        platform: platform,
+        content: content,
+        metadata: metadata
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
  * Execute weather skill
  */
 function executeWeatherSkill(location) {
@@ -291,6 +392,33 @@ function executeUserContextSkill() {
 }
 
 /**
+ * Execute Clawdbot partnership skill
+ */
+function executeClawdbotSkill(action, platform, content, metadata = {}) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(ARDEN_ROOT, 'skills/clawdbot-partner/execute-clawdbot.sh');
+    const metadataJson = JSON.stringify(metadata);
+    const command = `bash "${scriptPath}" "${action}" "${platform}" "${content}" '${metadataJson}'`;
+
+    logger.system.info('Executing Clawdbot partnership skill', { action, platform, content, metadata, command });
+
+    exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
+      if (error) {
+        logger.system.error('Clawdbot partnership skill execution failed', { 
+          error: error.message, 
+          stderr 
+        });
+        reject(new Error(`Failed to execute Clawdbot task: ${error.message}`));
+        return;
+      }
+
+      logger.system.info('Clawdbot partnership skill executed successfully', { action, platform, content });
+      resolve(stdout.trim());
+    });
+  });
+}
+
+/**
  * Process message and execute skills if detected
  * Returns skill output if executed, null otherwise
  */
@@ -365,6 +493,30 @@ async function executeSkillIfDetected(message) {
     }
   }
 
+  // Check for Clawdbot request
+  const clawdbotRequest = detectClawdbotRequest(message);
+  if (clawdbotRequest) {
+    logger.system.info('Clawdbot partnership skill detected', { 
+      action: clawdbotRequest.action,
+      platform: clawdbotRequest.platform,
+      content: clawdbotRequest.content,
+      metadata: clawdbotRequest.metadata
+    });
+    try {
+      const clawdbotOutput = await executeClawdbotSkill(
+        clawdbotRequest.action, 
+        clawdbotRequest.platform, 
+        clawdbotRequest.content, 
+        clawdbotRequest.metadata
+      );
+      logger.system.info('Clawdbot partnership skill executed successfully', { outputLength: clawdbotOutput.length });
+      return clawdbotOutput;
+    } catch (error) {
+      logger.system.error('Skill execution error', { error: error.message });
+      return `Error executing Clawdbot task: ${error.message}`;
+    }
+  }
+
   logger.system.info('No skill detected for message');
   return null;
 }
@@ -376,9 +528,11 @@ module.exports = {
   detectTodoRequest,
   detectDailyPlanningRequest,
   detectUserContextRequest,
+  detectClawdbotRequest,
   executeWeatherSkill,
   executeNoteSkill,
   executeTodoSkill,
   executeDailyPlanningSkill,
-  executeUserContextSkill
+  executeUserContextSkill,
+  executeClawdbotSkill
 };

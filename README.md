@@ -162,9 +162,17 @@ arden --voice
 ### Option 3: REST API + PWA
 - Progressive Web App for voice input
 - Works on all modern browsers
-- See: `api/voice-server.js` and `api/public/`
+- Voice debug interface included
+- See: `api/web-server.js` and `web/`
 
-### Option 3: iOS Shortcuts
+### Option 4: Voice Debug Interface
+- Advanced voice testing and development
+- Real-time STT/TTS pipeline monitoring
+- Audio processing diagnostics
+- Access at: http://localhost:3001/voice-debug.html
+- **Setup:** Automatically available with web interface
+
+### Option 5: iOS Shortcuts
 - Use Siri to trigger ARDEN
 - Dictation → webhook → ARDEN
 - See: `workflows/ios-shortcut.md`
@@ -176,6 +184,11 @@ Edit `config/arden.json`:
 {
   "voice": {
     "stt_provider": "openai-whisper",
+    "stt_config": {
+      "model": "base",
+      "language": "en",
+      "device": "cuda"
+    },
     "tts_provider": "elevenlabs",
     "voice_id": "your-voice-id",
     "language": "en"
@@ -183,9 +196,44 @@ Edit `config/arden.json`:
   "api": {
     "port": 3000,
     "auth_token": "your-secret-token"
+  },
+  "clawdbot_partnership": {
+    "enabled": true,
+    "api_url": "http://127.0.0.1:18789/api",
+    "supported_platforms": ["whatsapp", "telegram"],
+    "automation_enabled": true,
+    "collaboration_mode": "bidirectional"
   }
 }
 ```
+
+## Recent Updates
+
+### 🚀 Latest Features (February 2026)
+
+- **🤝 Clawdbot Partnership Integration** - Cross-platform AI collaboration system
+  - Send messages via WhatsApp, Telegram, Discord, Slack
+  - Delegate tasks to external AI systems
+  - Bidirectional automation and collaboration
+  - Webhook support for real-time synchronization
+
+- **🎤 Voice Debug Interface** - Enhanced voice development tools
+  - Real-time voice testing and debugging
+  - Audio processing diagnostics
+  - STT/TTS pipeline monitoring
+  - Accessible at `/voice-debug.html`
+
+- **⚡ System Improvements**
+  - CUDA support for GPU-accelerated STT processing
+  - Improved Discord bot with better rate limiting
+  - Enhanced PM2 configuration with local logging
+  - Mobile-responsive navigation improvements
+  - All tests passing (38 test cases validated)
+
+- **📱 Better Mobile Experience**
+  - Improved mobile navigation
+  - Voice debug tools accessible on mobile
+  - Enhanced responsive design
 
 ## Skills System
 
@@ -255,6 +303,26 @@ Retrieve your user profile and context information.
 - "Show my context"
 
 **Returns:** Full user profile from `~/Notes/profile.md`
+
+---
+
+#### 🤝 Clawdbot Partnership
+Cross-platform AI collaboration and messaging delegation.
+
+**Trigger Phrases:**
+- "Send [message] via WhatsApp"
+- "Tell Clawdbot to [task]"
+- "Delegate [task] to Clawdbot"
+- "Work with Clawdbot on [project]"
+
+**Supported Platforms:**
+- WhatsApp, Telegram, Discord, Slack
+- Email automation
+- Smart home integration
+- Calendar and reminder systems
+
+**Example:**  
+`"Send 'Meeting moved to 3pm' via WhatsApp"` → Routes to external messaging platform
 
 ---
 

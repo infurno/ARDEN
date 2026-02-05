@@ -264,10 +264,10 @@ async function handleMessage(message) {
 
   // Check rate limit
   const rateLimitResult = checkRateLimit(
-    rateLimitMap,
     userId,
-    RATE_LIMIT_MAX_REQUESTS,
-    RATE_LIMIT_WINDOW_MS
+    rateLimitMap,
+    RATE_LIMIT_WINDOW_MS,
+    RATE_LIMIT_MAX_REQUESTS
   );
 
   if (!rateLimitResult.allowed) {
@@ -276,7 +276,7 @@ async function handleMessage(message) {
       username,
       remainingTime: rateLimitResult.remainingTime 
     });
-    await message.reply(`Rate limit exceeded. Please wait ${Math.ceil(rateLimitResult.remainingTime / 1000)} seconds.`);
+    await message.reply(`Rate limit exceeded. Please wait ${rateLimitResult.waitTime} seconds.`);
     return;
   }
 
@@ -317,7 +317,7 @@ async function handleMessage(message) {
 }
 
 // Discord event handlers
-client.on('ready', () => {
+client.on('clientReady', () => {
   logger.system.info('Discord bot ready', {
     username: client.user.tag,
     id: client.user.id,

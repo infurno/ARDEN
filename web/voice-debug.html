@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARDEN Voice Debug</title>
+    <link rel="stylesheet" href="/assets/css/tokyo-night.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7aa2f7',
+                        secondary: '#bb9af7',
+                        accent: '#9ece6a',
+                        danger: '#f7768e',
+                        warning: '#e0af68',
+                        background: '#1a1b26',
+                        surface: '#24283b',
+                        border: '#414868',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .voice-button {
+            background-color: #414868;
+            color: #c0caf5;
+        }
+        .voice-button:hover {
+            background-color: #515a78;
+        }
+        .voice-button.recording {
+            background-color: #f7768e;
+            border-color: #f7768e;
+        }
+        #log {
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body class="bg-background text-main p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Navigation -->
+        <nav class="mb-6 flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-primary">ARDEN Voice Debug</h1>
+            <a href="/chat.html" class="bg-surface hover:bg-opacity-80 px-4 py-2 rounded-lg transition-colors duration-200">
+                ← Back to Chat
+            </a>
+        </nav>
+        
+        <div class="mb-6 p-4 bg-surface rounded-lg">
+            <h2 class="text-lg font-semibold mb-4">Voice Test</h2>
+            
+            <!-- Exact copy of voice button from chat.html -->
+            <button 
+                type="button"
+                id="voice-button"
+                class="voice-button hover:bg-opacity-80 font-medium px-4 py-2 rounded-lg transition-colors duration-200 flex items-center"
+                title="Hold to record voice message"
+            >
+                <svg id="mic-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                </svg>
+                <svg id="recording-icon" class="hidden w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="8"></circle>
+                </svg>
+            </button>
+            
+            <div class="mt-4">
+                <button id="test-permissions" class="bg-primary text-white px-4 py-2 rounded mr-2">Test Permissions</button>
+                <button id="clear-log" class="bg-secondary text-white px-4 py-2 rounded">Clear Log</button>
+                <button id="back-to-chat" class="bg-accent text-background px-4 py-2 rounded ml-2">← Back to Chat</button>
+            </div>
+        </div>
+        
+        <div class="bg-surface rounded-lg p-4">
+            <h2 class="text-lg font-semibold mb-4">Debug Log</h2>
+            <div id="log" class="bg-background border border-border rounded p-3 h-96 overflow-y-auto"></div>
+        </div>
+        
+        <div class="mt-6 bg-surface rounded-lg p-4">
+            <h2 class="text-lg font-semibold mb-4">Audio Playback (if recording works)</h2>
+            <audio id="audio-playback" controls class="w-full"></audio>
+        </div>
+        
+        <div class="mt-6 bg-surface rounded-lg p-4">
+            <h2 class="text-lg font-semibold mb-4">Troubleshooting Tips</h2>
+            <ul class="list-disc list-inside space-y-2 text-sm">
+                <li><strong>No microphone access?</strong> Check browser permissions (lock icon in address bar)</li>
+                <li><strong>Recording too short?</strong> Hold button for at least 1 second while speaking</li>
+                <li><strong>No audio detected?</strong> Speak louder or check microphone hardware</li>
+                <li><strong>Button disabled?</strong> Browser doesn't support audio recording</li>
+                <li><strong>Still not working?</strong> Try refreshing the page and re-allowing permissions</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/voice.js"></script>
+    <script>
+        const log = document.getElementById('log');
+        const voiceButton = document.getElementById('voice-button');
+        const micIcon = document.getElementById('mic-icon');
+        const recordingIcon = document.getElementById('recording-icon');
+        const testPermissionsBtn = document.getElementById('test-permissions');
+        const clearLogBtn = document.getElementById('clear-log');
+        const backToChatBtn = document.getElementById('back-to-chat');
+        const audioPlayback = document.getElementById('audio-playback');
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warn' ? '⚠️' : 'ℹ️';
+            const logLine = `[${timestamp}] ${icon} ${message}\n`;
+            log.textContent += logLine;
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+        
+        function addSeparator() {
+            log.textContent += '\n---\n';
+        }
+        
+        // Navigation handlers
+        backToChatBtn.addEventListener('click', () => {
+            window.location.href = '/chat.html';
+        });
+        
+        clearLogBtn.addEventListener('click', () => {
+            log.textContent = '';
+            addLog('Log cleared');
+        });
+        
+        // Initial checks
+        addLog('=== ARDEN Voice Debug Started ===');
+        addLog('This page helps diagnose voice recording issues');
+        
+        // Check if VoiceRecorder class is loaded
+        if (typeof VoiceRecorder !== 'undefined') {
+            addLog('VoiceRecorder class loaded successfully', 'success');
+            addLog(`Browser support: ${VoiceRecorder.isSupported()}`, VoiceRecorder.isSupported() ? 'success' : 'error');
+        } else {
+            addLog('VoiceRecorder class NOT loaded', 'error');
+        }
+        
+        // Test permissions
+        testPermissionsBtn.addEventListener('click', async () => {
+            addSeparator();
+            addLog('Testing microphone permissions...');
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                addLog('Microphone access granted', 'success');
+                
+                // List devices
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioInputs = devices.filter(device => device.kind === 'audioinput');
+                addLog(`Found ${audioInputs.length} audio input devices:`);
+                audioInputs.forEach((device, index) => {
+                    addLog(`  ${index + 1}. ${device.label || 'Unknown device'}`);
+                });
+                
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                addLog(`Microphone access failed: ${error.name} - ${error.message}`, 'error');
+                
+                if (error.name === 'NotAllowedError') {
+                    addLog('Please allow microphone access in browser settings', 'warn');
+                    addLog('Look for microphone icon 🔒 in address bar', 'warn');
+                } else if (error.name === 'NotFoundError') {
+                    addLog('No microphone device found', 'warn');
+                } else if (error.name === 'NotReadableError') {
+                    addLog('Microphone is already in use by another application', 'warn');
+                }
+            }
+        });
+        
+        // Voice button test (similar to chat.js)
+        if (voiceButton) {
+            addLog('Voice button element found', 'success');
+            addLog(`Voice button disabled: ${voiceButton.disabled}`);
+            addLog(`Voice button classes: ${voiceButton.className}`);
+            
+            const voiceRecorder = new VoiceRecorder();
+            let isRecording = false;
+            
+            // Check if voice recording is supported
+            if (!VoiceRecorder.isSupported()) {
+                voiceButton.disabled = true;
+                voiceButton.title = 'Voice recording not supported in this browser';
+                voiceButton.classList.add('opacity-50', 'cursor-not-allowed');
+                addLog('Voice recording disabled - browser not supported', 'warn');
+            }
+            
+            // Hold to record - exactly like in chat.js
+            voiceButton.addEventListener('mousedown', async (e) => {
+                addLog('MouseDown event detected on voice button');
+                e.preventDefault();
+                if (isRecording || !VoiceRecorder.isSupported()) return;
+                
+                try {
+                    addLog('Starting voice recording...');
+                    await voiceRecorder.startRecording();
+                    isRecording = true;
+                    
+                    // Update UI
+                    voiceButton.style.backgroundColor = '#f7768e';
+                    voiceButton.style.borderColor = '#f7768e';
+                    micIcon.classList.add('hidden');
+                    recordingIcon.classList.remove('hidden');
+                    voiceButton.classList.add('recording');
+                    
+                    addLog('Voice recording started', 'success');
+                    
+                } catch (error) {
+                    addLog(`Failed to start recording: ${error.message}`, 'error');
+                    
+                    let errorMessage = 'Failed to access microphone. ';
+                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                        errorMessage += 'Please allow microphone access in your browser settings.';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMessage += 'No microphone device found.';
+                    } else if (error.name === 'NotReadableError') {
+                        errorMessage += 'Microphone is already in use by another application.';
+                    } else {
+                        errorMessage += error.message;
+                    }
+                    
+                    addLog(`Error details: ${errorMessage}`, 'warn');
+                }
+            });
+            
+            // Stop recording - exactly like in chat.js
+            const stopRecording = async () => {
+                if (!isRecording) return;
+                
+                addLog('Stopping voice recording...');
+                
+                // Reset UI immediately
+                isRecording = false;
+                voiceButton.style.backgroundColor = '#414868';
+                voiceButton.style.borderColor = '#414868';
+                micIcon.classList.remove('hidden');
+                recordingIcon.classList.add('hidden');
+                voiceButton.classList.remove('recording');
+                
+                try {
+                    const audioBlob = await voiceRecorder.stopRecording();
+                    addLog(`Recording completed: ${audioBlob.size} bytes, type: ${audioBlob.type}`, 'success');
+                    
+                    // Create audio for playback
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPlayback.src = audioUrl;
+                    
+                    // Test sending to server (optional)
+                    addLog('Testing voice transcription...');
+                    try {
+                        const formData = new FormData();
+                        formData.append('audio', audioBlob, 'test.webm');
+                        
+                        const response = await fetch('/api/voice/stt', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            addLog(`Transcription successful: "${result.text}"`, 'success');
+                        } else {
+                            addLog(`Transcription failed: ${response.status}`, 'error');
+                        }
+                    } catch (transcriptionError) {
+                        addLog(`Transcription error: ${transcriptionError.message}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    addLog(`Recording failed: ${error.message}`, 'error');
+                    
+                    if (error.message === 'TOO_SHORT') {
+                        addLog(`Recording too short: ${error.duration}ms (need ${error.required}ms)`, 'warn');
+                    } else if (error.message === 'NO_AUDIO') {
+                        addLog(`No audio detected: ${error.size} bytes`, 'warn');
+                    } else {
+                        addLog(`Recording error: ${error.message}`, 'error');
+                    }
+                }
+            };
+            
+            voiceButton.addEventListener('mouseup', stopRecording);
+            voiceButton.addEventListener('mouseleave', stopRecording);
+            
+            // Touch events for mobile
+            voiceButton.addEventListener('touchstart', async (e) => {
+                addLog('TouchStart event detected');
+                e.preventDefault();
+                voiceButton.dispatchEvent(new MouseEvent('mousedown'));
+            });
+            
+            voiceButton.addEventListener('touchend', async (e) => {
+                addLog('TouchEnd event detected');
+                e.preventDefault();
+                await stopRecording();
+            });
+            
+        } else {
+            addLog('Voice button element NOT found', 'error');
+        }
+        
+        addSeparator();
+        addLog('Debug interface ready. Try clicking "Test Permissions" then hold the voice button.');
+        addLog('Use "← Back to Chat" to return to the main interface.');
+    </script>
+</body>
+</html>
