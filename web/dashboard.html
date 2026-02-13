@@ -47,9 +47,11 @@
                     <a href="/chat.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="chat">Chat</a>
                     <a href="/notes.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="notes">Notes</a>
                     <a href="/todos.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="todos">TODOs</a>
+                    <a href="/search.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="search">🔍 Search</a>
+                    <a href="/identity.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="identity">🪪 Identity</a>
+                    <a href="/daily-logs.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="logs">📅 Logs</a>
                     <a href="/skills.html" class="hover:text-primary tn-text-secondary nav-link" data-page="skills">Skills</a>
                     <a href="/dashboard.html" class="hover:text-primary tn-text-secondary nav-link" data-page="dashboard">Dashboard</a>
-                    <a href="/sessions.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="sessions">Sessions</a>
                     <a href="/settings.html" class="hover:text-primary tn-text-secondary no-underline nav-link" data-page="settings">Settings</a>
                 </nav>
                 
@@ -75,9 +77,11 @@
                 <a href="/chat.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="chat">💬 Chat</a>
                 <a href="/notes.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="notes">📝 Notes</a>
                 <a href="/todos.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="todos">✓ TODOs</a>
+                <a href="/search.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="search">🔍 Search</a>
+                <a href="/identity.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="identity">🪪 Identity</a>
+                <a href="/daily-logs.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="logs">📅 Logs</a>
                 <a href="/skills.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary mobile-nav-link" data-page="skills">🛠️ Skills</a>
                 <a href="/dashboard.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary mobile-nav-link" data-page="dashboard">📊 Dashboard</a>
-                <a href="/sessions.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="sessions">👥 Sessions</a>
                 <a href="/settings.html" class="block py-2 px-4 hover:bg-background rounded tn-text-secondary no-underline mobile-nav-link" data-page="settings">⚙️ Settings</a>
                 <div class="border-t border-border my-2"></div>
                 <div class="py-2 px-4 flex items-center space-x-2" id="mobile-status-indicator">
@@ -117,24 +121,73 @@
                 <p id="ai-model" class="text-xs mt-1" class="tn-text-tertiary">Model: --</p>
             </div>
 
-            <!-- Notes Count -->
+            <!-- Memory System -->
             <div class="bg-surface rounded-lg shadow-lg p-6 border border-border">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium" class="tn-text-secondary">Notes</h3>
-                    <span class="text-2xl">📄</span>
+                    <h3 class="text-sm font-medium" class="tn-text-secondary">Memory System</h3>
+                    <span class="text-2xl">🧠</span>
                 </div>
-                <p id="notes-count" class="text-2xl font-bold" class="tn-text-main">--</p>
-                <p class="text-xs mt-1" class="tn-text-tertiary">Total files</p>
+                <p id="memory-status-text" class="text-2xl font-bold" class="tn-text-main">Checking...</p>
+                <p id="memory-stats" class="text-xs mt-1" class="tn-text-tertiary">-- documents</p>
             </div>
 
-            <!-- Active TODOs -->
+            <!-- Heartbeat -->
             <div class="bg-surface rounded-lg shadow-lg p-6 border border-border">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium" class="tn-text-secondary">Active TODOs</h3>
-                    <span class="text-2xl">✓</span>
+                    <h3 class="text-sm font-medium" class="tn-text-secondary">Heartbeat</h3>
+                    <span class="text-2xl">💓</span>
                 </div>
-                <p id="todos-active" class="text-2xl font-bold" class="tn-text-main">--</p>
-                <p id="todos-total" class="text-xs mt-1" class="tn-text-tertiary">-- total</p>
+                <p id="heartbeat-status-text" class="text-2xl font-bold" class="tn-text-main">Checking...</p>
+                <p id="heartbeat-last" class="text-xs mt-1" class="tn-text-tertiary">Last check: --</p>
+            </div>
+        </div>
+
+        <!-- OpenClaw Components -->
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4" class="tn-text-main">🎯 OpenClaw Components</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Memory Search -->
+                <a href="/search.html" class="bg-surface rounded-lg p-4 border border-border hover:border-primary transition-colors no-underline">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-2xl">🔍</span>
+                        <span class="text-xs px-2 py-1 rounded bg-primary text-white">New</span>
+                    </div>
+                    <h4 class="font-semibold mb-1" class="tn-text-main">Memory Search</h4>
+                    <p class="text-xs" class="tn-text-tertiary">Hybrid semantic + keyword search across identity files and logs</p>
+                </a>
+
+                <!-- Identity Files -->
+                <a href="/identity.html" class="bg-surface rounded-lg p-4 border border-border hover:border-primary transition-colors no-underline">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-2xl">🪪</span>
+                        <span class="text-xs px-2 py-1 rounded bg-primary text-white">New</span>
+                    </div>
+                    <h4 class="font-semibold mb-1" class="tn-text-main">Identity Files</h4>
+                    <p class="text-xs" class="tn-text-tertiary">Edit SOUL, USER, MEMORY, AGENTS, HEARTBEAT</p>
+                </a>
+
+                <!-- Daily Logs -->
+                <a href="/daily-logs.html" class="bg-surface rounded-lg p-4 border border-border hover:border-primary transition-colors no-underline">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-2xl">📅</span>
+                        <span class="text-xs px-2 py-1 rounded bg-primary text-white">New</span>
+                    </div>
+                    <h4 class="font-semibold mb-1" class="tn-text-main">Daily Logs</h4>
+                    <p class="text-xs" class="tn-text-tertiary">Browse conversation history and heartbeat events</p>
+                </a>
+
+                <!-- Adapters Status -->
+                <div class="bg-surface rounded-lg p-4 border border-border">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-2xl">🔌</span>
+                        <span id="adapters-badge" class="text-xs px-2 py-1 rounded bg-accent text-black">-- active</span>
+                    </div>
+                    <h4 class="font-semibold mb-1" class="tn-text-main">Adapters</h4>
+                    <div id="adapters-list" class="text-xs" class="tn-text-tertiary">
+                        Loading...
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -404,6 +457,95 @@
                 link.style.textDecoration = 'none';
             }
         });
+    })();
+    
+    // OpenClaw Component Status Checks
+    (function() {
+        const MEMORY_API = 'http://localhost:3002';
+        
+        // Check Memory System status
+        async function checkMemoryStatus() {
+            try {
+                const response = await fetch(`${MEMORY_API}/health`, { 
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('memory-status-text').textContent = 'Online';
+                    document.getElementById('memory-status-text').style.color = '#9ece6a';
+                    document.getElementById('memory-stats').textContent = `${data.total_documents || 0} documents indexed`;
+                } else {
+                    throw new Error('Not OK');
+                }
+            } catch (error) {
+                document.getElementById('memory-status-text').textContent = 'Offline';
+                document.getElementById('memory-status-text').style.color = '#f7768e';
+                document.getElementById('memory-stats').textContent = 'Port 3002 unavailable';
+            }
+        }
+        
+        // Check Heartbeat status
+        async function checkHeartbeatStatus() {
+            try {
+                // Check if heartbeat process is running via PM2 or API
+                const response = await fetch('/api/status/heartbeat');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('heartbeat-status-text').textContent = data.enabled ? 'Active' : 'Disabled';
+                    document.getElementById('heartbeat-status-text').style.color = data.enabled ? '#9ece6a' : '#e0af68';
+                    document.getElementById('heartbeat-last').textContent = data.last_check ? 
+                        'Last: ' + new Date(data.last_check).toLocaleTimeString() : 'Not started';
+                } else {
+                    throw new Error('API unavailable');
+                }
+            } catch (error) {
+                // Fallback: assume running if PM2 is managing it
+                document.getElementById('heartbeat-status-text').textContent = 'Unknown';
+                document.getElementById('heartbeat-status-text').style.color = '#e0af68';
+                document.getElementById('heartbeat-last').textContent = 'Check PM2 status';
+            }
+        }
+        
+        // Check Adapters status
+        async function checkAdaptersStatus() {
+            const adapters = [
+                { name: 'Telegram', port: 3000, icon: '📱' },
+                { name: 'Discord', port: null, icon: '💬' },
+                { name: 'Web', port: 3001, icon: '🌐' },
+                { name: 'Memory', port: 3002, icon: '🧠' }
+            ];
+            
+            let activeCount = 0;
+            const statusPromises = adapters.map(async (adapter) => {
+                if (!adapter.port) return { ...adapter, active: true }; // Discord uses gateway
+                try {
+                    const response = await fetch(`http://localhost:${adapter.port}/health`, { 
+                        method: 'GET',
+                        mode: 'no-cors'
+                    });
+                    activeCount++;
+                    return { ...adapter, active: true };
+                } catch {
+                    return { ...adapter, active: false };
+                }
+            });
+            
+            const results = await Promise.all(statusPromises);
+            document.getElementById('adapters-badge').textContent = `${activeCount} active`;
+            document.getElementById('adapters-list').innerHTML = results
+                .map(a => `<span class="${a.active ? 'text-accent' : 'text-gray-600'}">${a.icon} ${a.name}</span>`)
+                .join(' · ');
+        }
+        
+        // Initial checks
+        checkMemoryStatus();
+        checkHeartbeatStatus();
+        checkAdaptersStatus();
+        
+        // Periodic updates
+        setInterval(checkMemoryStatus, 30000);
+        setInterval(checkHeartbeatStatus, 60000);
     })();
     </script>
 </body>

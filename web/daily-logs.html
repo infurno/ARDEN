@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARDEN - Daily Logs</title>
+    <link rel="stylesheet" href="/assets/css/tokyo-night.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7aa2f7',
+                        secondary: '#bb9af7',
+                        accent: '#9ece6a',
+                        danger: '#f7768e',
+                        warning: '#e0af68',
+                        background: '#1a1b26',
+                        surface: '#24283b',
+                        border: '#414868',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .calendar-day {
+            transition: all 0.2s ease;
+        }
+        .calendar-day:hover:not(.empty) {
+            background-color: #7aa2f7;
+            color: white;
+        }
+        .calendar-day.active {
+            background-color: #7aa2f7;
+            color: white;
+        }
+        .calendar-day.has-logs {
+            position: relative;
+        }
+        .calendar-day.has-logs::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background-color: #9ece6a;
+            border-radius: 50%;
+        }
+        .log-entry {
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .log-entry:hover {
+            border-left-color: #7aa2f7;
+            background-color: rgba(122, 162, 247, 0.05);
+        }
+        .log-entry.user {
+            border-left-color: #7aa2f7;
+        }
+        .log-entry.assistant {
+            border-left-color: #9ece6a;
+        }
+        .log-entry.heartbeat {
+            border-left-color: #bb9af7;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-background">
+    <!-- Header -->
+    <header class="bg-surface border-b border-border">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
+                    <h1 class="text-2xl font-bold text-white">ARDEN</h1>
+                </div>
+                
+                <nav class="hidden md:flex space-x-4">
+                    <a href="/chat.html" class="hover:text-primary text-gray-400 no-underline">Chat</a>
+                    <a href="/notes.html" class="hover:text-primary text-gray-400 no-underline">Notes</a>
+                    <a href="/todos.html" class="hover:text-primary text-gray-400 no-underline">TODOs</a>
+                    <a href="/search.html" class="hover:text-primary text-gray-400 no-underline">Search</a>
+                    <a href="/identity.html" class="hover:text-primary text-gray-400 no-underline">Identity</a>
+                    <a href="/daily-logs.html" class="text-primary font-medium no-underline">Logs</a>
+                    <a href="/dashboard.html" class="hover:text-primary text-gray-400 no-underline">Dashboard</a>
+                    <a href="/settings.html" class="hover:text-primary text-gray-400 no-underline">Settings</a>
+                </nav>
+                
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle" class="text-xl hover:opacity-80">🌙</button>
+                    <button id="logout-button" class="hover:text-danger text-sm text-gray-400">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <div class="mb-6">
+            <h2 class="text-3xl font-bold text-white mb-2">Daily Logs</h2>
+            <p class="text-gray-400">Browse your conversation history and heartbeat logs by date</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Calendar Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-surface rounded-lg border border-border p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <button id="prev-month" class="p-2 hover:bg-gray-700 rounded text-gray-400">◀</button>
+                        <span id="current-month" class="font-semibold text-white"></span>
+                        <button id="next-month" class="p-2 hover:bg-gray-700 rounded text-gray-400">▶</button>
+                    </div>
+                    
+                    <!-- Day headers -->
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="text-center text-xs text-gray-500 py-1">Su</div>
+                        <div class="text-center text-xs text-gray-500 py-1">Mo</div>
+                        <div class="text-center text-xs text-gray-500 py-1">Tu</div>
+                        <div class="text-center text-xs text-gray-500 py-1">We</div>
+                        <div class="text-center text-xs text-gray-500 py-1">Th</div>
+                        <div class="text-center text-xs text-gray-500 py-1">Fr</div>
+                        <div class="text-center text-xs text-gray-500 py-1">Sa</div>
+                    </div>
+                    
+                    <!-- Calendar days -->
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1">
+                        <!-- Generated by JS -->
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="mt-4 pt-4 border-t border-border space-y-2 text-xs">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-primary"></div>
+                            <span class="text-gray-400">User Messages</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-accent"></div>
+                            <span class="text-gray-400">Assistant Responses</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-secondary"></div>
+                            <span class="text-gray-400">Heartbeat Events</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="bg-surface rounded-lg border border-border p-4 mt-4">
+                    <h3 class="font-semibold text-white mb-3">This Month</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Total Conversations</span>
+                            <span id="stat-conversations" class="text-white">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Messages Exchanged</span>
+                            <span id="stat-messages" class="text-white">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Active Days</span>
+                            <span id="stat-active-days" class="text-white">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Log Content -->
+            <div class="lg:col-span-2">
+                <div class="bg-surface rounded-lg border border-border overflow-hidden">
+                    <!-- Header -->
+                    <div class="border-b border-border p-4 flex items-center justify-between">
+                        <div>
+                            <h3 id="selected-date" class="text-lg font-semibold text-white"></h3>
+                            <p id="log-summary" class="text-sm text-gray-400 mt-1"></p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="prev-day" class="p-2 hover:bg-gray-700 rounded text-gray-400">◀</button>
+                            <button id="today-btn" class="px-3 py-1 text-sm bg-surface border border-border rounded hover:bg-gray-700 text-gray-300">Today</button>
+                            <button id="next-day" class="p-2 hover:bg-gray-700 rounded text-gray-400">▶</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Log Entries -->
+                    <div id="log-entries" class="p-4 space-y-3 max-h-[600px] overflow-y-auto">
+                        <div class="text-center py-12 text-gray-500">
+                            <div class="text-4xl mb-4">📅</div>
+                            <p>Select a date to view logs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/assets/js/theme.js"></script>
+    <script src="/assets/js/api.js"></script>
+    <script>
+        let currentDate = new Date();
+        let selectedDate = new Date();
+        let logsData = {};
+        
+        // Generate sample logs for demonstration
+        function generateSampleLogs() {
+            const today = new Date().toISOString().split('T')[0];
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            
+            logsData[today] = [
+                { type: 'user', time: '09:15', content: 'Good morning! What\'s on my agenda today?' },
+                { type: 'assistant', time: '09:15', content: 'Good morning! You have a team standup at 10 AM and a project review at 2 PM. Your top TODO is to review the deployment logs.' },
+                { type: 'heartbeat', time: '10:30', content: 'Heartbeat check: 3 unread emails (1 priority), 2 meetings in next 24h' },
+                { type: 'user', time: '14:30', content: 'Add a todo to update the infrastructure documentation' },
+                { type: 'assistant', time: '14:30', content: 'Added to work TODOs: Update infrastructure documentation' }
+            ];
+            
+            logsData[yesterday] = [
+                { type: 'user', time: '08:30', content: 'Morning briefing' },
+                { type: 'assistant', time: '08:31', content: 'Morning! You completed 5 TODOs yesterday. Current priorities: Q1 planning, ARDEN architecture review.' },
+                { type: 'user', time: '11:00', content: 'What\'s the weather like today?' },
+                { type: 'assistant', time: '11:00', content: 'Currently 45°F and partly cloudy in Bentonville. High of 52°F. Light jacket recommended.' }
+            ];
+        }
+        
+        // Render calendar
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // Update header
+            document.getElementById('current-month').textContent = 
+                new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            
+            // Empty cells for days before start of month
+            for (let i = 0; i < firstDay; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day empty p-2 text-center text-sm';
+                grid.appendChild(cell);
+            }
+            
+            // Days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const cell = document.createElement('button');
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isSelected = selectedDate.toISOString().split('T')[0] === dateStr;
+                const hasLogs = logsData[dateStr] && logsData[dateStr].length > 0;
+                
+                cell.className = `calendar-day p-2 text-center text-sm rounded ${isSelected ? 'active' : ''} ${hasLogs ? 'has-logs' : ''}`;
+                cell.textContent = day;
+                cell.onclick = () => selectDate(new Date(year, month, day));
+                
+                grid.appendChild(cell);
+            }
+        }
+        
+        // Select date
+        function selectDate(date) {
+            selectedDate = date;
+            renderCalendar();
+            loadLogsForDate(date);
+        }
+        
+        // Load logs for date
+        async function loadLogsForDate(date) {
+            const dateStr = date.toISOString().split('T')[0];
+            document.getElementById('selected-date').textContent = 
+                date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            
+            // Try to load from API
+            try {
+                const response = await fetch(`/api/daily/${dateStr}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    logsData[dateStr] = data.entries || [];
+                }
+            } catch (error) {
+                // Use sample data or empty
+                if (!logsData[dateStr]) {
+                    logsData[dateStr] = [];
+                }
+            }
+            
+            displayLogs(logsData[dateStr] || []);
+            updateStats();
+        }
+        
+        // Display logs
+        function displayLogs(entries) {
+            const container = document.getElementById('log-entries');
+            
+            if (entries.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <div class="text-4xl mb-4">📝</div>
+                        <p>No logs for this date</p>
+                    </div>
+                `;
+                document.getElementById('log-summary').textContent = '0 entries';
+                return;
+            }
+            
+            const userCount = entries.filter(e => e.type === 'user').length;
+            const assistantCount = entries.filter(e => e.type === 'assistant').length;
+            const heartbeatCount = entries.filter(e => e.type === 'heartbeat').length;
+            
+            document.getElementById('log-summary').textContent = 
+                `${entries.length} entries · ${userCount} user · ${assistantCount} assistant · ${heartbeatCount} heartbeat`;
+            
+            container.innerHTML = entries.map(entry => `
+                <div class="log-entry ${entry.type} bg-surface rounded p-3">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <span class="text-lg">${getIconForType(entry.type)}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="text-xs text-gray-500">${entry.time || '--:--'}</span>
+                                <span class="text-xs font-medium ${getBadgeClass(entry.type)}">${entry.type}</span>
+                            </div>
+                            <p class="text-gray-300 text-sm leading-relaxed">${escapeHtml(entry.content)}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Get icon for entry type
+        function getIconForType(type) {
+            const icons = {
+                'user': '👤',
+                'assistant': '🤖',
+                'heartbeat': '💓',
+                'system': '⚙️'
+            };
+            return icons[type] || '📝';
+        }
+        
+        // Get badge class for type
+        function getBadgeClass(type) {
+            const classes = {
+                'user': 'text-primary',
+                'assistant': 'text-accent',
+                'heartbeat': 'text-secondary',
+                'system': 'text-gray-400'
+            };
+            return classes[type] || 'text-gray-400';
+        }
+        
+        // Update statistics
+        function updateStats() {
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+            
+            let totalConversations = 0;
+            let totalMessages = 0;
+            let activeDays = 0;
+            
+            Object.entries(logsData).forEach(([dateStr, entries]) => {
+                const date = new Date(dateStr);
+                if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+                    if (entries.length > 0) {
+                        activeDays++;
+                        totalMessages += entries.length;
+                        // Count conversations (groups of messages)
+                        totalConversations += Math.ceil(entries.length / 4);
+                    }
+                }
+            });
+            
+            document.getElementById('stat-conversations').textContent = totalConversations;
+            document.getElementById('stat-messages').textContent = totalMessages;
+            document.getElementById('stat-active-days').textContent = activeDays;
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Event listeners
+        document.getElementById('prev-month').onclick = () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        };
+        
+        document.getElementById('next-month').onclick = () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        };
+        
+        document.getElementById('prev-day').onclick = () => {
+            selectedDate.setDate(selectedDate.getDate() - 1);
+            selectDate(selectedDate);
+        };
+        
+        document.getElementById('next-day').onclick = () => {
+            selectedDate.setDate(selectedDate.getDate() + 1);
+            selectDate(selectedDate);
+        };
+        
+        document.getElementById('today-btn').onclick = () => {
+            selectedDate = new Date();
+            currentDate = new Date();
+            renderCalendar();
+            selectDate(selectedDate);
+        };
+        
+        // Initialize
+        generateSampleLogs();
+        renderCalendar();
+        selectDate(selectedDate);
+    </script>
+</body>
+</html>

@@ -15,7 +15,7 @@
 
 - **Domain**: Enterprise infrastructure design and implementation
 - **Key Projects**: Equinix data center operations, IIT Pod deployment
-- **Responsibilities**: Data center compliance, infrastructure architecture, camera compliance/privacy screening
+- **Responsibilities**: infrastructure architecture,Red Hat architecture, Application placement, full stack application architecture, Hand of the King to the VP of infrastructure  
 
 ## Technologies & Tools
 

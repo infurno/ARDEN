@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARDEN - Identity Files</title>
+    <link rel="stylesheet" href="/assets/css/tokyo-night.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7aa2f7',
+                        secondary: '#bb9af7',
+                        accent: '#9ece6a',
+                        danger: '#f7768e',
+                        warning: '#e0af68',
+                        background: '#1a1b26',
+                        surface: '#24283b',
+                        border: '#414868',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .identity-tab {
+            transition: all 0.2s ease;
+        }
+        .identity-tab.active {
+            background-color: #7aa2f7;
+            color: white;
+        }
+        .markdown-content h1 { font-size: 1.5rem; font-weight: bold; margin: 1rem 0; color: #c0caf5; }
+        .markdown-content h2 { font-size: 1.25rem; font-weight: bold; margin: 0.875rem 0; color: #c0caf5; border-bottom: 1px solid #414868; padding-bottom: 0.5rem; }
+        .markdown-content h3 { font-size: 1.125rem; font-weight: bold; margin: 0.75rem 0; color: #a9b1d6; }
+        .markdown-content p { margin: 0.5rem 0; line-height: 1.6; color: #c0caf5; }
+        .markdown-content ul { list-style-type: disc; margin: 0.5rem 0 0.5rem 1.5rem; color: #c0caf5; }
+        .markdown-content li { margin: 0.25rem 0; }
+        .markdown-content code { background-color: #1a1b26; padding: 0.125rem 0.375rem; border-radius: 4px; font-family: monospace; color: #9ece6a; }
+        .markdown-content pre { background-color: #1a1b26; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 0.75rem 0; border: 1px solid #414868; }
+        .markdown-content blockquote { border-left: 3px solid #7aa2f7; padding-left: 1rem; margin: 0.75rem 0; color: #a9b1d6; }
+        .markdown-content strong { color: #7aa2f7; font-weight: 600; }
+        .editor-textarea {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-background">
+    <!-- Header -->
+    <header class="bg-surface border-b border-border">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
+                    <h1 class="text-2xl font-bold text-white">ARDEN</h1>
+                </div>
+                
+                <nav class="hidden md:flex space-x-4">
+                    <a href="/chat.html" class="hover:text-primary text-gray-400 no-underline">Chat</a>
+                    <a href="/notes.html" class="hover:text-primary text-gray-400 no-underline">Notes</a>
+                    <a href="/todos.html" class="hover:text-primary text-gray-400 no-underline">TODOs</a>
+                    <a href="/search.html" class="hover:text-primary text-gray-400 no-underline">Search</a>
+                    <a href="/identity.html" class="text-primary font-medium no-underline">Identity</a>
+                    <a href="/daily-logs.html" class="hover:text-primary text-gray-400 no-underline">Logs</a>
+                    <a href="/dashboard.html" class="hover:text-primary text-gray-400 no-underline">Dashboard</a>
+                    <a href="/settings.html" class="hover:text-primary text-gray-400 no-underline">Settings</a>
+                </nav>
+                
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle" class="text-xl hover:opacity-80">🌙</button>
+                    <button id="logout-button" class="hover:text-danger text-sm text-gray-400">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <div class="mb-6">
+            <h2 class="text-3xl font-bold text-white mb-2">Identity Files</h2>
+            <p class="text-gray-400">Core personality, user profile, and long-term memory storage</p>
+        </div>
+
+        <!-- File Tabs -->
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button class="identity-tab active px-4 py-2 rounded-lg text-sm font-medium" data-file="SOUL.md">
+                <span class="mr-2">🧠</span>SOUL
+            </button>
+            <button class="identity-tab px-4 py-2 rounded-lg text-sm font-medium bg-surface text-gray-300 hover:bg-gray-700" data-file="USER.md">
+                <span class="mr-2">👤</span>USER
+            </button>
+            <button class="identity-tab px-4 py-2 rounded-lg text-sm font-medium bg-surface text-gray-300 hover:bg-gray-700" data-file="MEMORY.md">
+                <span class="mr-2">💾</span>MEMORY
+            </button>
+            <button class="identity-tab px-4 py-2 rounded-lg text-sm font-medium bg-surface text-gray-300 hover:bg-gray-700" data-file="AGENTS.md">
+                <span class="mr-2">🎭</span>AGENTS
+            </button>
+            <button class="identity-tab px-4 py-2 rounded-lg text-sm font-medium bg-surface text-gray-300 hover:bg-gray-700" data-file="HEARTBEAT.md">
+                <span class="mr-2">💓</span>HEARTBEAT
+            </button>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-4">
+                <span id="current-file" class="text-lg font-semibold text-white">SOUL.md</span>
+                <span id="last-modified" class="text-sm text-gray-500">Loading...</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="view-mode-btn" class="px-3 py-1 rounded text-sm bg-primary text-white">View</button>
+                <button id="edit-mode-btn" class="px-3 py-1 rounded text-sm bg-surface text-gray-300 hover:bg-gray-700">Edit</button>
+                <button id="save-btn" class="hidden px-3 py-1 rounded text-sm bg-accent text-black hover:opacity-90">
+                    💾 Save
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="bg-surface rounded-lg border border-border overflow-hidden">
+            <!-- View Mode -->
+            <div id="view-mode" class="p-6">
+                <div id="markdown-content" class="markdown-content">
+                    <div class="text-center py-12 text-gray-500">
+                        <div class="text-4xl mb-4">📄</div>
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Edit Mode -->
+            <div id="edit-mode" class="hidden">
+                <textarea 
+                    id="editor-textarea" 
+                    class="editor-textarea w-full h-[600px] bg-background text-gray-300 p-6 resize-none focus:outline-none"
+                    placeholder="# Start typing..."
+                ></textarea>
+            </div>
+        </div>
+
+        <!-- Quick Reference -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="bg-surface rounded-lg p-4 border border-border">
+                <div class="text-sm text-gray-400 mb-2">SOUL.md</div>
+                <div class="text-xs text-gray-500">Core identity, personality, and behavioral guidelines</div>
+            </div>
+            <div class="bg-surface rounded-lg p-4 border border-border">
+                <div class="text-sm text-gray-400 mb-2">USER.md</div>
+                <div class="text-xs text-gray-500">Your profile, preferences, and personal context</div>
+            </div>
+            <div class="bg-surface rounded-lg p-4 border border-border">
+                <div class="text-sm text-gray-400 mb-2">MEMORY.md</div>
+                <div class="text-xs text-gray-500">Decisions, lessons, and long-term learnings</div>
+            </div>
+            <div class="bg-surface rounded-lg p-4 border border-border">
+                <div class="text-sm text-gray-400 mb-2">AGENTS.md</div>
+                <div class="text-xs text-gray-500">Agent behavior definitions and routing rules</div>
+            </div>
+            <div class="bg-surface rounded-lg p-4 border border-border">
+                <div class="text-sm text-gray-400 mb-2">HEARTBEAT.md</div>
+                <div class="text-xs text-gray-500">Proactive monitoring configuration</div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/assets/js/theme.js"></script>
+    <script src="/assets/js/api.js"></script>
+    <script>
+        const IDENTITY_FILES = ['SOUL.md', 'USER.md', 'MEMORY.md', 'AGENTS.md', 'HEARTBEAT.md'];
+        let currentFile = 'SOUL.md';
+        let currentContent = '';
+        let isEditing = false;
+        
+        // Load identity file
+        async function loadFile(filename) {
+            currentFile = filename;
+            document.getElementById('current-file').textContent = filename;
+            
+            // Update tabs
+            document.querySelectorAll('.identity-tab').forEach(tab => {
+                if (tab.dataset.file === filename) {
+                    tab.classList.add('active');
+                    tab.classList.remove('bg-surface', 'text-gray-300');
+                } else {
+                    tab.classList.remove('active');
+                    tab.classList.add('bg-surface', 'text-gray-300');
+                }
+            });
+            
+            try {
+                // Try to load from API first
+                const response = await fetch(`/api/identity/${filename}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    currentContent = data.content;
+                    document.getElementById('last-modified').textContent = 
+                        'Modified: ' + new Date(data.modified).toLocaleString();
+                } else {
+                    throw new Error('API failed');
+                }
+            } catch (error) {
+                // Fallback: load default content
+                currentContent = getDefaultContent(filename);
+                document.getElementById('last-modified').textContent = 'Not saved yet';
+            }
+            
+            renderContent();
+        }
+        
+        // Get default content for files
+        function getDefaultContent(filename) {
+            const defaults = {
+                'SOUL.md': `# ARDEN Core Identity
+
+## Core Identity
+You are ARDEN (AI Routine Daily Engagement Nexus) — a proactive, voice-first AI assistant.
+
+## Purpose
+Help Hal Borland manage daily routines, capture insights, and maintain momentum across work and personal projects.
+
+## Personality
+- Conversational but efficient
+- Proactive when useful, passive when not
+- Curious about context; asks clarifying questions
+- Celebrates wins, helps course-correct on misses
+
+## Communication Style
+- **Voice-first**: Responses optimized for spoken delivery
+- **Concise**: Under 30 seconds when possible
+- **Contextual**: References relevant past decisions and current priorities`,
+                
+                'USER.md': `# User Profile: Hal Borland
+
+## Identity
+- **Name**: Hal Borland
+- **Role**: Strategic Engineer of Infrastructure at FedEx Freight
+- **Location**: NW Arkansas (Bentonville area)
+- **OS**: Arch Linux
+
+## Work Context
+- **Focus**: Infrastructure, automation, platform engineering
+- **Current Projects**: ARDEN AI system, infrastructure modernization
+- **Team**: Distributed, technical, fast-moving
+
+## Preferences
+- **Interface**: Terminal-first, web for visualization
+- **Communication**: Direct, technical, efficient
+- **Learning Style**: Hands-on, experimental, documentation-driven
+
+## Daily Patterns
+- **Morning**: Planning, review, high-focus work
+- **Afternoon**: Meetings, collaboration, context switching
+- **Evening**: Learning, side projects, documentation`,
+                
+                'MEMORY.md': `# Long-term Memory
+
+## Decisions
+
+## Learnings
+
+## Conversation Highlights
+
+## Rejected Approaches`,
+                
+                'AGENTS.md': `# Agent Behavior & Routing
+
+## Available Agents
+
+### Assistant (Default)
+- **When**: General queries, task management, everyday help
+- **Style**: Helpful, efficient, friendly
+
+### Strategist
+- **When**: Long-term planning, project decisions, architecture reviews
+- **Style**: Analytical, considers trade-offs
+
+### Researcher
+- **When**: Deep investigation, technology comparisons, documentation
+- **Style**: Thorough, cites sources, explores alternatives
+
+### Engineer
+- **When**: Code, infrastructure, debugging, deployment
+- **Style**: Technical, precise, includes commands and code blocks
+
+### Analyst
+- **When**: Data review, metrics, forecasting, evening reviews
+- **Style**: Numbers-focused, identifies trends, makes recommendations`,
+                
+                'HEARTBEAT.md': `# Heartbeat Configuration
+
+## Schedule
+- **Interval**: Every 30 minutes
+- **Active Hours**: 07:00 - 22:00
+
+## Data Sources
+- **Gmail**: Check for unread messages from priority senders
+- **Calendar**: Upcoming events in next 24 hours
+
+## Notification Rules
+
+### Always Notify
+- Urgent emails (flagged/priority)
+- Calendar conflicts
+- Upcoming meetings (15 min warning)
+
+### Daily Digest
+- Non-urgent email summaries
+- Tomorrow's schedule preview
+- Daily todo completion status
+
+## Quiet Hours
+- **Start**: 22:00
+- **End**: 07:00
+- **Exception**: Urgent priority only`
+            };
+            return defaults[filename] || `# ${filename}\n\nStart documenting here...`;
+        }
+        
+        // Render content
+        function renderContent() {
+            if (isEditing) {
+                document.getElementById('editor-textarea').value = currentContent;
+            } else {
+                document.getElementById('markdown-content').innerHTML = marked.parse(currentContent);
+            }
+        }
+        
+        // Switch to view mode
+        document.getElementById('view-mode-btn').addEventListener('click', () => {
+            isEditing = false;
+            document.getElementById('view-mode').classList.remove('hidden');
+            document.getElementById('edit-mode').classList.add('hidden');
+            document.getElementById('view-mode-btn').classList.add('bg-primary', 'text-white');
+            document.getElementById('view-mode-btn').classList.remove('bg-surface', 'text-gray-300');
+            document.getElementById('edit-mode-btn').classList.remove('bg-primary', 'text-white');
+            document.getElementById('edit-mode-btn').classList.add('bg-surface', 'text-gray-300');
+            document.getElementById('save-btn').classList.add('hidden');
+            renderContent();
+        });
+        
+        // Switch to edit mode
+        document.getElementById('edit-mode-btn').addEventListener('click', () => {
+            isEditing = true;
+            document.getElementById('view-mode').classList.add('hidden');
+            document.getElementById('edit-mode').classList.remove('hidden');
+            document.getElementById('edit-mode-btn').classList.add('bg-primary', 'text-white');
+            document.getElementById('edit-mode-btn').classList.remove('bg-surface', 'text-gray-300');
+            document.getElementById('view-mode-btn').classList.remove('bg-primary', 'text-white');
+            document.getElementById('view-mode-btn').classList.add('bg-surface', 'text-gray-300');
+            document.getElementById('save-btn').classList.remove('hidden');
+            renderContent();
+        });
+        
+        // Save content
+        document.getElementById('save-btn').addEventListener('click', async () => {
+            currentContent = document.getElementById('editor-textarea').value;
+            
+            try {
+                const response = await fetch(`/api/identity/${currentFile}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: currentContent })
+                });
+                
+                if (response.ok) {
+                    document.getElementById('last-modified').textContent = 
+                        'Modified: ' + new Date().toLocaleString();
+                    alert('Saved successfully!');
+                } else {
+                    throw new Error('Save failed');
+                }
+            } catch (error) {
+                // Fallback: save to localStorage
+                localStorage.setItem(`identity_${currentFile}`, currentContent);
+                document.getElementById('last-modified').textContent = 
+                    'Saved locally: ' + new Date().toLocaleString();
+                alert('Saved to browser storage (API unavailable)');
+            }
+        });
+        
+        // Tab click handlers
+        document.querySelectorAll('.identity-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                loadFile(tab.dataset.file);
+            });
+        });
+        
+        // Load initial file
+        loadFile('SOUL.md');
+    </script>
+</body>
+</html>

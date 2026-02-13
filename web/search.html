@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARDEN - Memory Search</title>
+    <link rel="stylesheet" href="/assets/css/tokyo-night.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7aa2f7',
+                        secondary: '#bb9af7',
+                        accent: '#9ece6a',
+                        danger: '#f7768e',
+                        warning: '#e0af68',
+                        background: '#1a1b26',
+                        surface: '#24283b',
+                        border: '#414868',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .search-result {
+            transition: all 0.2s ease;
+        }
+        .search-result:hover {
+            transform: translateX(4px);
+        }
+        .highlight {
+            background-color: rgba(122, 162, 247, 0.2);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        .score-bar {
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #7aa2f7, #bb9af7);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-background">
+    <!-- Header -->
+    <header class="bg-surface border-b border-border">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <img src="/assets/images/arden-logo.png" alt="ARDEN Logo" style="height: 40px; width: 40px; object-fit: contain;" onerror="this.style.display='none'">
+                    <h1 class="text-2xl font-bold text-white">ARDEN</h1>
+                </div>
+                
+                <nav class="hidden md:flex space-x-4">
+                    <a href="/chat.html" class="hover:text-primary text-gray-400 no-underline">Chat</a>
+                    <a href="/notes.html" class="hover:text-primary text-gray-400 no-underline">Notes</a>
+                    <a href="/todos.html" class="hover:text-primary text-gray-400 no-underline">TODOs</a>
+                    <a href="/search.html" class="text-primary font-medium no-underline">Search</a>
+                    <a href="/identity.html" class="hover:text-primary text-gray-400 no-underline">Identity</a>
+                    <a href="/daily-logs.html" class="hover:text-primary text-gray-400 no-underline">Logs</a>
+                    <a href="/dashboard.html" class="hover:text-primary text-gray-400 no-underline">Dashboard</a>
+                    <a href="/settings.html" class="hover:text-primary text-gray-400 no-underline">Settings</a>
+                </nav>
+                
+                <div class="flex items-center space-x-4">
+                    <div id="memory-status" class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-gray-500 rounded-full"></div>
+                        <span class="text-sm text-gray-400">Memory</span>
+                    </div>
+                    <button id="theme-toggle" class="text-xl hover:opacity-80">🌙</button>
+                    <button id="logout-button" class="hover:text-danger text-sm text-gray-400">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-white mb-2">Memory Search</h2>
+            <p class="text-gray-400">Search across identity files, daily logs, notes, and skills using hybrid semantic + keyword search</p>
+        </div>
+
+        <!-- Search Interface -->
+        <div class="bg-surface rounded-lg shadow-lg p-6 border border-border mb-6">
+            <div class="flex gap-4 mb-4">
+                <div class="flex-1">
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Search your memory... (e.g., 'infrastructure projects', 'meeting with Sarah')"
+                        class="w-full px-4 py-3 rounded-lg bg-background border border-border text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+                    >
+                </div>
+                <button 
+                    id="search-button"
+                    class="px-6 py-3 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+                >
+                    Search
+                </button>
+            </div>
+            
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-4 text-sm">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="filter-identity" checked class="rounded border-border">
+                    <span class="text-gray-300">Identity Files</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="filter-daily" checked class="rounded border-border">
+                    <span class="text-gray-300">Daily Logs</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="filter-notes" checked class="rounded border-border">
+                    <span class="text-gray-300">Notes</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" id="filter-skills" class="rounded border-border">
+                    <span class="text-gray-300">Skills</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Search Stats -->
+        <div id="search-stats" class="hidden mb-4 flex items-center justify-between text-sm text-gray-400">
+            <span id="results-count"></span>
+            <span id="search-time"></span>
+        </div>
+
+        <!-- Results -->
+        <div id="search-results" class="space-y-4">
+            <div class="text-center py-12 text-gray-500">
+                <div class="text-4xl mb-4">🔍</div>
+                <p>Enter a search query to explore your memory</p>
+            </div>
+        </div>
+
+        <!-- Index Stats -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-surface rounded-lg p-4 border border-border">
+                <div class="text-sm text-gray-400 mb-1">Total Documents</div>
+                <div id="stat-documents" class="text-2xl font-bold text-white">--</div>
+            </div>
+            <div class="bg-surface rounded-lg p-4 border border-border">
+                <div class="text-sm text-gray-400 mb-1">Chunks Indexed</div>
+                <div id="stat-chunks" class="text-2xl font-bold text-white">--</div>
+            </div>
+            <div class="bg-surface rounded-lg p-4 border border-border">
+                <div class="text-sm text-gray-400 mb-1">Index Size</div>
+                <div id="stat-size" class="text-2xl font-bold text-white">--</div>
+            </div>
+            <div class="bg-surface rounded-lg p-4 border border-border">
+                <div class="text-sm text-gray-400 mb-1">Last Ingest</div>
+                <div id="stat-last" class="text-2xl font-bold text-white">--</div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/assets/js/theme.js"></script>
+    <script src="/assets/js/api.js"></script>
+    <script>
+        // Memory server endpoint
+        const MEMORY_API = 'http://localhost:3002';
+        
+        // Check memory server status
+        async function checkMemoryStatus() {
+            try {
+                const response = await fetch(`${MEMORY_API}/health`, { 
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    document.getElementById('memory-status').innerHTML = `
+                        <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                        <span class="text-sm text-accent">Online</span>
+                    `;
+                    loadStats();
+                } else {
+                    throw new Error('Not OK');
+                }
+            } catch (error) {
+                document.getElementById('memory-status').innerHTML = `
+                    <div class="w-2 h-2 bg-danger rounded-full"></div>
+                    <span class="text-sm text-danger">Offline</span>
+                `;
+            }
+        }
+        
+        // Load index statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`${MEMORY_API}/stats`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('stat-documents').textContent = data.total_documents || 0;
+                    document.getElementById('stat-chunks').textContent = data.total_chunks || 0;
+                    document.getElementById('stat-size').textContent = formatBytes(data.index_size_bytes || 0);
+                    document.getElementById('stat-last').textContent = data.last_ingestion ? 
+                        new Date(data.last_ingestion).toLocaleDateString() : 'Never';
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+        
+        // Format bytes
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        
+        // Perform search
+        async function performSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+            
+            const resultsContainer = document.getElementById('search-results');
+            const statsContainer = document.getElementById('search-stats');
+            
+            resultsContainer.innerHTML = '<div class="text-center py-8 text-gray-400">Searching...</div>';
+            statsContainer.classList.add('hidden');
+            
+            const startTime = performance.now();
+            
+            try {
+                const filters = [];
+                if (document.getElementById('filter-identity').checked) filters.push('identity');
+                if (document.getElementById('filter-daily').checked) filters.push('daily');
+                if (document.getElementById('filter-notes').checked) filters.push('notes');
+                if (document.getElementById('filter-skills').checked) filters.push('skills');
+                
+                const response = await fetch(`${MEMORY_API}/search`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
+                        top_k: 10,
+                        filters: filters.length > 0 ? filters : undefined
+                    })
+                });
+                
+                const searchTime = ((performance.now() - startTime) / 1000).toFixed(2);
+                
+                if (!response.ok) {
+                    throw new Error('Search failed');
+                }
+                
+                const data = await response.json();
+                displayResults(data.results, query, searchTime);
+                
+            } catch (error) {
+                resultsContainer.innerHTML = `
+                    <div class="bg-surface border border-danger rounded-lg p-6 text-center">
+                        <div class="text-4xl mb-4">⚠️</div>
+                        <h3 class="text-danger font-semibold mb-2">Search Failed</h3>
+                        <p class="text-gray-400">${error.message}</p>
+                        <p class="text-sm text-gray-500 mt-2">Make sure the memory server is running on port 3002</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Display search results
+        function displayResults(results, query, searchTime) {
+            const container = document.getElementById('search-results');
+            const statsContainer = document.getElementById('search-stats');
+            
+            statsContainer.classList.remove('hidden');
+            document.getElementById('results-count').textContent = `${results.length} results found`;
+            document.getElementById('search-time').textContent = `${searchTime}s`;
+            
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <div class="text-4xl mb-4">🤷</div>
+                        <p>No results found for "${escapeHtml(query)}"</p>
+                        <p class="text-sm mt-2">Try different keywords or check your filters</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = results.map((result, index) => `
+                <div class="search-result bg-surface rounded-lg p-6 border border-border hover:border-primary cursor-pointer" onclick="viewResult('${result.source}', '${result.chunk_id}')">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="px-2 py-1 rounded text-xs font-medium ${getSourceBadgeClass(result.source)}">
+                                ${escapeHtml(result.source)}
+                            </span>
+                            ${result.metadata?.date ? `
+                                <span class="text-xs text-gray-500">${formatDate(result.metadata.date)}</span>
+                            ` : ''}
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="score-bar" style="width: 60px;"></div>
+                            <span class="text-xs text-gray-400">${(result.score * 100).toFixed(0)}%</span>
+                        </div>
+                    </div>
+                    <div class="text-gray-300 leading-relaxed">
+                        ${highlightText(escapeHtml(result.text), query)}
+                    </div>
+                    ${result.metadata?.file ? `
+                        <div class="mt-3 text-xs text-gray-500">
+                            📄 ${escapeHtml(result.metadata.file)}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+        
+        // Get badge class for source type
+        function getSourceBadgeClass(source) {
+            const classes = {
+                'identity': 'bg-primary text-white',
+                'daily': 'bg-accent text-black',
+                'notes': 'bg-secondary text-white',
+                'skills': 'bg-warning text-black'
+            };
+            return classes[source] || 'bg-gray-600 text-white';
+        }
+        
+        // Format date
+        function formatDate(dateStr) {
+            try {
+                return new Date(dateStr).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+        
+        // Highlight search terms
+        function highlightText(text, query) {
+            const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+            let highlighted = text;
+            terms.forEach(term => {
+                const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
+                highlighted = highlighted.replace(regex, '<span class="highlight">$1</span>');
+            });
+            return highlighted;
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Escape regex special chars
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        // View result details
+        function viewResult(source, chunkId) {
+            // Could open a modal or navigate to the source
+            console.log('View result:', source, chunkId);
+        }
+        
+        // Event listeners
+        document.getElementById('search-button').addEventListener('click', performSearch);
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+        
+        // Initialize
+        checkMemoryStatus();
+        setInterval(checkMemoryStatus, 30000); // Check every 30s
+    </script>
+</body>
+</html>
