@@ -9,6 +9,11 @@
  *   echo "what's the weather?" | node api/adapters/terminal.js  # piped
  */
 
+// Load environment variables FIRST before any other imports
+const path = require('path');
+const ARDEN_ROOT = path.resolve(__dirname, '../..');
+require('dotenv').config({ path: path.join(ARDEN_ROOT, '.env') });
+
 const readline = require('readline');
 const BaseAdapter = require('./base');
 const logger = require('../utils/logger');
@@ -153,10 +158,7 @@ module.exports = TerminalAdapter;
 
 // Allow running directly: node api/adapters/terminal.js
 if (require.main === module) {
-  const path = require('path');
-  const ARDEN_ROOT = path.resolve(__dirname, '../..');
   process.chdir(ARDEN_ROOT);
-  require('dotenv').config({ path: path.join(ARDEN_ROOT, '.env') });
 
   const adapter = new TerminalAdapter();
   adapter.start().catch((err) => {

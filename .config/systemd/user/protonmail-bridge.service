@@ -1,0 +1,21 @@
+[Unit]
+Description=ProtonMail Bridge for ARDEN
+Documentation=https://proton.me/mail/bridge
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/protonmail-bridge --noninteractive
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+
+[Install]
+WantedBy=default.target
