@@ -93,7 +93,7 @@ cd memory && ./setup.sh  # Creates venv, installs dependencies
 Proactive monitoring that pulls data sources and sends alerts.
 
 **Components:**
-- **Sources** - Gmail (unread), Google Calendar (upcoming events)
+- **Sources** - Gmail (unread), Google Calendar (upcoming events), ProtonMail (via Bridge IMAP)
 - **Reasoning** - Claude API analyzes data, decides NOTIFY vs HEARTBEAT_OK
 - **Scheduling** - Every 30 minutes via APScheduler
 - **Notifications** - POST to web server's /api/notify endpoint
@@ -101,7 +101,12 @@ Proactive monitoring that pulls data sources and sends alerts.
 **Setup:**
 ```bash
 cd heartbeat && ./setup.sh  # Creates venv, installs dependencies
-# Place Gmail OAuth credentials in heartbeat/credentials/
+
+# Gmail + Calendar
+# Place OAuth credentials in heartbeat/credentials/client_secret.json
+
+# ProtonMail (optional)
+./setup-protonmail.sh  # Interactive setup with Bridge installation
 ```
 
 ### Pillar 3: Adapters
@@ -246,22 +251,34 @@ Send messages to your bot in Discord servers or DMs.
 
 Send voice or text messages to your bot.
 
-#### 3. Web Interface
+#### 3. Web Interface (OpenClaw v2)
 
-Access the dashboard at http://localhost:3001 for:
+Access at http://localhost:3001
+
+**Dashboard:**
+- System status with Memory and Heartbeat health
+- Real-time adapter status (5 adapters)
+- OpenClaw Components quick links
+
+**New Features:**
+- **🔍 Search** (`/search.html`) - Hybrid semantic + keyword search across memory
+- **🪪 Identity** (`/identity.html`) - Edit SOUL.md, USER.md, MEMORY.md, AGENTS.md, HEARTBEAT.md
+- **📅 Daily Logs** (`/daily-logs.html`) - Calendar view of conversation history
+
+**Classic Features:**
 - Chat interface
 - Notes management
 - TODO tracking
-- System monitoring
 - Skills configuration
+- Voice debug tools
 
-#### 3. Direct CLI
+#### 4. Direct CLI
 
 ```bash
 arden "What's on my schedule today?"
 ```
 
-#### 4. Voice CLI
+#### 5. Voice CLI
 
 ```bash
 arden --voice
@@ -336,33 +353,46 @@ Edit `config/arden.json`:
 
 ## Recent Updates
 
-### 🚀 OpenClaw Architecture Migration (February 2026)
+### 🚀 OpenClaw Architecture Migration COMPLETE (February 2026)
 
-Complete architectural overhaul implementing the 4-pillar OpenClaw design:
+**Status: v2.0 LIVE** - All 4 pillars operational
 
-**Pillar 1: Memory System**
+**Pillar 1: Memory System** ✅
 - Hybrid search with FastEmbed (384-dim ONNX) + BM25
 - Identity files: SOUL.md, USER.md, MEMORY.md, AGENTS.md, HEARTBEAT.md
 - Daily log ingestion and persistent memory
-- Python Flask server on port 3002
+- Python Flask server on port 3002 (online)
 
-**Pillar 2: Heartbeat**
+**Pillar 2: Heartbeat** ✅
 - Proactive monitoring every 30 minutes
 - Gmail + Calendar integration via Google APIs
+- **NEW: ProtonMail Bridge integration** (IMAP via localhost:1143)
 - Claude-powered reasoning (NOTIFY/HEARTBEAT_OK pattern)
 - Automatic alerts sent to all adapters
 
-**Pillar 3: Adapters**
+**Pillar 3: Adapters** ✅
 - Unified adapter interface with consistent lifecycle
 - 5 adapters: Telegram, Discord, Web, Slack (Socket Mode), Terminal
+- Terminal adapter now respects AI_PROVIDER env (fixed env loading)
 - Backward compatibility maintained (legacy mode available)
 - Base adapter class with shared auth, rate limiting, message processing
 
-**Pillar 4: Skills Registry**
+**Pillar 4: Skills Registry** ✅
 - Auto-discovery from SKILL.md frontmatter
 - Standardized YAML format for triggers, patterns, tools
 - 11 skills (6 active + 5 planned placeholders)
 - Pattern-based auto-detection with compiled regex
+
+**Web UI v2** ✅
+- 🔍 **Search page** - Hybrid memory search with filters
+- 🪪 **Identity page** - Edit SOUL, USER, MEMORY, AGENTS, HEARTBEAT files
+- 📅 **Daily Logs page** - Calendar view of conversation history
+- Dashboard with real-time Memory/Heartbeat status cards
+
+**Infrastructure**
+- All 5 PM2 processes online (arden-bot, arden-web, arden-memory, arden-heartbeat, arden-discord)
+- Python virtual environments isolated per service
+- FastEmbed model: BAAI/bge-small-en-v1.5 (384-dim)
 
 ### Previous Features
 
