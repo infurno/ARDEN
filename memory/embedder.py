@@ -22,7 +22,7 @@ def _get_model():
         try:
             from fastembed import TextEmbedding
             logger.info("Loading FastEmbed model: all-MiniLM-L6-v2 (384-dim)")
-            _model = TextEmbedding(model_name="all-MiniLM-L6-v2")
+            _model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
             logger.info("FastEmbed model loaded successfully")
         except ImportError:
             logger.error("fastembed not installed. Run: pip install fastembed")
