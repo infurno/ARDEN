@@ -31,25 +31,6 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
     },
     {
-      name: 'arden-discord',
-      script: 'api/discord-bot.js',
-      cwd: appRoot,
-      instances: 1,
-      exec_mode: 'fork',
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '500M',
-      env: {
-        NODE_ENV: 'production'
-      },
-      error_file: path.join(appRoot, 'logs', 'discord-error.log'),
-      out_file: path.join(appRoot, 'logs', 'discord-out.log'),
-      log_file: path.join(appRoot, 'logs', 'discord-combined.log'),
-      time: true,
-      merge_logs: true,
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
-    },
-    {
       name: 'arden-web',
       script: 'api/web-server.js',
       cwd: appRoot,
