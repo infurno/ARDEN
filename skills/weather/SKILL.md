@@ -1,3 +1,23 @@
+---
+name: weather
+version: 1.0.0
+enabled: true
+triggers:
+  - "weather in {location}"
+  - "temperature in {location}"
+  - "forecast for {location}"
+patterns:
+  - "weather\\s+(?:in|for)\\s+(.+)"
+  - "what'?s\\s+the\\s+weather\\s+(?:in|for)\\s+(.+)"
+  - "how'?s\\s+the\\s+weather\\s+(?:in|for)\\s+(.+)"
+  - "temperature\\s+in\\s+(.+)"
+  - "current\\s+conditions?\\s+(?:for|in)\\s+(.+)"
+  - "forecast\\s+(?:for|in)\\s+(.+)"
+entry: tools/get-weather.sh
+timeout: 15000
+agents: [assistant, analyst]
+---
+
 # Weather Skill
 
 ## Purpose

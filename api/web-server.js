@@ -1,5 +1,11 @@
 /**
- * ARDEN Web Server
+ * ARDEN Web Server  (entry-point)
+ * 
+ * Two modes:
+ *   1. Adapter mode (default) -- uses api/adapters/web.js via the
+ *      unified adapter lifecycle.
+ *   2. Legacy mode -- original standalone code, activated with
+ *      ARDEN_LEGACY_WEB=1  (kept for rollback safety).
  * 
  * Express server for ARDEN web interface
  * Provides REST API and serves static HTML/CSS/JS
@@ -7,6 +13,19 @@
 
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
+// ── Adapter mode (default) ─────────────────────────────────────
+if (!process.env.ARDEN_LEGACY_WEB) {
+  const { WebAdapter } = require('./adapters');
+  const adapter = new WebAdapter();
+  adapter.start().catch((err) => {
+    console.error('Failed to start Web adapter:', err);
+    process.exit(1);
+  });
+  return;
+}
+
+// ── Legacy mode (ARDEN_LEGACY_WEB=1) ───────────────────────────
 const express = require('express');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
@@ -134,18 +153,10 @@ app.use((err, req, res, next) => {
 
 // Start server
 const server = app.listen(PORT, HOST, () => {
-  console.log('');
-  console.log('🌐 ARDEN Web Interface Started');
-  console.log('================================');
+  console.log('ARDEN Web Interface Started (legacy mode)');
   console.log(`URL: http://${HOST}:${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('');
-  console.log('Available at:');
-  console.log(`  http://localhost:${PORT}`);
-  console.log(`  http://127.0.0.1:${PORT}`);
-  console.log('');
   
-  logger.system.info('ARDEN Web Server started', {
+  logger.system.info('ARDEN Web Server started (legacy mode)', {
     port: PORT,
     host: HOST
   });

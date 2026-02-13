@@ -69,6 +69,47 @@ module.exports = {
       time: true,
       merge_logs: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
+    },
+    {
+      name: 'arden-memory',
+      script: 'memory/server.py',
+      cwd: appRoot,
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: 'python3',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        MEMORY_SERVER_PORT: 3002,
+        MEMORY_DB_PATH: './data/memory.db'
+      },
+      error_file: path.join(appRoot, 'logs', 'memory-error.log'),
+      out_file: path.join(appRoot, 'logs', 'memory-out.log'),
+      log_file: path.join(appRoot, 'logs', 'memory-combined.log'),
+      time: true,
+      merge_logs: true,
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
+    },
+    {
+      name: 'arden-heartbeat',
+      script: 'heartbeat/main.py',
+      cwd: appRoot,
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: 'python3',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '512M',
+      env: {
+        HEARTBEAT_INTERVAL: 1800
+      },
+      error_file: path.join(appRoot, 'logs', 'heartbeat-error.log'),
+      out_file: path.join(appRoot, 'logs', 'heartbeat-out.log'),
+      log_file: path.join(appRoot, 'logs', 'heartbeat-combined.log'),
+      time: true,
+      merge_logs: true,
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
     }
   ]
 };

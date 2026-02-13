@@ -1,3 +1,21 @@
+---
+name: daily-planning
+version: 1.0.0
+enabled: true
+triggers:
+  - "morning briefing"
+  - "daily briefing"
+  - "plan my day"
+patterns:
+  - "(?:morning\\s+briefing|daily\\s+briefing)"
+  - "(?:plan\\s+my\\s+day|what'?s\\s+my\\s+day\\s+look\\s+like)"
+  - "(?:what'?s\\s+on\\s+my\\s+agenda|what\\s+are\\s+my\\s+priorities)"
+  - "(?:what\\s+should\\s+i\\s+(?:do|focus\\s+on)\\s+today)"
+entry: tools/generate-briefing.sh
+timeout: 30000
+agents: [assistant, strategist, analyst]
+---
+
 # Daily Planning Skill
 
 ## Purpose

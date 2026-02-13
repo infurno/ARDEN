@@ -4,6 +4,48 @@ Voice-enabled personal AI infrastructure built on Claude Code.
 
 ## Architecture
 
+### OpenClaw Architecture (4 Pillars)
+
+ARDEN now implements the **OpenClaw architecture** - a 4-pillar design for proactive, memory-aware AI assistance:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      IDENTITY FILES                              │
+│  SOUL.md · USER.md · MEMORY.md · AGENTS.md · HEARTBEAT.md       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌───────────────┐   ┌───────────────┐   ┌──────────────────┐
+│   PILLAR 1    │   │   PILLAR 2    │   │    PILLAR 3      │
+│  Memory System│   │  Heartbeat    │   │    Adapters      │
+├───────────────┤   ├───────────────┤   ├──────────────────┤
+│ • Hybrid      │   │ • Gmail API   │   │ • Telegram       │
+│   Search      │   │ • Calendar    │   │ • Discord        │
+│ • Vector +    │   │ • Claude      │   │ • Web Server     │
+│   BM25        │   │   Reasoning   │   │ • Slack          │
+│ • FastEmbed   │   │ • 30-min loop │   │ • Terminal       │
+│ • Daily logs  │   │ • Proactive   │   │                  │
+│   ingested    │   │   alerts      │   │                  │
+└───────────────┘   └───────────────┘   └──────────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │    PILLAR 4      │
+                    │  Skills Registry │
+                    ├──────────────────┤
+                    │ • SKILL.md       │
+                    │   Discovery      │
+                    │ • Auto-detect    │
+                    │ • Pattern match  │
+                    │ • 11 skills      │
+                    └──────────────────┘
+```
+
+**Legacy Architecture:**
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    ARDEN Voice Layer                         │
@@ -30,6 +72,91 @@ Production Stack:
 │  └─ Local LLM with GPU acceleration                       │
 └────────────────────────────────────────────────────────────┘
 ```
+
+## The 4 Pillars
+
+### Pillar 1: Memory System
+Persistent, searchable memory with hybrid vector + keyword search.
+
+**Components:**
+- **Identity Files** - SOUL.md (personality), USER.md (profile), MEMORY.md (decisions/lessons)
+- **Hybrid Search** - 70% vector similarity (FastEmbed 384-dim ONNX) + 30% BM25 keyword
+- **Daily Logs** - Automatic ingestion of conversations and heartbeats
+- **API** - Python Flask server on port 3002
+
+**Setup:**
+```bash
+cd memory && ./setup.sh  # Creates venv, installs dependencies
+```
+
+### Pillar 2: Heartbeat
+Proactive monitoring that pulls data sources and sends alerts.
+
+**Components:**
+- **Sources** - Gmail (unread), Google Calendar (upcoming events)
+- **Reasoning** - Claude API analyzes data, decides NOTIFY vs HEARTBEAT_OK
+- **Scheduling** - Every 30 minutes via APScheduler
+- **Notifications** - POST to web server's /api/notify endpoint
+
+**Setup:**
+```bash
+cd heartbeat && ./setup.sh  # Creates venv, installs dependencies
+# Place Gmail OAuth credentials in heartbeat/credentials/
+```
+
+### Pillar 3: Adapters
+Unified interface for all platforms (5 adapters, consistent lifecycle).
+
+**Adapters:**
+| Adapter | Mode | Token Env Vars |
+|---------|------|----------------|
+| Telegram | Polling | `TELEGRAM_BOT_TOKEN` |
+| Discord | Gateway | `DISCORD_BOT_TOKEN` |
+| Web | HTTP | `SESSION_SECRET` |
+| Slack | Socket Mode | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN` |
+| Terminal | CLI | None (interactive) |
+
+**Usage:**
+```bash
+# Run any adapter
+node api/telegram-bot.js      # Uses adapter pattern by default
+node api/discord-bot.js       # Same
+node api/web-server.js        # Same
+node api/adapters/slack.js    # Direct
+node api/adapters/terminal.js # Interactive CLI
+
+# Legacy mode (original code)
+ARDEN_LEGACY_TELEGRAM=1 node api/telegram-bot.js
+```
+
+### Pillar 4: Skills Registry
+Auto-discoverable skills with standardized SKILL.md frontmatter.
+
+**Discovery:**
+- Scans `skills/*/SKILL.md` at startup
+- Parses YAML frontmatter for triggers, patterns, tools
+- Compiles regex patterns for auto-detection
+- Hot-reloadable via `skillRegistry.load()`
+
+**SKILL.md Format:**
+```yaml
+---
+name: weather
+version: 1.0.0
+enabled: true
+triggers:
+  - "weather in {location}"
+patterns:
+  - "weather\\s+in\\s+(.+)"
+entry: tools/get-weather.sh
+timeout: 15000
+agents: [assistant, analyst]
+---
+```
+
+**Skills:** 11 total (6 active, 5 planned)
+- ✅ weather, todo-management, note-taking, daily-planning, user-context, clawdbot-partner
+- 🚧 content-engine, direct-integrations, yt-script, pptx-generator, excalidraw-diagram
 
 ## Directory Structure
 
@@ -209,31 +336,40 @@ Edit `config/arden.json`:
 
 ## Recent Updates
 
-### 🚀 Latest Features (February 2026)
+### 🚀 OpenClaw Architecture Migration (February 2026)
 
-- **🤝 Clawdbot Partnership Integration** - Cross-platform AI collaboration system
-  - Send messages via WhatsApp, Telegram, Discord, Slack
-  - Delegate tasks to external AI systems
-  - Bidirectional automation and collaboration
-  - Webhook support for real-time synchronization
+Complete architectural overhaul implementing the 4-pillar OpenClaw design:
 
-- **🎤 Voice Debug Interface** - Enhanced voice development tools
-  - Real-time voice testing and debugging
-  - Audio processing diagnostics
-  - STT/TTS pipeline monitoring
-  - Accessible at `/voice-debug.html`
+**Pillar 1: Memory System**
+- Hybrid search with FastEmbed (384-dim ONNX) + BM25
+- Identity files: SOUL.md, USER.md, MEMORY.md, AGENTS.md, HEARTBEAT.md
+- Daily log ingestion and persistent memory
+- Python Flask server on port 3002
 
-- **⚡ System Improvements**
-  - CUDA support for GPU-accelerated STT processing
-  - Improved Discord bot with better rate limiting
-  - Enhanced PM2 configuration with local logging
-  - Mobile-responsive navigation improvements
-  - All tests passing (38 test cases validated)
+**Pillar 2: Heartbeat**
+- Proactive monitoring every 30 minutes
+- Gmail + Calendar integration via Google APIs
+- Claude-powered reasoning (NOTIFY/HEARTBEAT_OK pattern)
+- Automatic alerts sent to all adapters
 
-- **📱 Better Mobile Experience**
-  - Improved mobile navigation
-  - Voice debug tools accessible on mobile
-  - Enhanced responsive design
+**Pillar 3: Adapters**
+- Unified adapter interface with consistent lifecycle
+- 5 adapters: Telegram, Discord, Web, Slack (Socket Mode), Terminal
+- Backward compatibility maintained (legacy mode available)
+- Base adapter class with shared auth, rate limiting, message processing
+
+**Pillar 4: Skills Registry**
+- Auto-discovery from SKILL.md frontmatter
+- Standardized YAML format for triggers, patterns, tools
+- 11 skills (6 active + 5 planned placeholders)
+- Pattern-based auto-detection with compiled regex
+
+### Previous Features
+
+- **🤝 Clawdbot Partnership Integration** - Cross-platform AI collaboration
+- **🎤 Voice Debug Interface** - Real-time voice testing
+- **⚡ System Improvements** - CUDA support, rate limiting, PM2
+- **📱 Better Mobile Experience** - Responsive design
 
 ## Skills System
 

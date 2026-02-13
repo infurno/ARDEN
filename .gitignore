@@ -13,11 +13,21 @@ node_modules/
 api/node_modules/
 package-lock.json
 
-# Python virtual environment
+# Python virtual environments
 venv/
 env/
+.venv/
+memory/venv/
+heartbeat/venv/
 *.pyc
 __pycache__/
+*.pyo
+.Python
+
+# Python package metadata
+*.egg-info/
+dist/
+build/
 
 # Voice files (can be large)
 voice/recordings/*.ogg
@@ -104,3 +114,13 @@ config/*.backup.*
 *.db
 *.sqlite
 *.sqlite3
+data/*.db
+data/*.sqlite
+!data/.gitkeep
+
+# OAuth credentials
+credentials/
+heartbeat/credentials/
+token.pickle
+*.credentials.json
+gmail-credentials.json

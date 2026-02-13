@@ -1,3 +1,21 @@
+---
+name: clawdbot-partner
+version: 1.0.0
+enabled: true
+triggers:
+  - "clawdbot"
+  - "send message"
+  - "delegate to clawdbot"
+patterns:
+  - "(?:send|message|whatsapp|telegram|discord|slack)\\s+(.+?)(?:\\s+via\\s+clawdbot)?$"
+  - "(?:clawdbot)\\s+(?:send|message)\\s+(.+)$"
+  - "(?:ask|tell)\\s+clawdbot\\s+to\\s+(.+)$"
+  - "(?:delegate|forward)\\s+(.+?)\\s+to\\s+clawdbot$"
+entry: tools/execute-clawdbot.sh
+timeout: 30000
+agents: [assistant, strategist]
+---
+
 # Clawdbot Partnership Skill
 
 ## Overview

@@ -1,3 +1,20 @@
+---
+name: user-context
+version: 1.0.0
+enabled: true
+triggers:
+  - "who am i"
+  - "my profile"
+  - "user context"
+patterns:
+  - "(?:who\\s+am\\s+i|tell\\s+me\\s+about\\s+(?:me|myself))"
+  - "(?:my\\s+(?:profile|context|information))"
+  - "(?:show\\s+(?:me\\s+)?my\\s+(?:profile|context))"
+entry: tools/user_context.sh
+timeout: 5000
+agents: [assistant]
+---
+
 # User Context Skill
 
 ## Overview

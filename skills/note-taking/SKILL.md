@@ -1,3 +1,20 @@
+---
+name: note-taking
+version: 1.0.0
+enabled: true
+triggers:
+  - "take a note"
+  - "create a note"
+  - "save this"
+patterns:
+  - "(?:take\\s+a?\\s*note|create\\s+a?\\s*note|make\\s+a?\\s*note|save\\s+this|write\\s+this\\s+down|remember\\s+this)[\\s:]+(.+)"
+  - "(?:save\\s+this\\s+as\\s+a?\\s*note)[\\s:]+(.+)"
+  - "(?:note\\s+to\\s+self)[\\s:]+(.+)"
+entry: tools/create-note.sh
+timeout: 15000
+agents: [assistant]
+---
+
 # Note-Taking Skill
 
 ## Purpose

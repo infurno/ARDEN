@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * ARDEN Discord Bot
+ * ARDEN Discord Bot  (entry-point)
  *
- * Enables interaction with ARDEN from Discord.
- * Supports text messages, slash commands, and voice messages.
+ * Two modes:
+ *   1. Adapter mode (default) -- uses api/adapters/discord.js via the
+ *      unified adapter lifecycle.
+ *   2. Legacy mode -- original standalone code, activated with
+ *      ARDEN_LEGACY_DISCORD=1  (kept for rollback safety).
  *
  * Setup:
  * 1. Create a Discord application at https://discord.com/developers/applications
@@ -14,6 +17,28 @@
  * 5. Invite bot to your server with appropriate permissions
  * 6. Run: node discord-bot.js
  */
+
+const path = require('path');
+
+// Ensure we're working from the correct directory
+const ARDEN_ROOT = path.resolve(__dirname, '..');
+process.chdir(ARDEN_ROOT);
+
+// Load environment variables from .env file
+require('dotenv').config({ path: path.join(ARDEN_ROOT, '.env') });
+
+// ── Adapter mode (default) ─────────────────────────────────────
+if (!process.env.ARDEN_LEGACY_DISCORD) {
+  const { DiscordAdapter } = require('./adapters');
+  const adapter = new DiscordAdapter();
+  adapter.start().catch((err) => {
+    console.error('Failed to start Discord adapter:', err);
+    process.exit(1);
+  });
+  return;
+}
+
+// ── Legacy mode (ARDEN_LEGACY_DISCORD=1) ───────────────────────
 
 const { Client, GatewayIntentBits, Partials, AttachmentBuilder } = require('discord.js');
 const fs = require('fs').promises;
@@ -364,7 +389,7 @@ process.on('SIGTERM', async () => {
   try {
     await initDirectories();
     
-    logger.system.info('Starting ARDEN Discord Bot', {
+    logger.system.info('Starting ARDEN Discord Bot (legacy mode)', {
       workingDirectory: ARDEN_ROOT,
       aiProvider: AI_PROVIDER,
       aiModel: AI_PROVIDER === 'ollama' ? OLLAMA_MODEL : AI_PROVIDER === 'openai' ? OPENAI_MODEL : 'N/A',

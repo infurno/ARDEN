@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * ARDEN Telegram Voice Bot
+ * ARDEN Telegram Bot  (entry-point)
  *
- * Enables voice interaction with ARDEN from any device via Telegram.
- * Supports both voice messages and text messages.
+ * Two modes:
+ *   1. Adapter mode (default) -- uses api/adapters/telegram.js via the
+ *      unified adapter lifecycle (start / stop / processMessage).
+ *   2. Legacy mode -- original standalone code, activated with
+ *      ARDEN_LEGACY_TELEGRAM=1  (kept for rollback safety).
  *
  * Setup:
  * 1. Create a bot with @BotFather on Telegram
@@ -14,44 +17,44 @@
  * 5. Run: node telegram-bot.js
  */
 
-const TelegramBot = require('node-telegram-bot-api');
-const fs = require('fs').promises;
 const path = require('path');
 
 // Ensure we're working from the correct directory
-// This allows the script to be run from anywhere
 const ARDEN_ROOT = path.resolve(__dirname, '..');
 process.chdir(ARDEN_ROOT);
 
 // Load environment variables from .env file
 require('dotenv').config({ path: path.join(ARDEN_ROOT, '.env') });
 
-// Load configuration
+// ── Adapter mode (default) ─────────────────────────────────────
+if (!process.env.ARDEN_LEGACY_TELEGRAM) {
+  const { TelegramAdapter } = require('./adapters');
+  const adapter = new TelegramAdapter();
+  adapter.start().catch((err) => {
+    console.error('Failed to start Telegram adapter:', err);
+    process.exit(1);
+  });
+  return;
+}
+
+// ── Legacy mode (ARDEN_LEGACY_TELEGRAM=1) ──────────────────────
+const TelegramBot = require('node-telegram-bot-api');
+const fs = require('fs').promises;
+
 const config = require(path.join(ARDEN_ROOT, 'config/arden.json'));
-
-// Import logger
 const logger = require('./utils/logger');
-
-// Import configuration validator
 const { validateConfig } = require('./utils/config-validator');
-
-// Import handlers
 const { handleMessage } = require('./handlers/messages');
-
-// Import AI provider info for logging
 const { AI_PROVIDER, OLLAMA_MODEL, OPENAI_MODEL } = require('./services/ai-providers');
 
-// Environment variables
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// Validate required environment variables
 if (!TELEGRAM_BOT_TOKEN) {
   logger.system.error('TELEGRAM_BOT_TOKEN environment variable not set');
   process.exit(1);
 }
 
-// OPENAI_API_KEY only required for OpenAI Whisper STT or OpenAI AI provider
 const sttProvider = config.voice.stt_provider || 'local-whisper';
 if (sttProvider === 'openai-whisper' && !OPENAI_API_KEY) {
   logger.system.error('OPENAI_API_KEY required for OpenAI Whisper');
@@ -63,7 +66,6 @@ if (AI_PROVIDER === 'openai' && !OPENAI_API_KEY) {
   process.exit(1);
 }
 
-// Validate configuration on startup
 logger.system.info('Validating configuration...');
 let configValidation;
 try {
@@ -78,21 +80,15 @@ if (!configValidation.valid) {
     errors: configValidation.errors,
     warnings: configValidation.warnings 
   });
-  
-  // Log each error
   configValidation.errors.forEach(error => {
     logger.system.error(`Config error: ${error}`);
   });
-  
-  // Log warnings but don't exit
   configValidation.warnings.forEach(warning => {
     logger.system.warn(`Config warning: ${warning}`);
   });
-  
   process.exit(1);
 }
 
-// Log warnings if any
 if (configValidation.warnings && configValidation.warnings.length > 0) {
   configValidation.warnings.forEach(warning => {
     logger.system.warn(`Config warning: ${warning}`);
@@ -104,34 +100,26 @@ logger.system.info('Configuration validation passed', {
   warnings: configValidation.warnings ? configValidation.warnings.length : 0
 });
 
-// Initialize bot
 const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
+const rateLimitMap = new Map();
 
-// Rate limiting map
-const rateLimitMap = new Map(); // userId -> { count, resetTime }
-
-// Paths - now using ARDEN_ROOT for absolute paths
 const VOICE_DIR = path.join(ARDEN_ROOT, 'voice/recordings');
 const RESPONSE_DIR = path.join(ARDEN_ROOT, 'voice/responses');
 
-// Ensure directories exist
 async function initDirectories() {
   await fs.mkdir(VOICE_DIR, { recursive: true });
   await fs.mkdir(RESPONSE_DIR, { recursive: true });
   logger.system.info('Directories initialized', { VOICE_DIR, RESPONSE_DIR });
 }
 
-// Bot event handlers
 bot.on('message', async (msg) => {
   await handleMessage(bot, msg, rateLimitMap);
 });
 
-// Error handling
 bot.on('polling_error', (error) => {
   logger.system.error('Polling error', { error: error.message, code: error.code });
 });
 
-// Graceful shutdown
 process.on('SIGINT', () => {
   logger.system.info('Shutting down gracefully...');
   bot.stopPolling();
@@ -144,12 +132,11 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-// Initialize and start
 (async () => {
   try {
     await initDirectories();
     
-    logger.system.info('ARDEN Telegram Bot started', {
+    logger.system.info('ARDEN Telegram Bot started (legacy mode)', {
       workingDirectory: ARDEN_ROOT,
       aiProvider: AI_PROVIDER,
       aiModel: AI_PROVIDER === 'ollama' ? OLLAMA_MODEL : AI_PROVIDER === 'openai' ? OPENAI_MODEL : 'N/A',
@@ -158,15 +145,9 @@ process.on('SIGTERM', () => {
       ttsProvider: config.voice.tts_provider,
     });
 
-    console.log('🤖 ARDEN Telegram Bot started');
-    console.log(`📁 Working directory: ${ARDEN_ROOT}`);
-    console.log('📱 Send voice or text messages to interact');
+    console.log('ARDEN Telegram Bot started (legacy mode)');
     console.log(`AI Provider: ${AI_PROVIDER}`);
-    if (AI_PROVIDER === 'ollama') console.log(`Ollama model: ${OLLAMA_MODEL}`);
-    if (AI_PROVIDER === 'openai') console.log(`OpenAI model: ${OPENAI_MODEL}`);
     console.log(`Voice enabled: ${config.voice.enabled}`);
-    console.log(`STT: ${config.voice.stt_provider}`);
-    console.log(`TTS: ${config.voice.tts_provider}`);
   } catch (error) {
     logger.system.error('Failed to initialize bot', { error: error.message });
     process.exit(1);

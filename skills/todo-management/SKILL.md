@@ -1,3 +1,19 @@
+---
+name: todo-management
+version: 1.0.0
+enabled: true
+triggers:
+  - "add a todo"
+  - "remind me to"
+  - "i need to"
+patterns:
+  - "(?:add\\s+a?\\s*todo|add\\s+to\\s+(?:my\\s+)?todo\\s+list|remind\\s+me\\s+to|i\\s+need\\s+to|don'?t\\s+forget\\s+to|make\\s+a\\s+todo)[\\s:]+(.+)"
+  - "(?:add\\s+a?\\s*(?:work|personal|side\\s*project)\\s+todo)[\\s:]+(.+)"
+entry: tools/add-todo.sh
+timeout: 15000
+agents: [assistant, strategist, engineer]
+---
+
 # TODO Management Skill
 
 ## Purpose
