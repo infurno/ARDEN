@@ -1,11 +1,13 @@
 """
-Heartbeat Reasoner - Claude-powered reasoning over gathered data
+Heartbeat Reasoner - AI-powered reasoning over gathered data
 
-Takes raw data from sources (Gmail, Calendar) and uses Claude to:
+Takes raw data from sources (Gmail, ProtonMail, Calendar) and uses AI to:
 1. Summarize what's happening
 2. Identify urgent items
 3. Decide whether to notify
 4. Craft actionable notification messages
+
+Supports: OpenAI, Anthropic (Claude), or local fallback
 """
 
 import logging
@@ -43,7 +45,9 @@ def reason_over_data(
     additional_context: str = ""
 ) -> Tuple[bool, str]:
     """
-    Use Claude to reason over gathered data and decide whether to notify.
+    Use AI to reason over gathered data and decide whether to notify.
+    
+    Tries OpenAI first, then Anthropic, then falls back to simple rules.
     
     Args:
         email_summary: Formatted Gmail summary text
@@ -55,17 +59,6 @@ def reason_over_data(
         Tuple of (should_notify: bool, message: str)
         If should_notify is False, message is "HEARTBEAT_OK"
     """
-    try:
-        import anthropic
-    except ImportError:
-        logger.error("anthropic package not installed. Run: pip install anthropic")
-        return False, "HEARTBEAT_OK (reasoner unavailable)"
-    
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        logger.warning("ANTHROPIC_API_KEY not set, skipping reasoning")
-        return False, "HEARTBEAT_OK (no API key)"
-    
     # Build the data prompt
     user_message = f"""Current time: {_current_time()}
 
@@ -84,30 +77,129 @@ def reason_over_data(
     
     user_message += "\nAnalyze the above and decide: should Hal be notified? Respond with NOTIFY: <message> or HEARTBEAT_OK."
     
-    try:
-        client = anthropic.Anthropic(api_key=api_key)
-        
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=200,
-            system=SYSTEM_PROMPT,
-            messages=[
-                {"role": "user", "content": user_message}
-            ]
-        )
-        
-        result = response.content[0].text.strip()
-        logger.info(f"Reasoner response: {result}")
-        
-        if result.startswith("NOTIFY:"):
-            message = result[7:].strip()
-            return True, message
-        else:
-            return False, "HEARTBEAT_OK"
+    # Try OpenAI first
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openai_key:
+        try:
+            return _reason_with_openai(user_message)
+        except Exception as e:
+            logger.warning(f"OpenAI reasoning failed: {e}, trying Anthropic...")
     
-    except Exception as e:
-        logger.error(f"Reasoning failed: {e}")
-        return False, f"HEARTBEAT_OK (error: {e})"
+    # Try Anthropic as fallback
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    if anthropic_key:
+        try:
+            return _reason_with_anthropic(user_message)
+        except Exception as e:
+            logger.warning(f"Anthropic reasoning failed: {e}, using fallback...")
+    
+    # Fallback: simple rule-based
+    logger.info("No AI provider available, using fallback logic")
+    return _reason_with_fallback(email_summary, calendar_summary, protonmail_summary)
+
+
+def _reason_with_openai(user_message: str) -> Tuple[bool, str]:
+    """Use OpenAI GPT to reason over data."""
+    try:
+        import openai
+    except ImportError:
+        logger.error("openai package not installed. Run: pip install openai")
+        raise
+    
+    client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",  # Fast and cost-effective
+        max_tokens=200,
+        temperature=0.3,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_message}
+        ]
+    )
+    
+    result = response.choices[0].message.content.strip()
+    logger.info(f"OpenAI reasoner response: {result}")
+    
+    if result.startswith("NOTIFY:"):
+        message = result[7:].strip()
+        return True, message
+    else:
+        return False, "HEARTBEAT_OK"
+
+
+def _reason_with_anthropic(user_message: str) -> Tuple[bool, str]:
+    """Use Anthropic Claude to reason over data."""
+    try:
+        import anthropic
+    except ImportError:
+        logger.error("anthropic package not installed. Run: pip install anthropic")
+        raise
+    
+    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    
+    response = client.messages.create(
+        model="claude-3-5-sonnet-20241022",
+        max_tokens=200,
+        system=SYSTEM_PROMPT,
+        messages=[
+            {"role": "user", "content": user_message}
+        ]
+    )
+    
+    result = response.content[0].text.strip()
+    logger.info(f"Anthropic reasoner response: {result}")
+    
+    if result.startswith("NOTIFY:"):
+        message = result[7:].strip()
+        return True, message
+    else:
+        return False, "HEARTBEAT_OK"
+
+
+def _reason_with_fallback(
+    email_summary: str,
+    calendar_summary: str,
+    protonmail_summary: str
+) -> Tuple[bool, str]:
+    """Simple rule-based fallback when no AI provider is available."""
+    
+    # Check for urgent keywords
+    urgent_keywords = ["urgent", "asap", "immediate", "action required", "deadline", "overdue"]
+    all_text = f"{email_summary} {calendar_summary} {protonmail_summary}".lower()
+    
+    # Count unread emails
+    unread_count = 0
+    if "unread" in email_summary.lower():
+        try:
+            import re
+            match = re.search(r'(\d+)\s+unread', email_summary.lower())
+            if match:
+                unread_count += int(match.group(1))
+        except:
+            pass
+    
+    if "unread" in protonmail_summary.lower():
+        try:
+            import re
+            match = re.search(r'(\d+)\s+unread', protonmail_summary.lower())
+            if match:
+                unread_count += int(match.group(1))
+        except:
+            pass
+    
+    # Check for urgent items
+    has_urgent = any(keyword in all_text for keyword in urgent_keywords)
+    has_meeting_soon = "in 15 min" in all_text or "in 30 min" in all_text
+    
+    if has_urgent:
+        return True, f"Urgent items detected across your inbox"
+    elif has_meeting_soon:
+        return True, f"Meeting starting soon"
+    elif unread_count > 10:
+        return True, f"{unread_count} unread emails waiting"
+    else:
+        return False, "HEARTBEAT_OK"
 
 
 def _current_time() -> str:

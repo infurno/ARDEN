@@ -3,7 +3,7 @@ ARDEN Heartbeat Daemon - Main Entry Point
 
 Scheduled loop that:
 1. Reads configuration from HEARTBEAT.md
-2. Gathers data from enabled sources (Gmail, Calendar)
+2. Gathers data from enabled sources (Gmail, Calendar, ProtonMail)
 3. Sends data to Claude for reasoning
 4. Routes notifications to adapters
 5. Logs results to daily log
@@ -24,6 +24,18 @@ from pathlib import Path
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).parent.parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"✅ Loaded environment from {env_path}")
+    else:
+        print(f"⚠️  .env file not found at {env_path}")
+except ImportError:
+    print("⚠️  python-dotenv not installed, using system environment")
 
 from heartbeat.config import load_config
 from heartbeat.sources.gmail import fetch_unread_emails, summarize_emails, is_configured as gmail_configured

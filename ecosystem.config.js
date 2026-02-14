@@ -83,7 +83,11 @@ module.exports = {
       watch: false,
       max_memory_restart: '512M',
       env: {
-        HEARTBEAT_INTERVAL: 1800
+        HEARTBEAT_INTERVAL: 1800,
+        // Load from .env file - these will be overridden by .env if present
+        PROTONMAIL_USERNAME: process.env.PROTONMAIL_USERNAME,
+        PROTONMAIL_BRIDGE_PASSWORD: process.env.PROTONMAIL_BRIDGE_PASSWORD,
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY
       },
       error_file: path.join(appRoot, 'logs', 'heartbeat-error.log'),
       out_file: path.join(appRoot, 'logs', 'heartbeat-out.log'),
