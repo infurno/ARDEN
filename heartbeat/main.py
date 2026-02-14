@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from heartbeat.config import load_config
 from heartbeat.sources.gmail import fetch_unread_emails, summarize_emails, is_configured as gmail_configured
 from heartbeat.sources.calendar import fetch_upcoming_events, summarize_events, is_configured as calendar_configured
+from heartbeat.sources.imap import get_protonmail_client
 from heartbeat.reasoner import reason_over_data
 from heartbeat.notifier import notify, notify_all_channels, log_heartbeat_result
 
@@ -62,6 +63,34 @@ def is_active_hours(config: dict) -> bool:
     return start <= current_time <= end
 
 
+def check_protonmail():
+    """Check ProtonMail for unread emails via Bridge."""
+    try:
+        client = get_protonmail_client()
+        if not client:
+            return "ProtonMail not configured (set PROTONMAIL_USERNAME and PROTONMAIL_BRIDGE_PASSWORD)."
+        
+        if not client.connect():
+            return "ProtonMail Bridge not running (start: protonmail-bridge)."
+        
+        emails = client.check_unread()
+        client.disconnect()
+        
+        if not emails:
+            return "No unread ProtonMail messages."
+        
+        # Format summary
+        summary = f"{len(emails)} unread ProtonMail messages:\n"
+        for email in emails[:5]:  # Top 5
+            summary += f"- From: {email['sender'][:50]}, Subject: {email['subject'][:60]}\n"
+        
+        return summary
+        
+    except Exception as e:
+        logger.error(f"Error checking ProtonMail: {e}")
+        return f"ProtonMail check failed: {str(e)}"
+
+
 def run_heartbeat_cycle():
     """Execute a single heartbeat cycle."""
     logger.info("=== Heartbeat cycle starting ===")
@@ -75,16 +104,24 @@ def run_heartbeat_cycle():
         return
     
     # Gather data from enabled sources
-    email_summary = "Gmail not configured."
+    gmail_summary = "Gmail not configured."
+    protonmail_summary = "ProtonMail not checked."
     calendar_summary = "Calendar not configured."
     
     if config["sources"]["gmail"]["enabled"]:
         if gmail_configured():
             emails = fetch_unread_emails()
-            email_summary = summarize_emails(emails)
+            gmail_summary = summarize_emails(emails)
         else:
-            email_summary = "Gmail not configured (missing credentials)."
+            gmail_summary = "Gmail not configured (missing credentials)."
             logger.info("Gmail enabled but not configured")
+    
+    # Check ProtonMail (always try if credentials are set)
+    if os.getenv('PROTONMAIL_USERNAME') and os.getenv('PROTONMAIL_BRIDGE_PASSWORD'):
+        protonmail_summary = check_protonmail()
+        logger.info("ProtonMail checked")
+    else:
+        logger.info("ProtonMail not configured")
     
     if config["sources"]["calendar"]["enabled"]:
         if calendar_configured():
@@ -96,8 +133,9 @@ def run_heartbeat_cycle():
     
     # Send to Claude for reasoning
     should_notify, message = reason_over_data(
-        email_summary=email_summary,
-        calendar_summary=calendar_summary
+        email_summary=gmail_summary,
+        calendar_summary=calendar_summary,
+        protonmail_summary=protonmail_summary
     )
     
     # Act on the result

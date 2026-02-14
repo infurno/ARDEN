@@ -14,7 +14,7 @@ from typing import Dict, Optional, Tuple
 
 logger = logging.getLogger("arden.heartbeat.reasoner")
 
-SYSTEM_PROMPT = """You are ARDEN's heartbeat reasoner. Your job is to analyze data gathered from the user's Gmail and Calendar, and decide if the user (Hal) needs to be notified about anything.
+SYSTEM_PROMPT = """You are ARDEN's heartbeat reasoner. Your job is to analyze data gathered from the user's Gmail, ProtonMail, and Calendar, and decide if the user (Hal) needs to be notified about anything.
 
 Rules:
 - Only notify when there's something actionable or time-sensitive
@@ -22,6 +22,7 @@ Rules:
 - If nothing needs attention, respond with exactly: HEARTBEAT_OK
 - Never be alarmist -- just factual and helpful
 - Consider the user's preferences: they prefer concise, technical communication
+- ProtonMail often contains more sensitive/personal emails -- use judgment
 
 When you DO need to notify, format your response as:
 NOTIFY: <brief actionable message>
@@ -30,6 +31,7 @@ Examples:
 - NOTIFY: Meeting with DevOps team in 15 min -- no agenda doc shared yet
 - NOTIFY: 3 unread emails from your manager, oldest is 2 hours ago
 - NOTIFY: Calendar conflict: Standup and Architecture Review both at 2pm
+- NOTIFY: ProtonMail: Urgent security alert from your bank
 - HEARTBEAT_OK
 """
 
@@ -37,14 +39,16 @@ Examples:
 def reason_over_data(
     email_summary: str,
     calendar_summary: str,
+    protonmail_summary: str = "",
     additional_context: str = ""
 ) -> Tuple[bool, str]:
     """
     Use Claude to reason over gathered data and decide whether to notify.
     
     Args:
-        email_summary: Formatted email summary text
+        email_summary: Formatted Gmail summary text
         calendar_summary: Formatted calendar summary text
+        protonmail_summary: Formatted ProtonMail summary text
         additional_context: Any additional context (e.g., from HEARTBEAT.md)
     
     Returns:
@@ -65,8 +69,11 @@ def reason_over_data(
     # Build the data prompt
     user_message = f"""Current time: {_current_time()}
 
-=== EMAIL STATUS ===
+=== GMAIL STATUS ===
 {email_summary}
+
+=== PROTONMAIL STATUS ===
+{protonmail_summary}
 
 === CALENDAR STATUS ===
 {calendar_summary}

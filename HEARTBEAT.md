@@ -30,6 +30,18 @@
   - Cancelled meetings (free up time notification)
 - **Include**: Meeting links, attendee list, attached documents
 
+### ProtonMail
+- **Enabled**: true
+- **Connection**: ProtonMail Bridge (localhost:1143)
+- **Check**: Unread messages in inbox
+- **Notify When**:
+  - Security alerts or account notifications
+  - Emails from financial institutions
+  - Personal urgent communications
+  - Any unread after 24 hours (digest)
+- **Security**: Bridge runs locally, E2E encryption preserved
+- **Setup**: Requires PROTONMAIL_USERNAME and PROTONMAIL_BRIDGE_PASSWORD env vars
+
 ### Asana (Future)
 - **Enabled**: false
 - **Check**: Tasks due today, overdue tasks, new assignments
