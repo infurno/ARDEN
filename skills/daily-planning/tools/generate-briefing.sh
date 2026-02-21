@@ -137,18 +137,18 @@ if [ -d "$NOTES_DIR" ]; then
     echo "Found $NOTE_COUNT recent notes:"
     echo ""
     
-    # Parse and display recent notes with titles
-    find "$NOTES_DIR" -name "*.md" -type f -mtime -${DAYS_BACK} ! -path "*/todos/*" -exec stat -f "%m %N" {} + 2>/dev/null | \
-      sort -rn | head -10 | while read -r mtime filepath; do
+  # Parse and display recent notes with titles
+  find "$NOTES_DIR" -name "*.md" -type f -mtime -${DAYS_BACK} ! -path "*/todos/*" -printf "%T@ %p\n" 2>/dev/null | \
+    sort -rn | head -10 | while read -r mtime filepath; do
       
       # Get relative path
       RELATIVE_PATH="${filepath#$NOTES_DIR/}"
       
       # Extract title from first H1 in the file
-      TITLE=$(grep -m 1 "^# " "$filepath" 2>/dev/null | sed 's/^# //' || echo "")
+      TITLE=$(grep -m1 "^# " "$filepath" 2>/dev/null | sed 's/^# //' || echo "")
       
       # Get modification date
-      MOD_DATE=$(date -r "$mtime" "+%b %d, %I:%M %p" 2>/dev/null || echo "")
+      MOD_DATE=$(date -d "@$mtime" "+%b %d, %I:%M %p" 2>/dev/null || echo "")
       
       # Get first line of content (preview)
       PREVIEW=$(head -20 "$filepath" | grep -v "^#" | grep -v "^---" | grep -v "^\s*$" | head -1 | cut -c1-80)
@@ -183,10 +183,10 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ -d "$NOTES_DIR" ]; then
-  # Find notes created today (birth time = today)
-  TODAY_START=$(date -j -f "%Y-%m-%d %H:%M:%S" "$(date +%Y-%m-%d) 00:00:00" "+%s" 2>/dev/null || date +%s)
+  # Find notes created today
+  TODAY_START=$(date -d "today 00:00:00" "+%s" 2>/dev/null)
   
-  NEW_TODAY=$(find "$NOTES_DIR" -name "*.md" -type f ! -path "*/todos/*" -newerBt "@$TODAY_START" 2>/dev/null)
+  NEW_TODAY=$(find "$NOTES_DIR" -name "*.md" -type f ! -path "*/todos/*" -newerct "@$TODAY_START" 2>/dev/null)
   
   if [ -n "$NEW_TODAY" ]; then
     NEW_COUNT=$(echo "$NEW_TODAY" | wc -l | tr -d ' ')
@@ -201,7 +201,7 @@ if [ -d "$NOTES_DIR" ]; then
       TITLE=$(grep -m 1 "^# " "$filepath" 2>/dev/null | sed 's/^# //' || echo "")
       
       # Get creation time
-      CREATED=$(stat -f "%SB" -t "%I:%M %p" "$filepath" 2>/dev/null || echo "")
+      CREATED=$(stat -c "%y" "$filepath" 2>/dev/null | cut -d' ' -f2 | cut -d':' -f1,2 || echo "")
       
       if [ -n "$TITLE" ]; then
         echo "  ✅ $TITLE"
